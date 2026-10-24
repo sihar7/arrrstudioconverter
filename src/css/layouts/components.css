@@ -1,0 +1,598 @@
+/* ============================================================
+   css/layouts/components.css — primitive visual kecil yang dipakai ulang
+   ============================================================ */
+
+/* Eyebrow — label kapital ber-tracking lebar, diawali garis ukir pendek (gaya editorial otomotif) */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.eyebrow::before {
+  content: "";
+  width: 20px;
+  height: 1px;
+  flex-shrink: 0;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+/* Label kapital tanpa garis (navigasi, kolom tabel, meta) */
+.caps {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Judul lebar — axis wdth Google Sans Flex (karakter "grand tourer") */
+.font-display {
+  font-variation-settings: "wdth" 122;
+  font-stretch: 122%;
+}
+
+/* Krom terpoles — garis cakrawala gelap di tengah huruf seperti pantulan logam asli */
+.metal-text {
+  background: linear-gradient(
+    180deg,
+    var(--accent-strong) 0%,
+    var(--accent) 46%,
+    var(--fg-3) 50%,
+    var(--accent) 62%,
+    var(--accent-strong) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Tautan teks: garis bawah tumbuh dari kiri saat hover */
+.link-line {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size var(--slow) var(--ease);
+}
+@media (hover: hover) {
+  .link-line:hover {
+    background-size: 100% 1px;
+  }
+}
+
+/* State layer: overlay currentColor 8% hover · 10% fokus · 12% tekan */
+.state-layer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.state-layer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .state-layer:hover::before {
+    opacity: 0.08;
+  }
+}
+.state-layer:focus-visible::before {
+  opacity: 0.1;
+}
+.state-layer:active::before {
+  opacity: 0.12;
+}
+
+/* Ripple (dipasang global oleh RippleProvider pada .state-layer) */
+.ripple {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.16;
+  transform: scale(0);
+  pointer-events: none;
+  animation: ripple 0.55s var(--ease-decel) forwards;
+}
+.ripple.out {
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+}
+@keyframes ripple {
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Slider: alur terukir + kenop logam bubut (lihat MATERIAL) */
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  --pct: 50%;
+}
+.range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 1px;
+  background: linear-gradient(to right, var(--accent) var(--pct), var(--tonal) var(--pct));
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+.range::-moz-range-track {
+  height: 4px;
+  border-radius: 1px;
+  background: var(--tonal);
+}
+.range::-moz-range-progress {
+  height: 4px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: var(--knob);
+  border: 0;
+  box-shadow: var(--knob-shadow);
+  transition:
+    transform var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--knob);
+  border: 0;
+  box-shadow: var(--knob-shadow);
+}
+.range:hover::-webkit-slider-thumb {
+  box-shadow: var(--knob-shadow), 0 0 0 8px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.range:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: var(--knob-shadow), 0 0 0 10px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.range:focus-visible {
+  outline: none;
+}
+.range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
+}
+.range:disabled {
+  cursor: not-allowed;
+}
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--raised) 0%, var(--hover) 50%, var(--raised) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Muncul halus */
+.rise {
+  /* longhand: shorthand "animation" akan menimpa animation-delay dari utility Tailwind */
+  animation-name: rise;
+  animation-duration: 0.8s;
+  animation-timing-function: var(--ease);
+  animation-fill-mode: both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Progress berjalan saat status belum punya angka */
+.indeterminate {
+  position: relative;
+  overflow: hidden;
+}
+.indeterminate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: indet 1.1s var(--ease) infinite;
+}
+@keyframes indet {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* Reveal saat discroll (kelas .in dipasang IntersectionObserver) */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity var(--cine) var(--ease),
+    transform var(--cine) var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Bar waveform di mockup */
+.wave i {
+  display: block;
+  width: 3px;
+  background: var(--fg-3);
+  transform-origin: bottom;
+  animation: wave 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -70ms);
+}
+.wave i.on {
+  background: var(--accent);
+}
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Equalizer kecil (status memproses) */
+.eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.eq i {
+  width: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: eq 0.9s ease-in-out infinite;
+}
+.eq i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.eq i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+@keyframes eq {
+  0%,
+  100% {
+    height: 3px;
+  }
+  50% {
+    height: 12px;
+  }
+}
+
+/* Lazy loader logo ARRR — napas pelan + kilau menyapu dari kiri ke kanan */
+.arrr-loader {
+  animation: arrr-breathe 1.8s ease-in-out infinite;
+  -webkit-mask-image: url("/brand/arrr-logo-192.webp");
+  mask-image: url("/brand/arrr-logo-192.webp");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+.arrr-loader-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.75) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: arrr-shine 1.8s var(--ease) infinite;
+  mix-blend-mode: overlay;
+}
+@keyframes arrr-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes arrr-shine {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Scrollbar tipis */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+
+/* ============================================================
+   MATERIAL — FORGED COMPOSITE · Filosofi "Presisi yang ditempa"
+   ------------------------------------------------------------
+   Forged composite = ribuan serpihan serat dipres panas & tekanan
+   jadi satu bentuk: ringan, kuat, polanya tak pernah sama. Sama
+   seperti converter ini — banyak sumber diproses jadi satu aset.
+   Empat prinsip (juga ditampilkan di seksi Filosofi landing):
+     1. Grafit  — kanvas gelap (token --bg/--surface): tenang, karya jadi pusat
+     2. Perak   — aksen (--accent): hanya aksi terpenting yang berkilau
+     3. Serpihan tempa — material: latar, hero, CTA, footer, ubin ikon
+     4. Cahaya terarah — material hanya tampak di area yang disorot
+        (key light atas + sorot kursor); sisanya tenggelam ke grafit
+   Kartu/dialog = pelat satin di ATAS forged (dua material berlapis),
+   bertepi chamfer hasil mesin. Pemisah = alur terukir.
+   Tekstur: public/material/forged-*.webp (640px, seamless).
+   ============================================================ */
+:root {
+  --forged: url("/material/forged-dark.webp");
+  /* Peredam forged di latar halaman (material tetap terasa, tidak bersaing dengan konten) */
+  --forged-dim: color-mix(in srgb, var(--bg) 58%, transparent);
+  /* Film grain halus untuk seluruh layar */
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  /* Satin bead-blasted: butir mikro sebagai lapisan background (alpha sudah rendah) */
+  --satin: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='1.35' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+  --sheen: radial-gradient(90% 60% at 50% -12%, rgba(201, 205, 210, 0.09), transparent 62%);
+  --spot: rgba(230, 232, 235, 0.16);
+  --plate-top: rgba(255, 255, 255, 0.028);
+  --mat-grain-opacity: 0.05;
+  --mat-edge: rgba(255, 255, 255, 0.07);
+  --mat-edge-low: rgba(0, 0, 0, 0.4);
+  --groove-d: rgba(0, 0, 0, 0.55);
+  --groove-l: rgba(255, 255, 255, 0.06);
+  /* Kenop (slider, konsol) = logam terpoles */
+  --knob: conic-gradient(from 30deg, #f2f3f5, #9fa4ab 25%, #e6e8eb 50%, #9fa4ab 75%, #f2f3f5);
+  --knob-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="light"] {
+  --forged: url("/material/forged-light.webp");
+  --forged-dim: color-mix(in srgb, var(--bg) 50%, transparent);
+  --satin: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='1.35' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+  --sheen: radial-gradient(90% 60% at 50% -12%, rgba(255, 255, 255, 0.9), transparent 62%);
+  --spot: rgba(255, 255, 255, 0.55);
+  --plate-top: rgba(255, 255, 255, 0.7);
+  --mat-grain-opacity: 0.06;
+  --mat-edge: rgba(255, 255, 255, 0.95);
+  --mat-edge-low: rgba(0, 0, 0, 0.06);
+  --groove-d: rgba(0, 0, 0, 0.12);
+  --groove-l: rgba(255, 255, 255, 0.95);
+  --knob: conic-gradient(from 30deg, #ffffff, #b9bdc3 25%, #f2f3f5 50%, #b9bdc3 75%, #ffffff);
+  --knob-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Latar halaman = forged hanya di "kolam cahaya" atas — memudar ke grafit polos di bawah,
+   jadi material terbaca sebagai permukaan yang disorot lampu, bukan wallpaper (fixed, tanpa reflow) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--forged-dim), var(--forged-dim)),
+    var(--forged) 0 0 / 400px 400px repeat;
+  -webkit-mask-image: radial-gradient(95% 70% at 50% -5%, #000 0%, rgba(0, 0, 0, 0.5) 42%, transparent 78%);
+  mask-image: radial-gradient(95% 70% at 50% -5%, #000 0%, rgba(0, 0, 0, 0.5) 42%, transparent 78%);
+}
+/* Key light dari atas + sorot lembut yang mengikuti kursor (--mx/--my dari StudioLight) */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 28rem at var(--mx, 50%) var(--my, -10%), var(--spot), transparent 70%),
+    var(--sheen);
+  mix-blend-mode: soft-light;
+}
+html[data-theme="light"] body::after {
+  mix-blend-mode: normal;
+  opacity: 0.6;
+}
+/* Film grain di atas semua lapisan (pseudo terpisah supaya opacity-nya tidak meredam sheen) */
+html::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background-image: var(--grain);
+  opacity: var(--mat-grain-opacity);
+  mix-blend-mode: overlay;
+}
+html[data-theme="light"]::after {
+  mix-blend-mode: multiply;
+  filter: invert(1);
+}
+
+/* Pelat satin (kartu, dialog, menu): butir mikro + tepi chamfer — atas menangkap cahaya, bawah dalam bayang */
+.mat {
+  background-image: linear-gradient(180deg, var(--plate-top), transparent 38%), var(--satin);
+  box-shadow:
+    inset 0 1px 0 var(--mat-edge),
+    inset 0 -1px 0 var(--mat-edge-low),
+    var(--elev-1);
+}
+
+/* Forged penuh (hero, CTA, footer, banner profil) — taruh sebagai lapisan absolut di belakang konten */
+.forged {
+  background: var(--forged) 0 0 / 640px 640px repeat, var(--bg);
+}
+/* Lampu studio: sorot lembut yang mengikuti kursor (--mx/--my diset JS, default kanan atas) */
+.forged-spot {
+  background: radial-gradient(42rem 30rem at var(--mx, 70%) var(--my, 30%), var(--spot), transparent 70%);
+  background-attachment: fixed; /* koordinat viewport = sama dengan --mx/--my dari kursor */
+  mix-blend-mode: soft-light;
+}
+html[data-theme="light"] .forged-spot {
+  mix-blend-mode: screen;
+}
+/* Ubin forged kecil bertepi chamfer (ikon empty state, medali logo) */
+.forged-tile {
+  background: var(--forged) 0 0 / 320px 320px repeat, var(--raised);
+  box-shadow:
+    inset 0 1px 0 var(--mat-edge),
+    inset 0 -1px 0 var(--mat-edge-low),
+    0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+
+/* Alur terukir — pengganti garis datar untuk pemisah seksi */
+.engrave {
+  height: 2px;
+  border: 0;
+  background: linear-gradient(180deg, var(--groove-d) 0 1px, var(--groove-l) 1px 2px);
+}
+
+/* Tombol primer = pelat logam terpoles: kilau atas + chamfer */
+.btn-plate {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0) 48%, rgba(0, 0, 0, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+}
+html[data-theme="light"] .btn-plate {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 48%, rgba(0, 0, 0, 0.2));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Kilau menyapu saat hover — sekali lewat, seperti cahaya melintas di logam */
+.mat-shine {
+  position: relative;
+  overflow: hidden;
+}
+.mat-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.08) 50%, transparent 60%);
+  transform: translateX(-100%);
+}
+@media (hover: hover) {
+  .mat-shine:hover::after {
+    transform: translateX(100%);
+    transition: transform 0.9s var(--ease);
+  }
+}
+
+/* Hero: tirai gelap supaya teks di atas cakram tetap terbaca */
+.hero-veil {
+  background:
+    linear-gradient(180deg, transparent 0%, transparent 50%, color-mix(in srgb, var(--bg) 80%, transparent) 84%, var(--bg) 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--bg) 72%, transparent) 0%, transparent 60%);
+}
+
+/* Indikator scroll: garis tipis dengan segmen yang turun */
+.scroll-cue {
+  position: relative;
+  width: 1px;
+  height: 48px;
+  background: var(--line-2);
+  overflow: hidden;
+}
+.scroll-cue::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 16px;
+  background: var(--fg);
+  animation: scroll-cue 2.2s var(--ease) infinite;
+}
+@keyframes scroll-cue {
+  from {
+    transform: translateY(-16px);
+  }
+  to {
+    transform: translateY(48px);
+  }
+}
+
+@keyframes dlg-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Navbar masuk saat load: turun halus dari atas */
+@keyframes nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Konsol showcase landing: bagian waveform yang sudah diputar + playhead (clip-path & transform saja) */
+.console-played {
+  animation: console-play 16s linear infinite;
+}
+.console-head {
+  animation: console-head 16s linear infinite;
+}
+@keyframes console-play {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes console-head {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

@@ -1,0 +1,183 @@
+import { createSlice, nanoid, type PayloadAction } from "@reduxjs/toolkit";
+import { DEFAULT_OPTIONS, PRESETS, type AudioOptions, type PresetId } from "@/lib/schemas/convert.schema";
+import type { JobResult, PublicJob, VideoInfo } from "@/type/converter";
+import type { PermissionMode } from "@/type/history";
+
+// Antrean converter di klien. Job berjalan di server; item menyimpan jobId untuk polling.
+
+export type ItemStatus = "idle" | "pending" | "queued" | "downloading" | "processing" | "done" | "error";
+
+export interface UploadState {
+  status: "idle" | "uploading" | "processing" | "done" | "error";
+  assetId: string | null;
+  operationId: string | null;
+  error: string | null;
+}
+
+export interface QueueItem {
+  key: string;
+  videoId: string;
+  title: string;
+  author: string;
+  thumbnail: string;
+  duration: number | null;
+  status: ItemStatus;
+  progress: number;
+  jobId: string | null;
+  error: string | null;
+  result: JobResult | null;
+  options: AudioOptions | null;
+  autoUpload: boolean;
+  upload: UploadState;
+}
+
+export interface ConverterState {
+  options: AudioOptions;
+  preset: PresetId | "custom";
+  autoUpload: boolean;
+  autoPermission: PermissionMode;
+  items: QueueItem[];
+}
+
+const emptyUpload: UploadState = { status: "idle", assetId: null, operationId: null, error: null };
+
+const initialState: ConverterState = {
+  options: DEFAULT_OPTIONS,
+  preset: "normal",
+  autoUpload: false,
+  autoPermission: "none",
+  items: [],
+};
+
+const RUNNING: ItemStatus[] = ["pending", "queued", "downloading", "processing"];
+export const isRunning = (s: ItemStatus) => RUNNING.includes(s);
+
+const find = (s: ConverterState, key: string) => s.items.find((i) => i.key === key);
+
+const converterSlice = createSlice({
+  name: "converter",
+  initialState,
+  reducers: {
+    setOptions(state, action: PayloadAction<Partial<AudioOptions>>) {
+      state.options = { ...state.options, ...action.payload };
+      state.preset = "custom";
+    },
+    applyPreset(state, action: PayloadAction<PresetId>) {
+      // Preset hanya menyentuh efek; format/bitrate/trim tetap
+      const keep = {
+        format: state.options.format,
+        bitrate: state.options.bitrate,
+        sampleRate: state.options.sampleRate,
+        mono: state.options.mono,
+        compress: state.options.compress,
+        trimStart: state.options.trimStart,
+        trimEnd: state.options.trimEnd,
+      };
+      state.options = { ...DEFAULT_OPTIONS, ...keep, ...PRESETS[action.payload] };
+      state.preset = action.payload;
+    },
+    resetOptions(state) {
+      state.options = DEFAULT_OPTIONS;
+      state.preset = "normal";
+    },
+    setAutoUpload(state, action: PayloadAction<{ enabled?: boolean; permission?: PermissionMode }>) {
+      if (action.payload.enabled !== undefined) state.autoUpload = action.payload.enabled;
+      if (action.payload.permission !== undefined) state.autoPermission = action.payload.permission;
+    },
+    hydrateConverter(state, action: PayloadAction<Partial<Pick<ConverterState, "options" | "preset" | "autoUpload" | "autoPermission">>>) {
+      Object.assign(state, action.payload);
+      state.options = { ...DEFAULT_OPTIONS, ...state.options };
+    },
+
+    addItems(state, action: PayloadAction<VideoInfo[]>) {
+      for (const v of action.payload) {
+        const dup = state.items.find((i) => i.videoId === v.videoId && i.status !== "done" && i.status !== "error");
+        if (dup) continue;
+        state.items.push({
+          key: nanoid(10),
+          videoId: v.videoId,
+          title: v.title,
+          author: v.author,
+          thumbnail: v.thumbnail,
+          duration: v.duration,
+          status: "idle",
+          progress: 0,
+          jobId: null,
+          error: null,
+          result: null,
+          options: null,
+          autoUpload: false,
+          upload: emptyUpload,
+        });
+      }
+    },
+    /** Tandai item siap dikirim ke server dengan opsi saat ini */
+    enqueue(state, action: PayloadAction<string[] | undefined>) {
+      const keys = action.payload;
+      for (const item of state.items) {
+        if (keys ? !keys.includes(item.key) : item.status !== "idle" && item.status !== "error") continue;
+        if (isRunning(item.status)) continue;
+        Object.assign(item, {
+          status: "pending",
+          progress: 0,
+          jobId: null,
+          error: null,
+          result: null,
+          options: state.options,
+          autoUpload: state.autoUpload,
+          upload: emptyUpload,
+        });
+      }
+    },
+    jobUpdated(state, action: PayloadAction<{ key: string; job: PublicJob }>) {
+      const item = find(state, action.payload.key);
+      if (!item) return;
+      const { job } = action.payload;
+      item.jobId = job.id;
+      item.status = job.status;
+      item.progress = job.progress;
+      item.error = job.error;
+      item.result = job.result;
+      if (job.title && job.title !== job.videoId) item.title = job.title;
+    },
+    itemFailed(state, action: PayloadAction<{ key: string; error: string; reset?: boolean }>) {
+      const item = find(state, action.payload.key);
+      if (!item) return;
+      item.status = action.payload.reset ? "idle" : "error";
+      item.error = action.payload.reset ? null : action.payload.error;
+      item.progress = 0;
+      item.jobId = null;
+    },
+    removeItem(state, action: PayloadAction<string>) {
+      state.items = state.items.filter((i) => i.key !== action.payload);
+    },
+    clearFinished(state) {
+      state.items = state.items.filter((i) => i.status !== "done" && i.status !== "error");
+    },
+    uploadUpdated(state, action: PayloadAction<{ key: string; upload: Partial<UploadState> }>) {
+      const item = find(state, action.payload.key);
+      if (item) item.upload = { ...item.upload, ...action.payload.upload };
+    },
+    consumeAutoUpload(state, action: PayloadAction<string>) {
+      const item = find(state, action.payload);
+      if (item) item.autoUpload = false;
+    },
+  },
+});
+
+export const {
+  setOptions,
+  applyPreset,
+  resetOptions,
+  setAutoUpload,
+  hydrateConverter,
+  addItems,
+  enqueue,
+  jobUpdated,
+  itemFailed,
+  removeItem,
+  clearFinished,
+  uploadUpdated,
+  consumeAutoUpload,
+} = converterSlice.actions;
+export default converterSlice.reducer;
