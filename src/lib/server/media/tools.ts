@@ -18,6 +18,13 @@ const ASSET: Partial<Record<NodeJS.Platform, string>> = {
 
 const g = globalThis as unknown as { __arrcYtdlpInstall?: Promise<void> | null; __arrcYtdlpUpdatedAt?: number };
 
+// PO Token provider bgutil (cara yang sama dengan arrweb/Docker) — mode script, jadi jalan di serverless.
+// vendor/bgutil dibangun oleh scripts/build-bgutil.mjs; tidak ada → yt-dlp jalan tanpa PO token
+const bgutilHome = path.join(process.cwd(), "vendor", "bgutil");
+export const bgutil = fs.existsSync(path.join(bgutilHome, "build", "generate_once.js"))
+  ? { home: bgutilHome, plugins: path.join(bgutilHome, "plugins") }
+  : null;
+
 export function ffmpegBin(): string {
   return config.bin.ffmpeg || ffmpegStatic || "ffmpeg";
 }

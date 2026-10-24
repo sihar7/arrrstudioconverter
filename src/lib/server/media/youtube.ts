@@ -9,7 +9,7 @@ import { getJson, K, setJson } from "../redis";
 import { run } from "./process";
 import { cobaltDownload, cobaltEnabled } from "./cobalt";
 import { probe } from "./ffmpeg";
-import { maybeUpdateYtdlp, ytdlpBin } from "./tools";
+import { bgutil, maybeUpdateYtdlp, ytdlpBin } from "./tools";
 import type { PlaylistItem, VideoInfo } from "@/type/converter";
 
 // Keamanan: URL user TIDAK pernah diteruskan mentah ke yt-dlp — hanya ID hasil regex
@@ -85,17 +85,28 @@ const nextProxy = (): string | undefined => {
   return list.length ? list[proxyCursor++ % list.length] : undefined;
 };
 
-function baseArgs(): string[] {
+/** youtubeArgs: extractor-args "youtube:" tambahan (mis. player_client=…) — digabung jadi satu flag */
+function baseArgs(youtubeArgs: string[] = []): string[] {
   const args = ["--ignore-config", "--no-cache-dir", "--no-warnings", "--encoding", "utf-8"];
   const cookies = resolveCookies();
   if (cookies) args.push("--cookies", cookies);
   const proxy = nextProxy();
   if (proxy) args.push("--proxy", proxy);
-  // yt-dlp butuh JS runtime untuk tanda tangan YouTube; di Vercel tidak ada deno → pakai Node yang sedang jalan.
-  // Hanya di serverless: binary selalu versi terbaru (lokal bisa versi lama yang belum kenal flag ini)
-  if (config.serverless) args.push("--js-runtimes", `node:${process.execPath}`);
+  // yt-dlp butuh JS runtime untuk tanda tangan YouTube & PO token; di Vercel tidak ada deno → pakai Node yang sedang jalan.
+  // Lokal tanpa bgutil dilewati: binary lokal bisa versi lama yang belum kenal flag ini
+  if (config.serverless || bgutil) args.push("--js-runtimes", `node:${process.execPath}`);
+  // PO token dari bgutil → lolos verifikasi bot YouTube di IP datacenter
+  if (bgutil) {
+    args.push("--plugin-dirs", bgutil.plugins, "--extractor-args", `youtubepot-bgutilscript:server_home=${bgutil.home}`);
+  }
+  // Di server (IP datacenter) token selalu dikirim sejak request pertama, bukan menunggu diminta YouTube
+  const yt = bgutil && config.serverless ? ["fetch_pot=always", ...youtubeArgs] : youtubeArgs;
+  if (yt.length) args.push("--extractor-args", `youtube:${yt.join(";")}`);
   return args;
 }
+
+// Cache token bgutil di folder yang bisa ditulis (HOME di Vercel read-only)
+const ytEnv = { XDG_CACHE_HOME: config.paths.tmp };
 
 let warnedCookies = false;
 /** IP datacenter (Vercel dkk.) sering kena "Sign in to confirm you're not a bot" — solusinya cookies akun YouTube */
@@ -165,6 +176,7 @@ export async function videoInfo(videoId: string): Promise<VideoInfo> {
       run(bin, [...baseArgs(), "--no-playlist", "--skip-download", "-O", "%(duration)s", Url.youtubeWatch + videoId], {
         timeoutMs: 25_000,
         label: "yt-dlp",
+      env: ytEnv,
       }),
     )
     .then((r) => {
@@ -198,7 +210,7 @@ export async function playlist(listId: string): Promise<{ title: string; items: 
   const r = await run(
     bin,
     [...baseArgs(), "--flat-playlist", "-J", "--playlist-end", String(config.limits.playlistMax), Url.youtubePlaylist + listId],
-    { timeoutMs: 60_000, label: "yt-dlp" },
+    { timeoutMs: 60_000, label: "yt-dlp", env: ytEnv },
   );
   if (r.code !== 0) {
     hintCookies(r.stderr);
@@ -282,11 +294,7 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
     infoPath.replace(/%/g, "%%"),
   ];
   // Gagal (bot check / format) → coba player client lain yang tidak butuh PO token; tiap percobaan proxy berikutnya
-  const attempts = [
-    [],
-    ["--extractor-args", "youtube:player_client=tv_simply,tv,web_embedded"],
-    ["--extractor-args", "youtube:player_client=web_safari,mweb,android"],
-  ];
+  const attempts = [[], ["player_client=tv_simply,tv,web_embedded"], ["player_client=web_safari,mweb,android"]];
 
   const viaCobalt = async (): Promise<SourceAudio | null> => {
     if (!cobaltEnabled()) return null;
@@ -317,9 +325,10 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
   let botChecked = false;
   for (let i = 0; i < attempts.length; i++) {
     const bin = await ytdlpBin();
-    const r = await run(bin, [...baseArgs(), ...common, ...attempts[i], Url.youtubeWatch + videoId], {
+    const r = await run(bin, [...baseArgs(attempts[i]), ...common, Url.youtubeWatch + videoId], {
       timeoutMs: 5 * 60_000,
       label: "yt-dlp",
+      env: ytEnv,
       onLine: (line) => {
         const m = line.match(/ARRP\s+([\d.]+)%/);
         if (m) onProgress(Math.min(100, Number.parseFloat(m[1])));

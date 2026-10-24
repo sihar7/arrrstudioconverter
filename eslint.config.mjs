@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Bundle pihak ketiga (bgutil) hasil scripts/build-bgutil.mjs
+    "vendor/**",
   ]),
 ]);
 

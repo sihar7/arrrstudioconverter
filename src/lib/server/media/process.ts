@@ -15,6 +15,7 @@ interface RunOptions {
   label: string;
   onLine?: (line: string) => void;
   signal?: AbortSignal;
+  env?: Record<string, string>;
 }
 
 const MAX_BUFFER = 8 * 1024 * 1024;
@@ -23,7 +24,7 @@ export function run(bin: string, args: string[], opts: RunOptions): Promise<RunR
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, {
       windowsHide: true,
-      env: { ...process.env, PYTHONUTF8: "1", PYTHONIOENCODING: "utf-8" },
+      env: { ...process.env, PYTHONUTF8: "1", PYTHONIOENCODING: "utf-8", ...opts.env },
     });
 
     let stdout = "";

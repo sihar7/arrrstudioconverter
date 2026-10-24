@@ -46,6 +46,8 @@ const nextConfig: NextConfig = {
   experimental: { optimizePackageImports: ["iconoir-react"] },
   // Paket yang memanggil binary / modul native → jangan di-bundle
   serverExternalPackages: ["ffmpeg-static", "ioredis", "ioredis-mock", "archiver"],
+  // PO Token provider bgutil dipanggil yt-dlp lewat path (bukan import) → ikutkan manual ke function Vercel
+  outputFileTracingIncludes: { "/api/**/*": ["./vendor/bgutil/**/*"] },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com" },
