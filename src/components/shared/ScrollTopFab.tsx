@@ -9,29 +9,23 @@ const R = 25;
 const C = 2 * Math.PI * R;
 
 /**
- * FAB kembali ke atas — muncul setelah halaman discroll jauh & sedang scroll ke atas.
+ * FAB kembali ke atas — muncul begitu halaman discroll melewati `deepAfter`.
+ * Naik otomatis di atas bar melayang lewat CSS var `--fab-lift` (diset halaman yang punya bar bawah).
  * Cincin progres ditulis langsung ke DOM (ref) → tidak ada render React per frame scroll.
  */
-export default function ScrollTopFab({ lifted, deepAfter = 600 }: { lifted?: boolean; deepAfter?: number }) {
+export default function ScrollTopFab({ lifted, deepAfter = 400 }: { lifted?: boolean; deepAfter?: number }) {
   const { t } = useT();
   const ring = useRef<SVGCircleElement>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    let lastY = window.scrollY;
-    let up = false;
     let frame = 0;
     const read = () => {
       frame = 0;
       const y = Math.max(0, window.scrollY);
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      // Abaikan getaran kecil (trackpad / momentum) supaya FAB tidak berkedip
-      if (Math.abs(y - lastY) > 6) {
-        up = y < lastY;
-        lastY = y;
-      }
       if (ring.current) ring.current.style.strokeDashoffset = String(C * (1 - (max > 0 ? Math.min(1, y / max) : 0)));
-      setVisible(y > deepAfter && up);
+      setVisible(y > deepAfter);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(read);
@@ -62,8 +56,10 @@ export default function ScrollTopFab({ lifted, deepAfter = 600 }: { lifted?: boo
       tabIndex={visible ? 0 : -1}
       aria-hidden={!visible}
       className={cn(
-        "state-layer mat fixed right-4 z-40 grid size-12 cursor-pointer place-items-center rounded-s bg-raised text-fg shadow-[var(--elev-3)] transition-[transform,opacity] duration-300 ease-[var(--ease-decel)] active:scale-[0.94] sm:right-6",
-        lifted ? "bottom-[88px] xl:bottom-6" : "bottom-6",
+        "state-layer mat fixed right-4 z-40 grid size-12 cursor-pointer place-items-center rounded-s bg-raised text-fg shadow-[var(--elev-3)] transition-[transform,opacity,bottom] duration-300 ease-[var(--ease-decel)] active:scale-[0.94] sm:right-6",
+        lifted
+          ? "bottom-[calc(88px+env(safe-area-inset-bottom)+var(--fab-lift,0px))] xl:bottom-[calc(24px+var(--fab-lift,0px))]"
+          : "bottom-[calc(24px+var(--fab-lift,0px))]",
         visible ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none translate-y-4 scale-75 opacity-0",
       )}
     >

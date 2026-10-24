@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
@@ -22,6 +22,16 @@ export function useLibrary() {
   const [loading, setLoading] = useState(false);
   // Kunci sinkron: infinite scroll bisa memicu load berkali-kali sebelum state loading ter-render
   const busy = useRef(false);
+  // Muat semua: jumlah aset terkumpul (null = tidak sedang berjalan) + flag berhenti
+  const [loadingAll, setLoadingAll] = useState<number | null>(null);
+  const stopAll = useRef(false);
+  // Pindah halaman → hentikan loop muat semua
+  useEffect(
+    () => () => {
+      stopAll.current = true;
+    },
+    [],
+  );
   const [granting, setGranting] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -61,6 +71,42 @@ export function useLibrary() {
     },
     [roblox.apiKey, roblox.creatorType, roblox.creatorId, nextToken, toast, t, f],
   );
+
+  /** Muat semua halaman inventory berurutan (lanjut dari token terakhir bila ada) sampai habis / dihentikan */
+  const loadAll = useCallback(async () => {
+    if (busy.current) return;
+    busy.current = true;
+    stopAll.current = false;
+    setLoading(true);
+    // Belum ada token lanjutan → mulai dari halaman pertama & ganti daftar
+    let token = nextToken ?? undefined;
+    let replace = !token;
+    let total = token ? assets.length : 0;
+    setLoadingAll(total);
+    try {
+      do {
+        const r = await fetchLibrary({
+          apiKey: roblox.apiKey,
+          creatorType: roblox.creatorType,
+          creatorId: roblox.creatorId,
+          pageToken: token,
+        });
+        merge(r.assets, replace);
+        replace = false;
+        total += r.assets.length;
+        setLoadingAll(total);
+        setNextToken(r.nextPageToken);
+        token = r.nextPageToken ?? undefined;
+      } while (token && !stopAll.current);
+      if (!token) toast(f(t.library.loadedAllToast, { n: total }), "ok");
+    } catch (e) {
+      toast(errText(e, t.toast.network), "err");
+    } finally {
+      busy.current = false;
+      setLoading(false);
+      setLoadingAll(null);
+    }
+  }, [roblox.apiKey, roblox.creatorType, roblox.creatorId, nextToken, assets.length, toast, t, f]);
 
   const toggle = (id: string) =>
     setSelected((s) => {
@@ -141,6 +187,11 @@ export function useLibrary() {
     setSelected,
     grants,
     load,
+    loadAll,
+    loadingAll,
+    stopLoadAll: () => {
+      stopAll.current = true;
+    },
     toggle,
     grant,
     ready: Boolean(roblox.apiKey && roblox.creatorId),

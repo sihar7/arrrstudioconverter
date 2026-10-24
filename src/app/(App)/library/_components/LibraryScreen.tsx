@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Album, Check, Copy, Discord, Globe, OpenNewWindow, Refresh, Search, Trash, Undo } from "iconoir-react";
+import { Album, Check, Copy, Discord, Download, Globe, OpenNewWindow, Pause, Refresh, Search, Trash, Undo } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { cn, copyText } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
@@ -20,6 +20,7 @@ import { inputClass } from "@/components/ui/Field";
 import { stateTone } from "../../history/_utils/helpers";
 import { useLibrary } from "../_hooks/useLibrary";
 import { parseIds } from "../_service/library.service";
+import ExportDialog from "./ExportDialog";
 
 type LibFilter = "all" | "Approved" | "Reviewing" | "Rejected" | "archived";
 const FILTERS: LibFilter[] = ["all", "Approved", "Reviewing", "Rejected", "archived"];
@@ -62,6 +63,27 @@ export default function LibraryScreen() {
       return !q || a.assetId.includes(q) || Boolean(a.name?.toLowerCase().includes(q));
     });
   }, [lib.assets, query, filter]);
+  const [exportOpen, setExportOpen] = useState(false);
+  const selectedAssets = useMemo(() => lib.assets.filter((a) => lib.selected.has(a.assetId)), [lib.assets, lib.selected]);
+
+  // Bar aksi massal muncul → FAB "ke atas" naik di atasnya (lewat CSS var, FAB ada di Header)
+  const bar = useRef<HTMLFormElement>(null);
+  const hasSel = lib.selected.size > 0;
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = bar.current;
+    if (!hasSel || !el) {
+      root.style.removeProperty("--fab-lift");
+      return;
+    }
+    const ro = new ResizeObserver(() => root.style.setProperty("--fab-lift", `${el.offsetHeight + 12}px`));
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--fab-lift");
+    };
+  }, [hasSel]);
+
   const allOn = shown.length > 0 && shown.every((a) => lib.selected.has(a.assetId));
   const manualIds = parseIds(manual);
 
@@ -132,11 +154,28 @@ export default function LibraryScreen() {
         title={L.title}
         sub={L.sub}
         actions={
-          lib.ownerType === "user" && (
-            <Button variant="primary" loading={lib.loading} icon={<Refresh width={16} height={16} />} onClick={() => lib.load()}>
-              {lib.loading ? L.loading : L.load}
-            </Button>
-          )
+          <>
+            {lib.assets.length > 0 && (
+              <Button variant="tonal" icon={<Download width={16} height={16} />} onClick={() => setExportOpen(true)}>
+                {L.export}
+              </Button>
+            )}
+            {lib.ownerType === "user" &&
+              (lib.loadingAll != null ? (
+                <Button variant="tonal" icon={<Pause width={16} height={16} />} onClick={lib.stopLoadAll}>
+                  {f(L.loadingAll, { n: lib.loadingAll })} · {L.stop}
+                </Button>
+              ) : (
+                <>
+                  <Button variant="tonal" disabled={lib.loading} onClick={() => void lib.loadAll()}>
+                    {L.loadAll}
+                  </Button>
+                  <Button variant="primary" loading={lib.loading} icon={<Refresh width={16} height={16} />} onClick={() => lib.load()}>
+                    {lib.loading ? L.loading : L.load}
+                  </Button>
+                </>
+              ))}
+          </>
         }
       />
 
@@ -319,6 +358,7 @@ export default function LibraryScreen() {
         {L.publicNote} {L.archiveNote}
       </p>
       {confirmDialog}
+      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} shown={shown} selected={selectedAssets} partial={Boolean(lib.nextToken)} />
 
       {/* Bar aksi massal — muncul saat ada yang dipilih, di atas tab bar HP */}
       <div
@@ -329,6 +369,7 @@ export default function LibraryScreen() {
         aria-hidden={!lib.selected.size}
       >
         <form
+          ref={bar}
           className="mat mx-auto flex max-w-[760px] flex-wrap items-center gap-2 rounded-xl border border-line/70 bg-raised p-2 pl-4 shadow-[var(--elev-3)]"
           onSubmit={(e) => {
             e.preventDefault();

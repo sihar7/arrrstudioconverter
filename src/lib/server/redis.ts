@@ -2,6 +2,7 @@ import "server-only";
 import Redis from "ioredis";
 import RedisMock from "ioredis-mock";
 import { config } from "./config";
+import { AppError } from "./http";
 
 // Satu koneksi per proses (disimpan di globalThis agar tidak bocor saat HMR dev)
 const g = globalThis as unknown as { __arrcRedis?: Redis };
@@ -17,7 +18,8 @@ export function redis(): Redis {
     g.__arrcRedis = client;
   } else {
     if (config.isProd) {
-      throw new Error("REDIS_URL wajib diisi di production");
+      // AppError → pesan konfigurasi terlihat di response, bukan "Terjadi kesalahan di server"
+      throw new AppError("Server belum dikonfigurasi: REDIS_URL (atau KV_URL) wajib diisi di environment production", 503, "REDIS_MISSING");
     }
     console.warn("[redis] REDIS_URL kosong — memakai Redis memori (dev saja, data hilang saat restart)");
     g.__arrcRedis = new RedisMock() as unknown as Redis;
