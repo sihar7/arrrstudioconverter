@@ -80,7 +80,18 @@ function baseArgs(): string[] {
   const args = ["--ignore-config", "--no-cache-dir", "--no-warnings", "--encoding", "utf-8"];
   const cookies = resolveCookies();
   if (cookies) args.push("--cookies", cookies);
+  // yt-dlp butuh JS runtime untuk tanda tangan YouTube; di Vercel tidak ada deno → pakai Node yang sedang jalan.
+  // Hanya di serverless: binary selalu versi terbaru (lokal bisa versi lama yang belum kenal flag ini)
+  if (config.serverless) args.push("--js-runtimes", `node:${process.execPath}`);
   return args;
+}
+
+let warnedCookies = false;
+/** IP datacenter (Vercel dkk.) sering kena "Sign in to confirm you're not a bot" — solusinya cookies akun YouTube */
+function hintCookies(stderr: string) {
+  if (warnedCookies || !stderr.includes("Sign in to confirm you") || resolveCookies()) return;
+  warnedCookies = true;
+  console.error("[yt-dlp] YouTube memblokir IP server. Isi env YTDLP_COOKIES_B64 (cookies.txt akun YouTube, base64) lalu redeploy.");
 }
 
 function friendlyError(stderr: string): string {
@@ -90,7 +101,7 @@ function friendlyError(stderr: string): string {
     ["Sign in to confirm your age", "Video dibatasi umur"],
     ["members-only", "Video khusus member"],
     ["not available in your country", "Video diblokir di negara server"],
-    ["Sign in to confirm you", "YouTube meminta verifikasi bot — coba lagi nanti"],
+    ["Sign in to confirm you", "YouTube sedang memblokir server (verifikasi bot) — coba lagi beberapa saat lagi"],
     ["HTTP Error 429", "Terlalu banyak request ke YouTube, coba lagi nanti"],
     ["Requested format is not available", "Format audio tidak tersedia untuk video ini"],
   ];
@@ -168,7 +179,10 @@ export async function playlist(listId: string): Promise<{ title: string; items: 
     [...baseArgs(), "--flat-playlist", "-J", "--playlist-end", String(config.limits.playlistMax), Url.youtubePlaylist + listId],
     { timeoutMs: 60_000, label: "yt-dlp" },
   );
-  if (r.code !== 0) throw new AppError(friendlyError(r.stderr), 422, "YOUTUBE");
+  if (r.code !== 0) {
+    hintCookies(r.stderr);
+    throw new AppError(friendlyError(r.stderr), 422, "YOUTUBE");
+  }
 
   let data: { title?: string; entries?: { id?: string; title?: string; duration?: number }[] };
   try {
@@ -247,7 +261,12 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
     "after_move:%(.{id,title,duration,uploader})j",
     infoPath.replace(/%/g, "%%"),
   ];
-  const attempts = [common, [...common, "--extractor-args", "youtube:player_client=tv,web_safari,android"]];
+  // Gagal (bot check / format) → coba player client lain yang tidak butuh PO token
+  const attempts = [
+    common,
+    [...common, "--extractor-args", "youtube:player_client=tv_simply,tv,web_embedded"],
+    [...common, "--extractor-args", "youtube:player_client=web_safari,mweb,android"],
+  ];
 
   let lastErr = "Gagal mengambil audio dari YouTube";
   for (let i = 0; i < attempts.length; i++) {
@@ -275,6 +294,7 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
       return { path: src, title: info.title || videoId, duration: Number(info.duration) || 0 };
     }
     lastErr = friendlyError(r.stderr);
+    hintCookies(r.stderr);
     if (!retryable(r.stderr)) break;
     if (i === 0) await maybeUpdateYtdlp();
   }

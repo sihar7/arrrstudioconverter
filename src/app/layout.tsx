@@ -7,11 +7,28 @@ import "@/css/globals.css";
 const sans = Google_Sans_Flex({ subsets: ["latin"], axes: ["wdth", "opsz"], variable: "--font-gsans", display: "swap" });
 const mono = Google_Sans_Code({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-gcode", display: "swap" });
 
+const siteUrl =
+  process.env.APP_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+const title = "ARRR Studio Converter — YouTube ke Roblox Audio";
+const description =
+  "Convert YouTube ke MP3/OGG/WAV/FLAC, atur kecepatan, nada & efek, lalu upload langsung ke Roblox lengkap dengan izin place.";
+
+// og:image diisi otomatis dari app/opengraph-image.tsx; metadataBase membuat URL-nya absolut (wajib untuk Discord/WA)
 export const metadata: Metadata = {
-  title: { default: "ARRR Studio Converter — YouTube ke Roblox Audio", template: "%s · ARRR Studio Converter" },
-  description:
-    "Convert YouTube ke MP3/OGG/WAV/FLAC, atur kecepatan, nada & efek, lalu upload langsung ke Roblox lengkap dengan izin place.",
+  metadataBase: new URL(siteUrl),
+  title: { default: title, template: "%s · ARRR Studio Converter" },
+  description,
   applicationName: "ARRR Studio Converter",
+  openGraph: {
+    type: "website",
+    siteName: "ARRR Studio Converter",
+    title,
+    description,
+    url: "/",
+    locale: "id_ID",
+  },
+  twitter: { card: "summary_large_image", title, description },
 };
 
 export const viewport: Viewport = {
