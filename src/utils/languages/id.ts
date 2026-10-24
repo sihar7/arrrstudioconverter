@@ -129,6 +129,20 @@ const id = {
     theme: "Tema",
     note: "Hanya upload audio yang kamu punya haknya.",
   },
+  consent: {
+    title: "Cookie & penyimpanan",
+    body: "Kami hanya memakai cookie yang dibutuhkan agar situs berjalan — sesi login, kuota tamu, dan preferensi tampilan. Tanpa iklan & pelacak pihak ketiga.",
+    accept: "Terima",
+    essential: "Hanya yang penting",
+    details: "Detail",
+    hideDetails: "Tutup detail",
+    items: [
+      ["arrc_sid", "Sesi login Discord (JWT bertanda tangan, httpOnly, 30 hari)"],
+      ["arrc_gid", "ID tamu acak untuk menghitung kuota gratis (1 tahun)"],
+      ["arrc_oauth", "Anti-pemalsuan saat login Discord (10 menit)"],
+      ["localStorage", "Tema, bahasa, pengaturan converter, pilihan cookie ini"],
+    ],
+  },
   login: {
     eyebrow: "YouTube → Roblox",
     items: [

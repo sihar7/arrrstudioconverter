@@ -80,6 +80,7 @@ function baseArgs(): string[] {
   const args = ["--ignore-config", "--no-cache-dir", "--no-warnings", "--encoding", "utf-8"];
   const cookies = resolveCookies();
   if (cookies) args.push("--cookies", cookies);
+  if (config.bin.proxy) args.push("--proxy", config.bin.proxy);
   // yt-dlp butuh JS runtime untuk tanda tangan YouTube; di Vercel tidak ada deno → pakai Node yang sedang jalan.
   // Hanya di serverless: binary selalu versi terbaru (lokal bisa versi lama yang belum kenal flag ini)
   if (config.serverless) args.push("--js-runtimes", `node:${process.execPath}`);
@@ -89,9 +90,13 @@ function baseArgs(): string[] {
 let warnedCookies = false;
 /** IP datacenter (Vercel dkk.) sering kena "Sign in to confirm you're not a bot" — solusinya cookies akun YouTube */
 function hintCookies(stderr: string) {
-  if (warnedCookies || !stderr.includes("Sign in to confirm you") || resolveCookies()) return;
+  if (warnedCookies || !stderr.includes("Sign in to confirm you")) return;
   warnedCookies = true;
-  console.error("[yt-dlp] YouTube memblokir IP server. Isi env YTDLP_COOKIES_B64 (cookies.txt akun YouTube, base64) lalu redeploy.");
+  console.error(
+    resolveCookies()
+      ? "[yt-dlp] Bot check meski cookies terpasang — cookies kedaluwarsa/ter-flag (export ulang) atau pakai YTDLP_PROXY (proxy residensial)."
+      : "[yt-dlp] YouTube memblokir IP server. Isi env YTDLP_COOKIES_B64 (cookies.txt akun YouTube, base64) dan/atau YTDLP_PROXY lalu redeploy.",
+  );
 }
 
 function friendlyError(stderr: string): string {

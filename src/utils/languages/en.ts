@@ -130,6 +130,20 @@ const en: Dictionary = {
     theme: "Theme",
     note: "Only upload audio you have the rights to.",
   },
+  consent: {
+    title: "Cookies & storage",
+    body: "We only use cookies the site needs to work — your login session, guest quota, and display preferences. No ads, no third-party trackers.",
+    accept: "Accept",
+    essential: "Essential only",
+    details: "Details",
+    hideDetails: "Hide details",
+    items: [
+      ["arrc_sid", "Discord login session (signed JWT, httpOnly, 30 days)"],
+      ["arrc_gid", "Random guest ID to count free quota (1 year)"],
+      ["arrc_oauth", "Forgery protection during Discord login (10 minutes)"],
+      ["localStorage", "Theme, language, converter settings, this cookie choice"],
+    ],
+  },
   login: {
     eyebrow: "YouTube → Roblox",
     items: [

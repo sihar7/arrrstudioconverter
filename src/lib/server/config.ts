@@ -22,6 +22,8 @@ export const config = {
   // Ada token Blob → file hasil disimpan di Vercel Blob (private); tidak ada → disk lokal (dev)
   blobEnabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
   cronSecret: process.env.CRON_SECRET || "",
+  // Kunci tanda tangan cookie sesi (JWT HS256) — string acak ≥32 karakter
+  jwtSecret: process.env.JWT_SECRET || "",
 
   discord: {
     clientId: process.env.DISCORD_CLIENT_ID || "",
@@ -51,6 +53,8 @@ export const config = {
     cookies: process.env.YTDLP_COOKIES || "",
     // Isi cookies.txt dalam base64 (untuk Vercel — tidak bisa menaruh file)
     cookiesB64: process.env.YTDLP_COOKIES_B64 || "",
+    // Proxy untuk yt-dlp (http://user:pass@host:port / socks5://…) — IP residensial lolos bot check YouTube
+    proxy: process.env.YTDLP_PROXY || "",
   },
 
   paths: {
@@ -64,6 +68,7 @@ export const config = {
   cookies: {
     session: "arrc_sid",
     guest: "arrc_gid",
+    oauthState: "arrc_oauth",
     sessionDays: 30,
   },
 } as const;

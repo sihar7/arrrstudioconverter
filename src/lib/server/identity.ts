@@ -3,7 +3,8 @@ import { createHash, randomBytes } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import { config } from "./config";
 import { getJson, K, redis, setJson } from "./redis";
-import { AppError } from "./http";
+import { AppError, clientIp } from "./http";
+import { signJwt, verifyJwt } from "./jwt";
 import type { SessionUser } from "@/type/auth";
 
 // Identitas request: user Discord (sesi di Redis) atau guest (cookie acak + hash IP)
@@ -19,16 +20,14 @@ export interface Identity {
 
 const SESSION_TTL = config.cookies.sessionDays * 86400;
 
-function clientIp(req: NextRequest) {
-  const fwd = req.headers.get("x-forwarded-for");
-  return (fwd?.split(",")[0] || req.headers.get("x-real-ip") || "local").trim();
-}
 
 export async function identify(req: NextRequest): Promise<Identity> {
-  const sid = req.cookies.get(config.cookies.session)?.value;
+  // Cookie sesi = JWT bertanda tangan; sid di dalamnya tetap dicek ke Redis (bisa dicabut kapan saja)
+  const claims = verifyJwt(req.cookies.get(config.cookies.session)?.value);
   let user: SessionUser | null = null;
-  if (sid && /^[a-f0-9]{64}$/.test(sid)) {
-    user = await getJson<SessionUser>(K("sess", sid));
+  if (claims && /^[a-f0-9]{64}$/.test(claims.sid)) {
+    const stored = await getJson<SessionUser>(K("sess", claims.sid));
+    if (stored && stored.id === claims.sub) user = stored;
   }
 
   let guestId = req.cookies.get(config.cookies.guest)?.value ?? "";
@@ -59,14 +58,15 @@ export function attachGuest<T extends NextResponse>(res: T, id: Identity): T {
   return res;
 }
 
+/** Simpan sesi di Redis → kembalikan JWT untuk cookie */
 export async function createSession(user: SessionUser) {
   const sid = randomBytes(32).toString("hex");
   await setJson(K("sess", sid), user, SESSION_TTL);
-  return sid;
+  return signJwt({ sub: user.id, sid }, SESSION_TTL);
 }
 
-export function setSessionCookie(res: NextResponse, sid: string) {
-  res.cookies.set(config.cookies.session, sid, {
+export function setSessionCookie(res: NextResponse, token: string) {
+  res.cookies.set(config.cookies.session, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: config.isProd,
@@ -76,7 +76,7 @@ export function setSessionCookie(res: NextResponse, sid: string) {
 }
 
 export async function destroySession(req: NextRequest, res: NextResponse) {
-  const sid = req.cookies.get(config.cookies.session)?.value;
+  const sid = verifyJwt(req.cookies.get(config.cookies.session)?.value)?.sid;
   if (sid && /^[a-f0-9]{64}$/.test(sid)) await redis().del(K("sess", sid));
   res.cookies.set(config.cookies.session, "", { path: "/", maxAge: 0 });
 }

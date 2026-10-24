@@ -7,6 +7,7 @@ import Toaster from "@/components/shared/Toaster";
 import TopLoader from "@/components/shared/TopLoader";
 import Ripple from "@/components/shared/Ripple";
 import StudioLight from "@/components/shared/StudioLight";
+import CookieConsent from "@/components/shared/CookieConsent";
 
 /** Terapkan tema & bahasa ke <html> setiap preferensi berubah */
 function HtmlSync() {
@@ -28,6 +29,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       <StudioLight />
       {children}
       <Toaster />
+      <CookieConsent />
     </StoreProvider>
   );
 }
