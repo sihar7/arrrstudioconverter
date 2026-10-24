@@ -7,6 +7,8 @@ import { config } from "../config";
 import { AppError } from "../http";
 import { getJson, K, setJson } from "../redis";
 import { run } from "./process";
+import { cobaltDownload, cobaltEnabled } from "./cobalt";
+import { probe } from "./ffmpeg";
 import { maybeUpdateYtdlp, ytdlpBin } from "./tools";
 import type { PlaylistItem, VideoInfo } from "@/type/converter";
 
@@ -76,11 +78,19 @@ function resolveCookies(): string | null {
   return cookiesFile;
 }
 
+// Rotasi proxy: tiap percobaan/pemanggilan maju satu proxy, jadi proxy yang ter-flag tidak dipakai terus
+let proxyCursor = 0;
+const nextProxy = (): string | undefined => {
+  const list = config.bin.proxies;
+  return list.length ? list[proxyCursor++ % list.length] : undefined;
+};
+
 function baseArgs(): string[] {
   const args = ["--ignore-config", "--no-cache-dir", "--no-warnings", "--encoding", "utf-8"];
   const cookies = resolveCookies();
   if (cookies) args.push("--cookies", cookies);
-  if (config.bin.proxy) args.push("--proxy", config.bin.proxy);
+  const proxy = nextProxy();
+  if (proxy) args.push("--proxy", proxy);
   // yt-dlp butuh JS runtime untuk tanda tangan YouTube; di Vercel tidak ada deno → pakai Node yang sedang jalan.
   // Hanya di serverless: binary selalu versi terbaru (lokal bisa versi lama yang belum kenal flag ini)
   if (config.serverless) args.push("--js-runtimes", `node:${process.execPath}`);
@@ -94,10 +104,16 @@ function hintCookies(stderr: string) {
   warnedCookies = true;
   console.error(
     resolveCookies()
-      ? "[yt-dlp] Bot check meski cookies terpasang — cookies kedaluwarsa/ter-flag (export ulang) atau pakai YTDLP_PROXY (proxy residensial)."
-      : "[yt-dlp] YouTube memblokir IP server. Isi env YTDLP_COOKIES_B64 (cookies.txt akun YouTube, base64) dan/atau YTDLP_PROXY lalu redeploy.",
+      ? "[yt-dlp] Bot check meski cookies terpasang — cookies kedaluwarsa/ter-flag (export ulang), tambah YTDLP_PROXY (proxy residensial) atau COBALT_API_URL."
+      : "[yt-dlp] YouTube memblokir IP server. Isi env YTDLP_COOKIES_B64 (cookies.txt akun YouTube, base64), YTDLP_PROXY dan/atau COBALT_API_URL lalu redeploy.",
   );
 }
+
+const isBotCheck = (stderr: string) => /Sign in to confirm you|not a bot|HTTP Error 429/i.test(stderr);
+
+// IP server sedang diblokir → job berikutnya langsung lewat cobalt (hemat 3× percobaan yt-dlp yang pasti gagal)
+const BLOCKED_KEY = K("yt", "blocked");
+const BLOCKED_TTL = 15 * 60;
 
 function friendlyError(stderr: string): string {
   const map: [string, string][] = [
@@ -106,7 +122,7 @@ function friendlyError(stderr: string): string {
     ["Sign in to confirm your age", "Video dibatasi umur"],
     ["members-only", "Video khusus member"],
     ["not available in your country", "Video diblokir di negara server"],
-    ["Sign in to confirm you", "YouTube sedang memblokir server (verifikasi bot) — coba lagi beberapa saat lagi"],
+    ["Sign in to confirm you", "YouTube sedang memblokir server (verifikasi bot) — admin sudah diberi tahu, coba lagi nanti"],
     ["HTTP Error 429", "Terlalu banyak request ke YouTube, coba lagi nanti"],
     ["Requested format is not available", "Format audio tidak tersedia untuk video ini"],
   ];
@@ -248,7 +264,6 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
   await fsp.mkdir(dir, { recursive: true });
 
   const common = [
-    ...baseArgs(),
     "--no-playlist",
     "--newline",
     "--no-mtime",
@@ -266,17 +281,43 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
     "after_move:%(.{id,title,duration,uploader})j",
     infoPath.replace(/%/g, "%%"),
   ];
-  // Gagal (bot check / format) → coba player client lain yang tidak butuh PO token
+  // Gagal (bot check / format) → coba player client lain yang tidak butuh PO token; tiap percobaan proxy berikutnya
   const attempts = [
-    common,
-    [...common, "--extractor-args", "youtube:player_client=tv_simply,tv,web_embedded"],
-    [...common, "--extractor-args", "youtube:player_client=web_safari,mweb,android"],
+    [],
+    ["--extractor-args", "youtube:player_client=tv_simply,tv,web_embedded"],
+    ["--extractor-args", "youtube:player_client=web_safari,mweb,android"],
   ];
 
+  const viaCobalt = async (): Promise<SourceAudio | null> => {
+    if (!cobaltEnabled()) return null;
+    try {
+      const src = await cobaltDownload(videoId, dir, onProgress);
+      const { duration } = await probe(src);
+      if (duration && duration > config.limits.maxDuration) {
+        await fsp.rm(dir, { recursive: true, force: true });
+        throw new AppError(`Video dilewati: lebih dari ${Math.floor(config.limits.maxDuration / 60)} menit`, 422, "TOO_LONG");
+      }
+      // Judul diisi dari oEmbed oleh pemanggil (jobs.ts); simpan info supaya cache sumber bisa dipakai ulang
+      await fsp.writeFile(infoPath, JSON.stringify({ id: videoId, title: videoId, duration: duration ?? 0 }));
+      return { path: src, title: videoId, duration: duration ?? 0 };
+    } catch (e) {
+      if (e instanceof AppError && e.code === "TOO_LONG") throw e;
+      console.error(`[cobalt] ${videoId}:`, (e as Error).message);
+      return null;
+    }
+  };
+
+  const blocked = cobaltEnabled() && (await getJson<boolean>(BLOCKED_KEY));
+  if (blocked) {
+    const res = await viaCobalt();
+    if (res) return res;
+  }
+
   let lastErr = "Gagal mengambil audio dari YouTube";
+  let botChecked = false;
   for (let i = 0; i < attempts.length; i++) {
     const bin = await ytdlpBin();
-    const r = await run(bin, [...attempts[i], Url.youtubeWatch + videoId], {
+    const r = await run(bin, [...baseArgs(), ...common, ...attempts[i], Url.youtubeWatch + videoId], {
       timeoutMs: 5 * 60_000,
       label: "yt-dlp",
       onLine: (line) => {
@@ -296,12 +337,22 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
       const info = fs.existsSync(infoPath)
         ? (JSON.parse(await fsp.readFile(infoPath, "utf8")) as { title?: string; duration?: number })
         : {};
+      if (blocked) await setJson(BLOCKED_KEY, false, 1);
       return { path: src, title: info.title || videoId, duration: Number(info.duration) || 0 };
     }
     lastErr = friendlyError(r.stderr);
     hintCookies(r.stderr);
+    if (isBotCheck(r.stderr)) botChecked = true;
     if (!retryable(r.stderr)) break;
     if (i === 0) await maybeUpdateYtdlp();
+  }
+
+  if (botChecked) {
+    await setJson(BLOCKED_KEY, true, BLOCKED_TTL);
+    if (!blocked) {
+      const res = await viaCobalt();
+      if (res) return res;
+    }
   }
   await fsp.rm(dir, { recursive: true, force: true });
   throw new AppError(lastErr, 422, "YOUTUBE");

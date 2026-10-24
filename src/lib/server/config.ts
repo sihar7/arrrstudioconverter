@@ -53,8 +53,19 @@ export const config = {
     cookies: process.env.YTDLP_COOKIES || "",
     // Isi cookies.txt dalam base64 (untuk Vercel — tidak bisa menaruh file)
     cookiesB64: process.env.YTDLP_COOKIES_B64 || "",
-    // Proxy untuk yt-dlp (http://user:pass@host:port / socks5://…) — IP residensial lolos bot check YouTube
-    proxy: process.env.YTDLP_PROXY || "",
+    // Proxy untuk yt-dlp (http://user:pass@host:port / socks5://…), boleh lebih dari satu dipisah koma —
+    // dirotasi saat satu proxy kena bot check. IP residensial lolos bot check YouTube
+    proxies: (process.env.YTDLP_PROXY || "")
+      .split(/[,\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean),
+  },
+
+  // Cadangan saat yt-dlp diblokir YouTube: instance cobalt (https://github.com/imputnet/cobalt),
+  // sebaiknya self-host di VPS/IP rumahan. Kosong = tanpa cadangan
+  cobalt: {
+    url: (process.env.COBALT_API_URL || "").replace(/\/$/, ""),
+    key: process.env.COBALT_API_KEY || "",
   },
 
   paths: {

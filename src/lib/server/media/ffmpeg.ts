@@ -68,6 +68,8 @@ export function filterChain(o: AudioOptions, outDur: number): string {
 export interface SourceProbe {
   /** kbps audio sumber; null kalau tidak terbaca */
   kbps: number | null;
+  /** durasi sumber (detik); null kalau tidak terbaca */
+  duration?: number | null;
 }
 
 /** Baca bitrate sumber dari header ffmpeg (tanpa ffprobe — ffmpeg-static tidak menyertakannya) */
@@ -77,7 +79,9 @@ export async function probe(src: string): Promise<SourceProbe> {
   const stream = text.match(/Audio:.*?(\d+) kb\/s/);
   const total = text.match(/bitrate:\s*(\d+) kb\/s/);
   const kbps = Number(stream?.[1] ?? total?.[1]);
-  return { kbps: Number.isFinite(kbps) && kbps > 0 ? kbps : null };
+  const d = text.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
+  const duration = d ? Math.round(Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3])) : null;
+  return { kbps: Number.isFinite(kbps) && kbps > 0 ? kbps : null, duration: duration || null };
 }
 
 // Transcode lossy→lossy butuh sedikit ruang ekstra supaya tidak terdengar turun
