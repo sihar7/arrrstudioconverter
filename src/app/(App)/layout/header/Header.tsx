@@ -2,16 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Album, ArrowRight, ClockRotateRight, MusicDoubleNote, Settings } from "iconoir-react";
+import { Album, ClockRotateRight, MusicDoubleNote, Settings } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useScrolled } from "@/hooks/useScrollState";
-import { useMeQuery } from "@/store/api/baseApi";
 import Logo, { LogoMark } from "@/components/shared/Logo";
 import UserMenu, { QuotaPill } from "@/components/shared/UserMenu";
 import { LangToggle, ThemeToggle } from "@/components/shared/PrefToggles";
 import ScrollTopFab from "@/components/shared/ScrollTopFab";
-import { ButtonLink } from "@/components/ui/Button";
 import MobileMenu from "./MobileMenu";
 
 export const NAV = [
@@ -26,15 +24,13 @@ export const NAV = [
  * Desktop (xl+): tautan kapital di kiri · logo di tengah · utilitas & akun di kanan.
  * < xl: logo kiri + utilitas + tombol menu (panel navigasi) — tab bar bawah tetap ada untuk jangkauan jempol.
  * Saat discroll bar berubah jadi "island": kapsul kaca melayang yang lebih ramping (tinggi luar tetap → tanpa geser layout).
- * overlay = landing: transparan di atas hero, tombol CTA tampil.
+ * overlay = landing: tampilan sama persis, hanya posisinya fixed di atas hero.
  */
 export default function Header({ overlay = false }: { overlay?: boolean }) {
   const pathname = usePathname();
   const { t } = useT();
-  const { data: me } = useMeQuery();
   const scrolled = useScrolled();
   const activeHref = NAV.find((n) => pathname.startsWith(n.href))?.href;
-  const solid = scrolled || !overlay;
 
   return (
     <>
@@ -42,11 +38,8 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
         className={cn(
           "top-0 z-50 h-[var(--nav-h)] animate-[nav-in_.8s_var(--ease)_both] transition-[background-color,border-color] duration-500 ease-[var(--ease)]",
           overlay ? "fixed inset-x-0" : "sticky",
-          scrolled
-            ? "border-b border-transparent"
-            : solid
-              ? "border-b border-line/50"
-              : "border-b border-transparent bg-gradient-to-b from-bg/80 to-transparent",
+          // Tampilan identik di semua halaman; overlay hanya beda posisi (fixed di atas hero)
+          scrolled ? "border-b border-transparent" : "border-b border-line/50",
         )}
       >
         <a
@@ -124,17 +117,6 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
             <span aria-hidden="true" className="mx-1.5 hidden h-5 w-px bg-line sm:block" />
             <UserMenu />
             <MobileMenu activeHref={activeHref} />
-            {overlay && (
-              <ButtonLink
-                href="/converter"
-                variant="primary"
-                size="sm"
-                className="ml-2 hidden sm:inline-flex"
-                iconRight={<ArrowRight width={14} height={14} />}
-              >
-                {me?.user ? t.nav.converter : t.nav.tryFree}
-              </ButtonLink>
-            )}
           </div>
         </div>
       </header>
