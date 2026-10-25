@@ -293,8 +293,9 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
     "after_move:%(.{id,title,duration,uploader})j",
     infoPath.replace(/%/g, "%%"),
   ];
-  // Gagal (bot check / format) → coba player client lain yang tidak butuh PO token; tiap percobaan proxy berikutnya
-  const attempts = [[], ["player_client=tv_simply,tv,web_embedded"], ["player_client=web_safari,mweb,android"]];
+  // Gagal (bot check / format) → coba player client lain; tiap percobaan proxy berikutnya.
+  // android_vr / tv / web_embedded tidak butuh PO token sama sekali (PO Token Guide yt-dlp, Jul 2026)
+  const attempts = [[], ["player_client=android_vr,tv,web_embedded"], ["player_client=web_safari,mweb,tv_simply"]];
 
   const viaCobalt = async (): Promise<SourceAudio | null> => {
     if (!cobaltEnabled()) return null;
