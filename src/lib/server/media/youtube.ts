@@ -87,7 +87,7 @@ const nextProxy = (): string | undefined => {
 
 /** youtubeArgs: extractor-args "youtube:" tambahan (mis. player_client=…) — digabung jadi satu flag */
 function baseArgs(youtubeArgs: string[] = []): string[] {
-  const args = ["--ignore-config", "--no-cache-dir", "--no-warnings", "--encoding", "utf-8"];
+  const args = ["--ignore-config", "--no-cache-dir", "--no-warnings", "--encoding", "utf-8", "--geo-bypass"];
   const cookies = resolveCookies();
   if (cookies) args.push("--cookies", cookies);
   const proxy = nextProxy();
@@ -294,8 +294,13 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
     infoPath.replace(/%/g, "%%"),
   ];
   // Gagal (bot check / format) → coba player client lain; tiap percobaan proxy berikutnya.
-  // android_vr / tv / web_embedded tidak butuh PO token sama sekali (PO Token Guide yt-dlp, Jul 2026)
-  const attempts = [[], ["player_client=android_vr,tv,web_embedded"], ["player_client=web_safari,mweb,tv_simply"]];
+  // Percobaan pertama = kombinasi yang dipakai arrweb (tv,android,web); android_vr / tv / web_embedded
+  // tidak butuh PO token sama sekali (PO Token Guide yt-dlp, Jul 2026)
+  const attempts = [
+    ["player_client=tv,android,web"],
+    ["player_client=android_vr,tv,web_embedded"],
+    ["player_client=web_safari,mweb,tv_simply"],
+  ];
 
   const viaCobalt = async (): Promise<SourceAudio | null> => {
     if (!cobaltEnabled()) return null;

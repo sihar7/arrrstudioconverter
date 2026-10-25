@@ -92,7 +92,7 @@ export async function runJob(jobId: string, guestKeys: string[] | null) {
   };
 
   await acquire();
-  const tmpOut = path.join(config.paths.tmp, `${job.id}.${job.options.format}`);
+  const tmpOut = path.join(/* turbopackIgnore: true */ config.paths.tmp, `${job.id}.${job.options.format}`);
   try {
     const info = await videoInfo(job.videoId).catch(() => null);
     await save({ status: "downloading", progress: 1, title: info?.title ?? job.title }, true);

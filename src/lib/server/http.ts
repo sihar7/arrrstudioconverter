@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse, type NextRequest } from "next/server";
 import { ZodError } from "zod";
 
@@ -91,6 +92,9 @@ export function handle<C = unknown>(fn: (req: NextRequest, ctx: C) => Promise<Re
       sameOrigin(req);
       return await fn(req, ctx);
     } catch (e) {
+      // Error internal Next (bail-out prerender saat baca headers, redirect, notFound) harus diteruskan,
+      // kalau ditangkap route di-prerender sebagai 500 statis
+      unstable_rethrow(e);
       return fail(e);
     }
   };
