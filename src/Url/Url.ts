@@ -22,6 +22,9 @@ const Url = {
   youtubePlaylist: "https://www.youtube.com/playlist?list=",
   youtubeOembed: "https://www.youtube.com/oembed",
   youtubeThumb: "https://i.ytimg.com/vi",
+  youtubePlayer: "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+  youtubeSwData: "https://www.youtube.com/sw.js_data",
+  youtubeHome: "https://www.youtube.com",
   ytdlpRelease: "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
 
   arrWebsite: "https://arrstudioweb.vercel.app/en",

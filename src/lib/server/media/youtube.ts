@@ -8,6 +8,7 @@ import { AppError } from "../http";
 import { getJson, K, setJson } from "../redis";
 import { run } from "./process";
 import { cobaltDownload, cobaltEnabled } from "./cobalt";
+import { innertubeDownload, innertubeInfo, isFinalError } from "./innertube";
 import { probe } from "./ffmpeg";
 import { bgutil, maybeUpdateYtdlp, ytdlpBin } from "./tools";
 import type { PlaylistItem, VideoInfo } from "@/type/converter";
@@ -136,6 +137,7 @@ function friendlyError(stderr: string): string {
     ["Sign in to confirm you", "YouTube sedang memblokir server (verifikasi bot) — admin sudah diberi tahu, coba lagi nanti"],
     ["HTTP Error 429", "Terlalu banyak request ke YouTube, coba lagi nanti"],
     ["Requested format is not available", "Format audio tidak tersedia untuk video ini"],
+    ["HTTP Error 403", "YouTube menolak unduhan dari server, coba lagi sebentar lagi"],
   ];
   for (const [needle, msg] of map) if (stderr.includes(needle)) return msg;
   const errs = [...stderr.matchAll(/ERROR:\s*(.+)/g)];
@@ -171,29 +173,33 @@ export async function videoInfo(videoId: string): Promise<VideoInfo> {
       return null;
     });
 
-  const duration = ytdlpBin()
-    .then((bin) =>
-      run(bin, [...baseArgs(), "--no-playlist", "--skip-download", "-O", "%(duration)s", Url.youtubeWatch + videoId], {
-        timeoutMs: 25_000,
-        label: "yt-dlp",
-      env: ytEnv,
-      }),
-    )
-    .then((r) => {
-      const n = Number.parseFloat(r.stdout.trim().split(/\s+/).pop() ?? "");
-      return Number.isFinite(n) ? Math.round(n) : null;
-    })
-    .catch(() => null);
+  // Durasi lewat InnerTube (< 1 dtk); yt-dlp hanya cadangan di lokal — di serverless spawn-nya lama & ikut diblokir
+  const ytdlpDuration = () =>
+    ytdlpBin()
+      .then((bin) =>
+        run(bin, [...baseArgs(), "--no-playlist", "--skip-download", "-O", "%(duration)s", Url.youtubeWatch + videoId], {
+          timeoutMs: 25_000,
+          label: "yt-dlp",
+          env: ytEnv,
+        }),
+      )
+      .then((r) => {
+        const n = Number.parseFloat(r.stdout.trim().split(/\s+/).pop() ?? "");
+        return Number.isFinite(n) ? Math.round(n) : null;
+      })
+      .catch(() => null);
+  const inner = innertubeInfo(videoId).catch(() => null);
 
-  const [meta, dur] = await Promise.all([oembed, duration]);
+  const [meta, it] = await Promise.all([oembed, inner]);
+  const dur = it?.duration || (config.serverless ? null : await ytdlpDuration());
   const info: VideoInfo = {
     videoId,
-    title: meta?.title?.trim() || videoId,
-    author: meta?.author_name?.trim() || "",
+    title: meta?.title?.trim() || it?.title || videoId,
+    author: meta?.author_name?.trim() || it?.author || "",
     thumbnail: thumbOf(videoId),
     duration: dur,
   };
-  if (meta) await setJson(cacheKey, info, 86400);
+  if (meta || it) await setJson(cacheKey, info, 86400);
   return info;
 }
 
@@ -300,7 +306,7 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
     ["player_client=tv,android,web"],
     ["player_client=android_vr,tv,web_embedded"],
     ["player_client=web_safari,mweb,tv_simply"],
-  ];
+  ].slice(0, config.serverless ? 2 : 3); // serverless: hemat waktu, cadangan ini jarang lolos dari IP datacenter
 
   const viaCobalt = async (): Promise<SourceAudio | null> => {
     if (!cobaltEnabled()) return null;
@@ -320,6 +326,20 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
       return null;
     }
   };
+
+  // Jalur utama: client InnerTube sendiri (cepat, tanpa PO token/env). Gagal → yt-dlp → cobalt
+  try {
+    const res = await innertubeDownload(videoId, dir, config.limits.maxDuration, onProgress);
+    await fsp.writeFile(infoPath, JSON.stringify({ id: videoId, title: res.title, duration: res.duration }));
+    return res;
+  } catch (e) {
+    if (isFinalError(e) || (e instanceof AppError && (e.code === "TOO_LONG" || e.code === "TOO_LARGE"))) {
+      await fsp.rm(dir, { recursive: true, force: true });
+      throw e;
+    }
+    console.error(`[innertube] ${videoId}:`, (e as Error).message);
+    onProgress(0);
+  }
 
   const blocked = cobaltEnabled() && (await getJson<boolean>(BLOCKED_KEY));
   if (blocked) {
