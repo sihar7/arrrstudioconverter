@@ -1,9 +1,9 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import Image from "next/image";
-import { Copy, Download, Pause, Play, Refresh, Upload, WarningTriangle, Xmark } from "iconoir-react";
-import { isRunning, type QueueItem } from "@/store/slices/converterSlice";
+import { Check, Copy, Download, Pause, Play, Refresh, Upload, WarningTriangle, Xmark } from "iconoir-react";
+import { isRunning, type ItemStatus, type QueueItem } from "@/store/slices/converterSlice";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
@@ -22,13 +22,18 @@ interface Props {
   item: QueueItem;
   playing: boolean;
   uploadBlock: UploadBlock;
+  /** Bisa dipilih untuk upload massal (selesai, belum terupload) */
+  selectable: boolean;
+  /** Urutan pilihan (1-based) atau null */
+  selectIndex: number | null;
+  onSelect: () => void;
   onConvert: () => void;
   onRemove: () => void;
   onTogglePlay: () => void;
   onUpload: () => void;
 }
 
-function QueueItemRow({ item, playing, uploadBlock, onConvert, onRemove, onTogglePlay, onUpload }: Props) {
+function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, onSelect, onConvert, onRemove, onTogglePlay, onUpload }: Props) {
   const { t, f, lang } = useT();
   const toast = useToast();
   const running = isRunning(item.status);
@@ -36,20 +41,70 @@ function QueueItemRow({ item, playing, uploadBlock, onConvert, onRemove, onToggl
   const chips = item.options ? summarize(item.options, t) : [];
   const outDur = item.result?.duration ?? (item.options ? outputDuration(item.options, item.duration) : item.duration);
   const up = item.upload;
+  const selected = selectIndex != null;
 
   const copy = async (text: string) => {
     if (await copyText(text)) toast(t.toast.copied, "ok");
   };
 
   return (
-    <li className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-line px-4 py-4 last:border-b-0 sm:grid-cols-[112px_minmax(0,1fr)_auto] sm:px-5">
-      {/* Thumbnail (lazy) */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-s bg-raised">
-        <Image src={item.thumbnail} alt="" fill sizes="112px" unoptimized loading="lazy" className="object-cover" />
-        <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white">
-          {formatDuration(outDur)}
-        </span>
-      </div>
+    <li
+      className={cn(
+        "grid grid-cols-[96px_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-line px-4 py-4 transition-colors duration-200 last:border-b-0 sm:grid-cols-[112px_minmax(0,1fr)_auto] sm:px-5",
+        selected && "bg-fg/[0.035]",
+      )}
+    >
+      {/* Thumbnail (lazy) — pada item siap upload, cover = tombol pilih bernomor ala photo picker */}
+      {selectable ? (
+        <button
+          type="button"
+          aria-pressed={selected}
+          aria-label={f(t.converter.pick, { title: item.title })}
+          onClick={onSelect}
+          className="group/thumb relative aspect-video w-full cursor-pointer self-start overflow-hidden rounded-s bg-raised transition-transform duration-150 active:scale-[0.96]"
+        >
+          <Image
+            src={item.thumbnail}
+            alt=""
+            fill
+            sizes="112px"
+            unoptimized
+            loading="lazy"
+            className={cn(
+              "object-cover transition-[transform,filter] duration-300 ease-[var(--ease)]",
+              selected ? "scale-[1.08] brightness-[0.42]" : "group-hover/thumb:brightness-[0.8]",
+            )}
+          />
+          {selected ? (
+            <span
+              key={selectIndex}
+              aria-hidden="true"
+              className="pick-pop absolute inset-0 m-auto grid size-8 place-items-center rounded-full bg-accent font-mono text-[13px] font-semibold tabular-nums text-on-accent"
+            >
+              {selectIndex}
+            </span>
+          ) : (
+            <span
+              aria-hidden="true"
+              className="absolute left-1.5 top-1.5 size-5 rounded-full border-[1.5px] border-white/90 bg-black/30 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/thumb:opacity-100 [@media(hover:hover)]:group-focus-visible/thumb:opacity-100"
+            />
+          )}
+          {/* Penanda aktif = garis bawah (konvensi navbar) */}
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent transition-transform duration-300 ease-[var(--ease)]",
+              selected ? "scale-x-100" : "scale-x-0",
+            )}
+          />
+          <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white">{formatDuration(outDur)}</span>
+        </button>
+      ) : (
+        <div className="relative aspect-video w-full self-start overflow-hidden rounded-s bg-raised">
+          <Image src={item.thumbnail} alt="" fill sizes="112px" unoptimized loading="lazy" className="object-cover" />
+          <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white">{formatDuration(outDur)}</span>
+        </div>
+      )}
 
       {/* Info + status */}
       <div className="min-w-0">
@@ -72,25 +127,7 @@ function QueueItemRow({ item, playing, uploadBlock, onConvert, onRemove, onToggl
         </div>
 
         <div className="mt-2.5">
-          {running && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="flex items-center gap-2 text-fg-2">
-                  <span className="eq text-accent" aria-hidden="true">
-                    <i />
-                    <i />
-                    <i />
-                  </span>
-                  {t.converter.status[item.status]}
-                </span>
-                <span className="font-mono tabular-nums text-fg-3">{item.status === "pending" ? "" : `${Math.round(item.progress)}%`}</span>
-              </div>
-              <Progress
-                value={item.status === "pending" || item.status === "queued" ? null : item.progress}
-                label={`${item.title} — ${t.converter.status[item.status]}`}
-              />
-            </div>
-          )}
+          {running && <RunningStatus item={item} />}
           {item.status === "error" && (
             <p className="flex items-start gap-1.5 text-[13px] text-err" role="alert">
               <WarningTriangle width={14} height={14} className="mt-0.5 shrink-0" /> {item.error}
@@ -192,6 +229,95 @@ function QueueItemRow({ item, playing, uploadBlock, onConvert, onRemove, onToggl
         />
       </div>
     </li>
+  );
+}
+
+// ============================================================
+// PROGRES BERTAHAP: Antre → Unduh → Proses (+ detail & waktu berjalan)
+// ============================================================
+
+const stageOf = (s: ItemStatus) => (s === "downloading" ? 1 : s === "processing" ? 2 : 0);
+
+/** Isi tiap segmen 0–1; null = belum ada angka (indeterminate) */
+function segmentFill(stage: number, idx: number, progress: number): number | null {
+  if (idx < stage) return 1;
+  if (idx > stage) return 0;
+  if (idx === 0) return null;
+  // Server: unduh 1–55%, proses 56–98%
+  return idx === 1 ? Math.min(1, progress / 55) : Math.min(1, Math.max(0, (progress - 56) / 42));
+}
+
+function Elapsed() {
+  const [start] = useState(() => Date.now());
+  const [now, setNow] = useState(start);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <>{formatDuration((now - start) / 1000)}</>;
+}
+
+function RunningStatus({ item }: { item: QueueItem }) {
+  const { t, f } = useT();
+  const stage = stageOf(item.status);
+  const labels = [t.converter.stages.queue, t.converter.stages.download, t.converter.stages.process];
+  const d = t.converter.detail;
+  const detail =
+    item.status === "processing" && item.options
+      ? f(d.processing, { format: item.options.format.toUpperCase(), bitrate: item.options.bitrate })
+      : d[item.status as "pending" | "queued" | "downloading"];
+  const pct = stage === 0 ? null : Math.round(item.progress);
+
+  return (
+    <div
+      role="progressbar"
+      aria-label={`${item.title} — ${detail}`}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct ?? undefined}
+      className="flex flex-col gap-2"
+    >
+      <div className="flex items-center justify-between gap-3 text-[12.5px]">
+        <span className="flex min-w-0 items-center gap-2 text-fg">
+          <span className="eq shrink-0 text-accent" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="truncate">{detail}</span>
+        </span>
+        <span className="shrink-0 font-mono tabular-nums text-fg-3">
+          {pct != null && <span className="text-fg-2">{pct}% · </span>}
+          <Elapsed />
+        </span>
+      </div>
+      <div className="grid grid-cols-[1fr_2fr_2fr] gap-1.5" aria-hidden="true">
+        {labels.map((label, i) => {
+          const fill = segmentFill(stage, i, item.progress);
+          return (
+            <div key={label} className="flex flex-col gap-1.5">
+              <div className={cn("h-1 overflow-hidden rounded-xs bg-tonal", fill == null && "indeterminate")}>
+                {fill != null && (
+                  <div
+                    className="h-full origin-left bg-accent transition-transform duration-500 ease-[var(--ease)]"
+                    style={{ transform: `scaleX(${fill})` }}
+                  />
+                )}
+              </div>
+              <span
+                className={cn(
+                  "flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] transition-colors",
+                  i < stage ? "text-fg-2" : i === stage ? "text-fg" : "text-fg-3",
+                )}
+              >
+                {i < stage && <Check width={11} height={11} strokeWidth={2.4} />}
+                {label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

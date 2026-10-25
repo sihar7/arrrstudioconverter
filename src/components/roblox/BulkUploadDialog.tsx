@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, WarningTriangle } from "iconoir-react";
+import { WarningTriangle } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/lib/utils";
 import Dialog from "@/components/ui/Dialog";
@@ -106,30 +106,39 @@ export default function BulkUploadDialog({ entries, initial, onClose, onSubmit }
           <ul className="thin-scroll flex max-h-[38dvh] flex-col gap-1.5 overflow-y-auto rounded-l bg-bg p-1.5">
             {entries.map((e) => {
               const on = picked.has(e.key);
+              const order = on ? entries.filter((x) => picked.has(x.key)).findIndex((x) => x.key === e.key) + 1 : null;
               return (
                 <li key={e.key} className={cn("flex items-center gap-3 rounded-s p-1.5 pr-2 transition-colors", on ? "bg-raised" : "opacity-60")}>
+                  {/* Cover = tombol pilih bernomor (urutan upload) */}
                   <button
                     type="button"
-                    role="checkbox"
-                    aria-checked={on}
+                    aria-pressed={on}
                     aria-label={e.title}
                     onClick={() => toggle(e.key)}
-                    className={cn(
-                      "grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-colors",
-                      on ? "text-accent" : "text-fg-3 hover:bg-hover",
-                    )}
+                    className="group/thumb relative aspect-video w-[72px] shrink-0 cursor-pointer overflow-hidden rounded-[6px] bg-bg transition-transform duration-150 active:scale-[0.94]"
                   >
-                    <span
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={e.thumbnail}
+                      alt=""
+                      loading="lazy"
                       className={cn(
-                        "grid size-[18px] place-items-center rounded-[4px] border-2 transition-colors",
-                        on ? "border-accent bg-accent text-on-accent" : "border-fg-3",
+                        "size-full object-cover transition-[filter,transform] duration-300",
+                        on ? "scale-[1.08] brightness-[0.42]" : "grayscale group-hover/thumb:grayscale-0",
                       )}
-                    >
-                      {on && <Check width={14} height={14} strokeWidth={2.6} />}
-                    </span>
+                    />
+                    {on ? (
+                      <span
+                        key={order}
+                        aria-hidden="true"
+                        className="pick-pop absolute inset-0 m-auto grid size-6 place-items-center rounded-full bg-accent font-mono text-[11.5px] font-semibold tabular-nums text-on-accent"
+                      >
+                        {order}
+                      </span>
+                    ) : (
+                      <span aria-hidden="true" className="absolute inset-0 m-auto size-5 rounded-full border-[1.5px] border-white/90 bg-black/30" />
+                    )}
                   </button>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={e.thumbnail} alt="" loading="lazy" className="hidden aspect-video w-16 shrink-0 rounded-[6px] object-cover sm:block" />
                   <div className="min-w-0 flex-1">
                     <Input
                       aria-label={`${u.name} — ${e.title}`}

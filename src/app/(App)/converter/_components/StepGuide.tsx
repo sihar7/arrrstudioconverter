@@ -31,50 +31,45 @@ export default function StepGuide() {
   };
 
   return (
-    <nav aria-label={t.converter.guideLabel} className="rise [animation-delay:40ms]">
-      <ol className="grid gap-px overflow-hidden rounded-l border border-line/60 bg-line/60 sm:grid-cols-3">
+    <nav aria-label={t.converter.guideLabel}>
+      {/* Stepper ringkas: nomor + judul, garis penghubung terisi mengikuti progres */}
+      <ol className="flex items-center">
         {t.converter.guide.map((s, i) => {
           const done = i < current || (allDone && i === 2);
           const now = i === current && !done;
           return (
-            <li key={s.title} className="bg-surface">
+            <li key={s.title} className="flex items-center">
+              {i > 0 && (
+                <span aria-hidden="true" className="relative mx-1 h-px w-5 overflow-hidden bg-line-2 sm:w-8">
+                  <span
+                    className={cn(
+                      "absolute inset-0 origin-left bg-accent transition-transform duration-700 ease-[var(--ease)]",
+                      i <= current ? "scale-x-100" : "scale-x-0",
+                    )}
+                  />
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => go(i)}
+                title={s.desc}
                 aria-current={now ? "step" : undefined}
                 className={cn(
-                  "state-layer group relative flex h-full w-full cursor-pointer items-start gap-4 px-5 py-4 text-left transition-colors duration-300",
-                  now ? "text-fg" : "text-fg-2 hover:text-fg",
+                  "state-layer group flex h-11 cursor-pointer items-center gap-2 rounded-full pl-1.5 pr-3 transition-colors duration-300",
+                  now ? "text-fg" : done ? "text-fg-2 hover:text-fg" : "text-fg-3 hover:text-fg-2",
                 )}
               >
-                {/* Indikator progres di tepi atas */}
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "absolute inset-x-0 top-0 h-0.5 origin-left bg-accent transition-transform duration-700 ease-[var(--ease)]",
-                    done || now ? "scale-x-100" : "scale-x-0",
-                    now && "opacity-100",
-                    done && "opacity-50",
-                  )}
-                />
                 <span
                   className={cn(
-                    "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-s border font-mono text-[12px] transition-colors duration-300",
+                    "grid size-7 shrink-0 place-items-center rounded-full border font-mono text-[11px] transition-[background-color,border-color,color,transform] duration-300 group-active:scale-90",
                     done && "border-transparent bg-tonal text-on-tonal",
                     now && "btn-plate border-transparent bg-accent text-on-accent",
-                    !done && !now && "border-line-2 text-fg-3",
+                    !done && !now && "border-line-2",
                   )}
                 >
-                  {done ? <Check width={15} height={15} strokeWidth={2.2} /> : String(i + 1).padStart(2, "0")}
+                  {done ? <Check width={14} height={14} strokeWidth={2.2} /> : i + 1}
                 </span>
-                <span className="min-w-0">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-[14.5px] font-semibold">{s.title}</span>
-                    {now && <span className="caps text-[10px] text-accent">{t.converter.stepNow}</span>}
-                    {i === 1 && !now && !done && <span className="caps text-[10px] text-fg-3">{t.converter.optional}</span>}
-                  </span>
-                  <span className="mt-1 block text-[13px] leading-snug text-fg-3">{s.desc}</span>
-                </span>
+                <span className={cn("whitespace-nowrap text-[13px] font-semibold", !now && "hidden md:inline")}>{s.title}</span>
               </button>
             </li>
           );

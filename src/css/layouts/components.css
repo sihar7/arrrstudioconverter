@@ -366,9 +366,9 @@
   /* Peredam forged di latar halaman (material tetap terasa, tidak bersaing dengan konten) */
   --forged-dim: color-mix(in srgb, var(--bg) 58%, transparent);
   /* Film grain halus untuk seluruh layar */
-  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --grain: url("/material/grain.png");
   /* Satin bead-blasted: butir mikro sebagai lapisan background (alpha sudah rendah) */
-  --satin: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='1.35' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+  --satin: url("/material/satin.png");
   --sheen: radial-gradient(90% 60% at 50% -12%, rgba(201, 205, 210, 0.09), transparent 62%);
   --spot: rgba(230, 232, 235, 0.16);
   --plate-top: rgba(255, 255, 255, 0.028);
@@ -384,7 +384,7 @@
 html[data-theme="light"] {
   --forged: url("/material/forged-light.webp");
   --forged-dim: color-mix(in srgb, var(--bg) 50%, transparent);
-  --satin: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='1.35' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+  --satin: url("/material/satin.png");
   --sheen: radial-gradient(90% 60% at 50% -12%, rgba(255, 255, 255, 0.9), transparent 62%);
   --spot: rgba(255, 255, 255, 0.55);
   --plate-top: rgba(255, 255, 255, 0.7);
@@ -411,36 +411,44 @@ body::before {
   -webkit-mask-image: radial-gradient(95% 70% at 50% -5%, #000 0%, rgba(0, 0, 0, 0.5) 42%, transparent 78%);
   mask-image: radial-gradient(95% 70% at 50% -5%, #000 0%, rgba(0, 0, 0, 0.5) 42%, transparent 78%);
 }
-/* Key light dari atas + sorot lembut yang mengikuti kursor (--mx/--my dari StudioLight) */
+/* Key light statis dari atas. Sorot kursor = elemen .studio-spot (digeser via transform — tanpa recalc style) */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(38rem 28rem at var(--mx, 50%) var(--my, -10%), var(--spot), transparent 70%),
-    var(--sheen);
-  mix-blend-mode: soft-light;
+  background: var(--sheen);
 }
 html[data-theme="light"] body::after {
-  mix-blend-mode: normal;
   opacity: 0.6;
 }
-/* Film grain di atas semua lapisan (pseudo terpisah supaya opacity-nya tidak meredam sheen) */
+.studio-spot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 76rem;
+  height: 56rem;
+  margin: -28rem 0 0 -38rem;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--spot), transparent);
+  opacity: 0;
+  transition: opacity var(--base) var(--ease);
+  will-change: transform;
+}
+.studio-spot[data-on] {
+  opacity: 0.55;
+}
+/* Film grain halus — lapisan latar (z -1), tanpa blend mode: murah saat scroll */
 html::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: -1;
   pointer-events: none;
   background-image: var(--grain);
-  opacity: var(--mat-grain-opacity);
-  mix-blend-mode: overlay;
-}
-html[data-theme="light"]::after {
-  mix-blend-mode: multiply;
-  filter: invert(1);
+  opacity: calc(var(--mat-grain-opacity) * 8);
 }
 
 /* Pelat satin (kartu, dialog, menu): butir mikro + tepi chamfer — atas menangkap cahaya, bawah dalam bayang */
@@ -456,14 +464,9 @@ html[data-theme="light"]::after {
 .forged {
   background: var(--forged) 0 0 / 640px 640px repeat, var(--bg);
 }
-/* Lampu studio: sorot lembut yang mengikuti kursor (--mx/--my diset JS, default kanan atas) */
+/* Sorot statis untuk seksi forged (hero, CTA) */
 .forged-spot {
-  background: radial-gradient(42rem 30rem at var(--mx, 70%) var(--my, 30%), var(--spot), transparent 70%);
-  background-attachment: fixed; /* koordinat viewport = sama dengan --mx/--my dari kursor */
-  mix-blend-mode: soft-light;
-}
-html[data-theme="light"] .forged-spot {
-  mix-blend-mode: screen;
+  background: radial-gradient(42rem 30rem at 70% 30%, var(--spot), transparent 70%);
 }
 /* Ubin forged kecil bertepi chamfer (ikon empty state, medali logo) */
 .forged-tile {
@@ -594,5 +597,61 @@ html[data-theme="light"] .btn-plate {
   }
   to {
     transform: translateX(100%);
+  }
+}
+
+/* Dock aksi pilihan: muncul dari bawah (deselerasi), keluar langsung */
+.dock-in {
+  animation: dock-in var(--base) var(--ease-decel) both;
+}
+@keyframes dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Nomor pilihan "pop" saat cover dipilih */
+.pick-pop {
+  animation: pick-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes pick-pop {
+  from {
+    transform: scale(0.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Menu HP: panel turun dari atas, item menyusul berurutan */
+.menu-sheet[open] {
+  animation: menu-in var(--base) var(--ease-decel) both;
+}
+.menu-sheet[open]::backdrop {
+  animation: fade-in var(--base) var(--ease) both;
+}
+.menu-sheet[open] .menu-item {
+  animation: menu-item-in var(--base) var(--ease-decel) both;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+}
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }

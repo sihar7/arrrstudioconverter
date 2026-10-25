@@ -12,6 +12,7 @@ import UserMenu, { QuotaPill } from "@/components/shared/UserMenu";
 import { LangToggle, ThemeToggle } from "@/components/shared/PrefToggles";
 import ScrollTopFab from "@/components/shared/ScrollTopFab";
 import { ButtonLink } from "@/components/ui/Button";
+import MobileMenu from "./MobileMenu";
 
 export const NAV = [
   { href: "/converter", key: "converter", icon: MusicDoubleNote },
@@ -23,7 +24,8 @@ export const NAV = [
 /**
  * Navbar tunggal untuk SEMUA halaman (landing & app) — tata letak editorial ala ferrari.com.
  * Desktop (xl+): tautan kapital di kiri · logo di tengah · utilitas & akun di kanan.
- * < xl: logo kiri + utilitas; navigasi pindah ke tab bar bawah (jangkauan jempol), tanpa hamburger.
+ * < xl: logo kiri + utilitas + tombol menu (panel navigasi) — tab bar bawah tetap ada untuk jangkauan jempol.
+ * Saat discroll bar berubah jadi "island": kapsul kaca melayang yang lebih ramping (tinggi luar tetap → tanpa geser layout).
  * overlay = landing: transparan di atas hero, tombol CTA tampil.
  */
 export default function Header({ overlay = false }: { overlay?: boolean }) {
@@ -38,12 +40,12 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
     <>
       <header
         className={cn(
-          "top-0 z-50 animate-[nav-in_.8s_var(--ease)_both] transition-[background-color,border-color,box-shadow] duration-500 ease-[var(--ease)]",
+          "top-0 z-50 h-[var(--nav-h)] animate-[nav-in_.8s_var(--ease)_both] transition-[background-color,border-color] duration-500 ease-[var(--ease)]",
           overlay ? "fixed inset-x-0" : "sticky",
           scrolled
-            ? "border-b border-line/60 bg-[var(--glass)] shadow-[inset_0_-1px_0_var(--mat-edge)] backdrop-blur-xl backdrop-saturate-150"
+            ? "border-b border-transparent"
             : solid
-              ? "border-b border-transparent bg-transparent"
+              ? "border-b border-line/50"
               : "border-b border-transparent bg-gradient-to-b from-bg/80 to-transparent",
         )}
       >
@@ -53,13 +55,20 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
         >
           {t.common.skip}
         </a>
-        <div className="relative mx-auto grid h-[var(--nav-h)] max-w-[var(--wrap)] grid-cols-[1fr_auto] items-center gap-3 px-4 sm:px-8">
+        <div
+          className={cn(
+            "relative mx-auto grid grid-cols-[1fr_auto] items-center gap-3 border transition-[max-width,height,margin,padding,border-radius,background-color,border-color,box-shadow] duration-500 ease-[var(--ease)]",
+            scrolled
+              ? "mt-2 h-14 w-[calc(100%-16px)] max-w-[1120px] rounded-full border-line/70 bg-[var(--glass)] px-3 shadow-[var(--shadow)] backdrop-blur-xl backdrop-saturate-150 sm:w-[calc(100%-32px)] sm:px-5"
+              : "h-[var(--nav-h)] max-w-[var(--wrap)] border-transparent px-4 sm:px-8",
+          )}
+        >
           {/* Kiri: logo (< lg) / tautan utama (lg+) */}
           <div className="flex min-w-0 items-center">
             <span className="xl:hidden">
               <Logo />
             </span>
-            <nav aria-label="Main" className="hidden h-[var(--nav-h)] items-stretch gap-1 xl:flex">
+            <nav aria-label="Main" className="hidden h-full items-stretch gap-1 xl:flex">
               {NAV.map(({ href, key }) => {
                 const active = href === activeHref;
                 return (
@@ -77,7 +86,8 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
                     <span
                       aria-hidden="true"
                       className={cn(
-                        "absolute inset-x-3.5 bottom-0 h-px origin-left bg-fg transition-transform duration-500 ease-[var(--ease)]",
+                        "absolute inset-x-3.5 h-px origin-left bg-fg transition-transform duration-500 ease-[var(--ease)]",
+                        scrolled ? "top-[calc(50%+12px)]" : "bottom-0",
                         active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100 group-hover:bg-fg-3",
                       )}
                     />
@@ -94,7 +104,14 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
             className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 text-fg transition-opacity hover:opacity-80 xl:flex"
           >
             <LogoMark priority />
-            <span className="whitespace-nowrap pl-[0.3em] text-[9px] font-bold tracking-[0.3em]">ARRR STUDIO</span>
+            <span
+              className={cn(
+                "whitespace-nowrap pl-[0.3em] text-[9px] font-bold tracking-[0.3em] transition-[opacity,height] duration-300",
+                scrolled ? "h-0 opacity-0" : "h-3 opacity-100",
+              )}
+            >
+              ARRR STUDIO
+            </span>
           </Link>
 
           {/* Kanan: utilitas & akun */}
@@ -106,6 +123,7 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
             <ThemeToggle />
             <span aria-hidden="true" className="mx-1.5 hidden h-5 w-px bg-line sm:block" />
             <UserMenu />
+            <MobileMenu activeHref={activeHref} />
             {overlay && (
               <ButtonLink
                 href="/converter"
@@ -135,7 +153,7 @@ function TabBar({ activeHref }: { activeHref?: string }) {
   return (
     <nav
       aria-label="Mobile"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line/70 bg-[var(--glass)] pb-[env(safe-area-inset-bottom)] shadow-[inset_0_1px_0_var(--mat-edge)] backdrop-blur-xl backdrop-saturate-150 xl:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line/70 bg-[var(--glass)] pb-[env(safe-area-inset-bottom)] shadow-[inset_0_1px_0_var(--mat-edge)] backdrop-blur-md xl:hidden"
     >
       <ul className="mx-auto grid h-[68px] max-w-xl grid-cols-4">
         {NAV.map(({ href, key, icon: Icon }) => {
