@@ -4,9 +4,9 @@ import { ShieldCheck } from "iconoir-react";
 import EmptyState from "@/components/shared/EmptyState";
 import Badge from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
-import { getAudit } from "../_service/admin.service";
+import { clearAudit, getAudit } from "../_service/admin.service";
 import { useAdminData } from "../_hooks/useAdmin";
-import { ErrorBox, ListBox, ListSkeleton, RefreshButton, Toolbar } from "./parts";
+import { ErrorBox, ListBox, ListSkeleton, PurgeButton, RefreshButton, Toolbar } from "./parts";
 
 const ACTION: Record<string, string> = {
   login: "Masuk",
@@ -16,6 +16,15 @@ const ACTION: Record<string, string> = {
   "user.revoke": "Paksa keluar user",
   "user.purge": "Hapus data user",
   "file.delete": "Hapus file",
+  "file.purge": "Hapus semua file",
+  "job.delete": "Hapus job",
+  "job.purge": "Hapus job selesai",
+  "order.approve": "Order lunas",
+  "order.reject": "Order ditolak",
+  "order.delete": "Hapus order",
+  "order.purge": "Hapus order tertutup",
+  "user.plan": "Atur plan user",
+  "audit.clear": "Kosongkan log audit",
   "maintenance.cleanup": "Bersihkan storage",
   "maintenance.revoke-admin": "Cabut sesi admin",
   "system.janitor": "Jalankan janitor",
@@ -28,7 +37,21 @@ export default function AuditTab() {
 
   return (
     <div>
-      <Toolbar actions={<RefreshButton loading={loading} onClick={reload} />}>
+      <Toolbar
+        actions={
+          <>
+            <PurgeButton
+              label="Kosongkan log"
+              title="Kosongkan log audit"
+              message="Semua entri log dihapus permanen. Satu entri baru “Kosongkan log audit” tetap dicatat atas namamu sebagai jejak."
+              disabled={!data?.items.length}
+              run={clearAudit}
+              onDone={reload}
+            />
+            <RefreshButton loading={loading} onClick={reload} />
+          </>
+        }
+      >
         <p className="text-[13px] text-fg-3">150 aktivitas admin terbaru. IP disimpan dalam bentuk hash.</p>
       </Toolbar>
 

@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NavArrowDown } from "iconoir-react";
+import { Lock, NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
+import { useMeQuery } from "@/store/api/baseApi";
+import { PLANS, cheapestPlan } from "@/lib/schemas/plans";
 import type { NavItem } from "./Header";
 
 /**
@@ -23,6 +25,9 @@ export default function NavMenu({
   activeHref?: string;
 }) {
   const { t } = useT();
+  const { data: me } = useMeQuery();
+  // Label gembok "Pro" di Audio saya bila plan user belum membukanya (guest: tidak ditampilkan)
+  const libraryLock = me?.user && !PLANS[me.plan?.id ?? "free"].library ? t.plan.names[cheapestPlan((p) => p.library)] : null;
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -119,8 +124,14 @@ export default function NavMenu({
                 <Icon width={19} height={19} />
               </span>
               <span className="min-w-0">
-                <span className="block text-[14px] font-semibold tracking-[-0.005em]">
+                <span className="flex items-center gap-2 text-[14px] font-semibold tracking-[-0.005em]">
                   {t.nav[key as keyof typeof t.nav] as string}
+                  {key === "library" && libraryLock && (
+                    <span className="caps inline-flex items-center gap-1 rounded-xs bg-raised px-1.5 py-0.5 text-[9.5px] text-fg-2">
+                      <Lock width={10} height={10} aria-hidden="true" />
+                      {libraryLock}
+                    </span>
+                  )}
                 </span>
                 <span className="mt-0.5 block truncate text-[12px] text-fg-3">
                   {t.nav.desc[key as keyof typeof t.nav.desc]}

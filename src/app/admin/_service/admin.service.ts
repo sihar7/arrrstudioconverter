@@ -35,13 +35,33 @@ export const getOrders = (status: OrderFilter) =>
 export const orderAction = (id: string, action: "approve" | "reject", note?: string) =>
   apiFetch<{ order: Order }>(`/api/admin/orders/${id}`, { method: "POST", json: { action, note } });
 
+/** Hapus order + bukti (plan yang sudah aktif tidak dicabut) */
+export const deleteOrder = (id: string) => apiFetch<{ ok: true }>(`/api/admin/orders/${id}`, { method: "DELETE" });
+
+/** Hapus massal order dibatalkan / kedaluwarsa / ditolak */
+export const purgeOrders = () => apiFetch<{ deleted: number }>("/api/admin/orders", { method: "DELETE" });
+
+/** URL gambar bukti pembayaran (cookie admin ikut karena path /api/admin); v = pemecah cache saat bukti diganti */
+export const proofUrl = (id: string, v?: number | null) => `/api/admin/orders/${id}/proof${v ? `?v=${v}` : ""}`;
+
 export const getJobs = () => apiFetch<{ items: AdminJob[] }>("/api/admin/jobs", { cache: "no-store" });
+
+export const deleteJob = (id: string) => apiFetch<{ ok: true }>(`/api/admin/jobs/${id}`, { method: "DELETE" });
+
+/** Hapus semua job selesai / gagal */
+export const purgeJobs = () => apiFetch<{ deleted: number }>("/api/admin/jobs", { method: "DELETE" });
 
 export const getFiles = () => apiFetch<{ items: AdminFile[] }>("/api/admin/files", { cache: "no-store" });
 
 export const deleteFile = (id: string) => apiFetch<{ ok: true }>(`/api/admin/files/${id}`, { method: "DELETE" });
 
+/** Hapus semua file hasil */
+export const purgeFiles = () => apiFetch<{ deleted: number }>("/api/admin/files", { method: "DELETE" });
+
 export const getAudit = () => apiFetch<{ items: AdminAuditEntry[] }>("/api/admin/audit", { cache: "no-store" });
+
+/** Kosongkan log audit (entri "audit.clear" tetap tercatat setelahnya) */
+export const clearAudit = () => apiFetch<{ deleted: number }>("/api/admin/audit", { method: "DELETE" });
 
 export const revokeAdminSessions = () =>
   apiFetch<{ sessions: number }>("/api/admin/maintenance", { method: "POST", json: { action: "revoke-admin-sessions" } });

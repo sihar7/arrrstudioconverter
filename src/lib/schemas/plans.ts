@@ -1,4 +1,4 @@
-import type { AudioFormat, AudioOptions } from "./convert.schema";
+import { DEFAULT_OPTIONS, type AudioFormat, type AudioOptions } from "./convert.schema";
 
 // Definisi plan — dipakai bersama oleh UI (halaman harga, kunci opsi) dan API (penegakan batas).
 // File ini identik di repo web & backend; ubah keduanya bersamaan.
@@ -7,7 +7,8 @@ export const PLAN_IDS = ["free", "pro", "studio"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 /**
- * Efek bertingkat (efek dasar — speed, pitch, volume, trim, fade, normalize — selalu ada di semua plan):
+ * Efek dasar (speed, pitch, volume, fade) ada di semua plan tapi RENTANGNYA bertingkat (lihat `ranges`).
+ * Efek tambahan bertingkat:
  *   eq        — bass & treble (Pro)
  *   reverb    — gema ruang, untuk preset Slowed + Reverb (Pro)
  *   spatial8d — audio 8D berputar (Studio)
@@ -28,12 +29,18 @@ export interface PlanLimits {
   maxBitrate: 96 | 128 | 192 | 256 | 320;
   formats: readonly AudioFormat[];
   effects: readonly EffectId[];
+  /** rentang efek dasar: speed [min, max]×, pitch ±semitone, volume ±dB, fade in/out maks detik */
+  ranges: { speed: readonly [number, number]; pitch: number; volume: number; fade: number };
+  /** kompres pintar: VBR + bitrate menyesuaikan sumber → file jauh lebih kecil */
+  smartCompress: boolean;
   /** lama file hasil bisa diunduh (jam) */
   fileTtlHours: number;
   /** entri riwayat yang disimpan */
   historyMax: number;
   /** upload massal ke Roblox */
   bulkRoblox: boolean;
+  /** halaman "Audio saya": kelola, arsipkan & atur izin audio Roblox milik sendiri */
+  library: boolean;
   /** antrean server didahulukan */
   priority: boolean;
 }
@@ -48,9 +55,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     maxBitrate: 192,
     formats: ["mp3", "ogg"],
     effects: [],
+    ranges: { speed: [0.8, 1.25], pitch: 3, volume: 6, fade: 3 },
+    smartCompress: false,
     fileTtlHours: 1,
     historyMax: 50,
     bulkRoblox: false,
+    library: false,
     priority: false,
   },
   pro: {
@@ -62,9 +72,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     maxBitrate: 256,
     formats: ["mp3", "ogg", "m4a"],
     effects: ["eq", "reverb"],
+    ranges: { speed: [0.5, 1.5], pitch: 7, volume: 12, fade: 8 },
+    smartCompress: true,
     fileTtlHours: 24,
     historyMax: 300,
     bulkRoblox: true,
+    library: true,
     priority: false,
   },
   studio: {
@@ -76,9 +89,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     maxBitrate: 320,
     formats: ["mp3", "ogg", "m4a", "wav", "flac"],
     effects: ["eq", "reverb", "spatial8d"],
+    ranges: { speed: [0.5, 2], pitch: 12, volume: 20, fade: 15 },
+    smartCompress: true,
     fileTtlHours: 72,
     historyMax: 1000,
     bulkRoblox: true,
+    library: true,
     priority: true,
   },
 };
@@ -125,13 +141,29 @@ export function effectsUsed(o: Partial<AudioOptions>): EffectId[] {
   return out;
 }
 
+const clampNum = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
 /** Turunkan opsi ke batas plan (mis. preferensi tersimpan dari plan lama / setelah downgrade) */
 export function clampOptions(o: AudioOptions, plan: PlanLimits): AudioOptions {
   const next = { ...o };
+  const r = plan.ranges;
+  next.speed = clampNum(next.speed, r.speed[0], r.speed[1]);
+  next.pitch = clampNum(next.pitch, -r.pitch, r.pitch);
+  next.volume = clampNum(next.volume, -r.volume, r.volume);
+  next.fadeIn = clampNum(next.fadeIn, 0, r.fade);
+  next.fadeOut = clampNum(next.fadeOut, 0, r.fade);
+  if (!plan.smartCompress) next.compress = false;
   if (!plan.formats.includes(next.format)) next.format = plan.formats[0];
   if (next.bitrate > plan.maxBitrate) next.bitrate = plan.maxBitrate;
   if (!plan.effects.includes("eq")) Object.assign(next, { bass: 0, treble: 0 });
   if (!plan.effects.includes("reverb")) next.reverb = 0;
   if (!plan.effects.includes("spatial8d")) next.spatial8d = false;
   return next;
+}
+
+/** Opsi (mis. preset) bisa dipakai utuh di plan ini tanpa diturunkan */
+export function fitsPlan(opts: Partial<AudioOptions>, plan: PlanLimits): boolean {
+  const full: AudioOptions = { ...DEFAULT_OPTIONS, ...opts };
+  const clamped = clampOptions(full, plan);
+  return (Object.keys(opts) as (keyof AudioOptions)[]).every((k) => clamped[k] === full[k]);
 }

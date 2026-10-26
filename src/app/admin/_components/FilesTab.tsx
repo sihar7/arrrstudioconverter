@@ -7,9 +7,9 @@ import Button from "@/components/ui/Button";
 import { useToast } from "@/hooks/useToast";
 import { formatBytes, formatDuration } from "@/lib/utils";
 import type { AdminFile } from "@/type/admin";
-import { deleteFile, getFiles } from "../_service/admin.service";
+import { deleteFile, getFiles, purgeFiles } from "../_service/admin.service";
 import { errorText, useAdminConfirm, useAdminData, useAuthGuard } from "../_hooks/useAdmin";
-import { ErrorBox, ListBox, ListSkeleton, RefreshButton, Toolbar, nf } from "./parts";
+import { ErrorBox, ListBox, ListSkeleton, PurgeButton, RefreshButton, Toolbar, nf } from "./parts";
 
 const COLS = "md:grid-cols-[minmax(0,1.8fr)_100px_150px_120px_auto]";
 
@@ -48,7 +48,21 @@ export default function FilesTab() {
 
   return (
     <div>
-      <Toolbar actions={<RefreshButton loading={loading} onClick={reload} />}>
+      <Toolbar
+        actions={
+          <>
+            <PurgeButton
+              label="Hapus semua"
+              title="Hapus semua file hasil"
+              message={`${nf(data?.items.length ?? 0)} file (${formatBytes(total)}) dihapus dari storage. Riwayat tetap ada — user tinggal convert ulang.`}
+              disabled={!data?.items.length}
+              run={purgeFiles}
+              onDone={reload}
+            />
+            <RefreshButton loading={loading} onClick={reload} />
+          </>
+        }
+      >
         {data && (
           <p className="text-[13px] text-fg-3">
             {nf(data.items.length)} file aktif · {formatBytes(total)}

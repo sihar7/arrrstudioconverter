@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import type { AdminMe } from "@/type/admin";
 import { adminLogout, adminMe, getOrders } from "../_service/admin.service";
 import { useAuthGuard } from "../_hooks/useAdmin";
+import { useAdminEvents } from "../_hooks/useAdminEvents";
+import NotificationBell from "./NotificationBell";
 import OverviewTab from "./OverviewTab";
 import OrdersTab from "./OrdersTab";
 import UsersTab from "./UsersTab";
@@ -119,6 +121,21 @@ export default function AdminScreen() {
     const t = setInterval(() => document.visibilityState === "visible" && loadPending(), 30_000);
     return () => clearInterval(t);
   }, [me, loadPending]);
+
+  // Realtime: event order → toast + badge diperbarui; polling 30 dtk di atas tetap jadi cadangan
+  const [unread, setUnread] = useState(0);
+  const live = useAdminEvents((e) => {
+    setUnread((n) => n + 1);
+    loadPending();
+    if (e.type === "order.confirming" || e.type === "order.proof" || e.type === "order.created") toast(`${e.title} — ${e.body}`, "info");
+  }, me != null);
+
+  // Judul tab browser menampilkan jumlah order yang perlu dicek
+  useEffect(() => {
+    const base = "Admin";
+    const title = ITEMS.find((i) => i.value === tab)?.title ?? "Dashboard";
+    document.title = pending > 0 ? `(${pending}) Order perlu dicek · ${base}` : `${title} · ${base}`;
+  }, [pending, tab]);
 
   useEffect(() => {
     const d = drawerRef.current;
@@ -281,6 +298,18 @@ export default function AdminScreen() {
                 {pending} order perlu dicek
               </button>
             )}
+            <NotificationBell
+              state={live.state}
+              events={live.events}
+              unread={unread}
+              sound={live.sound}
+              onSound={live.setSound}
+              permission={live.permission}
+              onRequestDesktop={() => void live.requestDesktop()}
+              onOpen={() => setUnread(0)}
+              onOpenOrder={() => changeTab("orders")}
+              onClear={live.clear}
+            />
             <span className="lg:hidden">
               <ThemeToggle />
             </span>

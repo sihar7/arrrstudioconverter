@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Album, Check, Copy, Discord, Download, Globe, OpenNewWindow, Pause, Refresh, Search, Trash, Undo } from "iconoir-react";
+import { Album, Check, Copy, Crown, Discord, Download, Globe, Lock, OpenNewWindow, Pause, Refresh, Search, Trash, Undo } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { cn, copyText } from "@/lib/utils";
+import { PLANS, cheapestPlan } from "@/lib/schemas/plans";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -120,6 +121,28 @@ export default function LibraryScreen() {
               <a href="/api/auth/discord?next=/library" className={buttonClass("primary")}>
                 <Discord width={18} height={18} /> {t.login.discord}
               </a>
+            }
+          />
+        </CardBox>
+      </div>
+    );
+  }
+
+  // Audio saya khusus plan tertentu (Pro+) — server juga menolak dengan 403 PLAN_REQUIRED
+  if (!PLANS[me.plan?.id ?? "free"].library) {
+    const need = t.plan.names[cheapestPlan((p) => p.library)];
+    return (
+      <div className="flex flex-col gap-8">
+        {header}
+        <CardBox>
+          <EmptyState
+            icon={<Lock width={22} height={22} />}
+            title={f(t.plan.locked, { plan: need })}
+            sub={L.lockedSub}
+            action={
+              <ButtonLink href="/pricing" variant="primary" icon={<Crown width={18} height={18} aria-hidden="true" />}>
+                {f(t.pricing.switchTo, { plan: need })}
+              </ButtonLink>
             }
           />
         </CardBox>

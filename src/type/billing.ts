@@ -33,6 +33,17 @@ export interface Order {
   /** catatan admin (mis. alasan ditolak) */
   note: string | null;
   handledBy: string | null;
+  /** waktu bukti pembayaran terakhir diunggah; null = belum ada (opsional, data lama tidak punya) */
+  proofAt?: number | null;
+}
+
+/** Event realtime ke panel admin (SSE /api/admin/events) */
+export interface AdminEvent {
+  type: "order.created" | "order.confirming" | "order.proof" | "order.cancelled" | "order.paid" | "order.rejected";
+  orderId: string;
+  title: string;
+  body: string;
+  at: number;
 }
 
 export interface OrderDetail extends Order {

@@ -81,8 +81,8 @@ export function estimateBytes(o: AudioOptions, seconds: number) {
   const ch = o.mono ? 1 : 2;
   if (o.format === "wav") return seconds * o.sampleRate * ch * 2;
   if (o.format === "flac") return seconds * o.sampleRate * ch * 2 * 0.58;
-  // Lossy: bitrate × durasi; kompres pintar rata-rata ±20% lebih kecil, mono ±35%
-  const factor = (o.compress ? 0.8 : 1) * (o.mono ? 0.65 : 1);
+  // Lossy: bitrate × durasi; kompres pintar rata-rata ±35% lebih kecil, mono ±35%
+  const factor = (o.compress ? 0.65 : 1) * (o.mono ? 0.65 : 1);
   return (seconds * o.bitrate * 1000 * factor) / 8;
 }
 

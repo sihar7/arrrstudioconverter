@@ -1,10 +1,12 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { RefreshDouble, WarningTriangle } from "iconoir-react";
+import { useState, type ReactNode } from "react";
+import { RefreshDouble, Trash, WarningTriangle } from "iconoir-react";
 import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/useToast";
+import { errorText, useAdminConfirm, useAuthGuard } from "../_hooks/useAdmin";
 
 // Potongan UI kecil yang dipakai semua tab admin
 
@@ -97,6 +99,54 @@ export function Toolbar({ children, actions, className }: { children?: ReactNode
       <div className="min-w-0 flex-1">{children}</div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
+  );
+}
+
+/**
+ * Tombol hapus massal (merah) + dialog konfirmasi. run() mengembalikan jumlah yang terhapus → toast.
+ * Dipakai semua tab admin supaya perilaku & teks konsisten.
+ */
+export function PurgeButton({
+  label,
+  title,
+  message,
+  run,
+  onDone,
+  disabled,
+}: {
+  label: string;
+  title: string;
+  message: string;
+  run: () => Promise<{ deleted: number }>;
+  onDone: () => void;
+  disabled?: boolean;
+}) {
+  const [confirm, dialog] = useAdminConfirm();
+  const toast = useToast();
+  const guard = useAuthGuard();
+  const [busy, setBusy] = useState(false);
+
+  const go = async () => {
+    if (!(await confirm({ title, message, action: label }))) return;
+    setBusy(true);
+    try {
+      const { deleted } = await run();
+      toast(`${nf(deleted)} data dihapus`, "ok");
+      onDone();
+    } catch (e) {
+      if (!guard(e)) toast(errorText(e), "err");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Button size="sm" variant="danger" loading={busy} disabled={disabled} onClick={go} icon={<Trash aria-hidden="true" />}>
+        {label}
+      </Button>
+      {dialog}
+    </>
   );
 }
 

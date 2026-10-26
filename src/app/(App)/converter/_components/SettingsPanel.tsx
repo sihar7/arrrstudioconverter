@@ -18,7 +18,7 @@ import {
 import { updateRoblox } from "@/store/slices/robloxSlice";
 import { useMeQuery } from "@/store/api/baseApi";
 import { DEFAULT_OPTIONS, LIMITS, PRESETS, ROBLOX_FORMATS, type AudioOptions } from "@/lib/schemas/convert.schema";
-import { PLANS, cheapestPlan, clampOptions, effectsUsed, type EffectId, type PlanId } from "@/lib/schemas/plans";
+import { PLANS, cheapestPlan, clampOptions, fitsPlan, type EffectId, type PlanId } from "@/lib/schemas/plans";
 import { summarize } from "@/lib/audioSummary";
 import { robloxPlayback } from "@/lib/robloxPlayback";
 import { cn, formatBytes, formatDuration, parseTime } from "@/lib/utils";
@@ -187,11 +187,18 @@ export default function SettingsPanel() {
   const hasFx = (e: EffectId) => limits.effects.includes(e);
   const fxPlan = (e: EffectId) => planName(cheapestPlan((pl) => pl.effects.includes(e)));
   const lockedText = (id: PlanId) => f(t.plan.locked, { plan: planName(id) });
-  /** Preset yang butuh efek di luar plan → label plan termurah yang membukanya */
-  const presetLock = (opts: Partial<AudioOptions>) => {
-    const need = effectsUsed(opts).filter((e) => !hasFx(e));
-    return need.length ? planName(cheapestPlan((pl) => need.every((e) => pl.effects.includes(e)))) : undefined;
+  /** Preset di luar plan (efek / rentang speed-pitch) → label plan termurah yang bisa memakainya utuh */
+  const presetLock = (opts: Partial<AudioOptions>) => (fitsPlan(opts, limits) ? undefined : planName(cheapestPlan((pl) => fitsPlan(opts, pl))));
+
+  // Rentang efek dasar bertingkat; catatan menunjuk plan berikutnya yang rentangnya lebih lebar
+  const R = limits.ranges;
+  const wider = (pick: (r: typeof R) => number) => {
+    const next = PLANS[cheapestPlan((pl) => pick(pl.ranges) > pick(R))];
+    return pick(next.ranges) > pick(R) ? next : null;
   };
+  const tempoUp = wider((r) => r.speed[1] - r.speed[0] + r.pitch);
+  const levelUp = wider((r) => r.volume + r.fade);
+  const fx = t.pricing.features;
   const lockedFormats = FORMAT_OPTIONS.filter((fo) => !limits.formats.includes(fo.value));
 
   // Preferensi tersimpan di luar plan (preset terkunci, setelah plan habis, dll) → turunkan ke batas plan.
@@ -402,7 +409,13 @@ export default function SettingsPanel() {
                 )}
               </Field>
             </div>
-            <Switch label={p.compress} hint={p.compressHint} checked={o.compress} onChange={(compress) => set({ compress })} />
+            <Switch
+              label={limits.smartCompress ? p.compress : `${p.compress} · ${planName(cheapestPlan((pl) => pl.smartCompress))}`}
+              hint={p.compressHint}
+              checked={o.compress}
+              disabled={!limits.smartCompress}
+              onChange={(compress) => set({ compress })}
+            />
             <Switch label={p.mono} hint={p.monoHint} checked={o.mono} onChange={(mono) => set({ mono })} />
             <button
               type="button"
@@ -460,18 +473,21 @@ export default function SettingsPanel() {
         {tab === "tempo" && (
           <>
             <Group>
-              <Slider label={p.speed} {...LIMITS.speed} value={o.speed} defaultValue={1} format={speedLabel} onChange={(speed) => set({ speed })} />
+              <Slider label={p.speed} min={R.speed[0]} max={R.speed[1]} step={LIMITS.speed.step} value={o.speed} defaultValue={1} format={speedLabel} onChange={(speed) => set({ speed })} />
               <div className="-mt-1 grid grid-cols-5 gap-1.5">
                 {SPEED_QUICK.map((s) => {
                   const on = Math.abs(o.speed - s) < 1e-6;
+                  const out = s < R.speed[0] || s > R.speed[1];
                   return (
                     <button
                       key={s}
                       type="button"
                       aria-pressed={on}
+                      disabled={out}
+                      title={out ? lockedText(cheapestPlan((pl) => s >= pl.ranges.speed[0] && s <= pl.ranges.speed[1])) : undefined}
                       onClick={() => set({ speed: s })}
                       className={cn(
-                        "state-layer h-9 cursor-pointer rounded-xs border font-mono text-[12px] transition-colors active:scale-[0.96]",
+                        "state-layer h-9 cursor-pointer rounded-xs border font-mono text-[12px] transition-colors active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-35 disabled:active:scale-100",
                         on ? "btn-plate border-transparent bg-accent text-on-accent" : "border-line text-fg-2 hover:border-line-2 hover:text-fg",
                       )}
                     >
@@ -482,7 +498,13 @@ export default function SettingsPanel() {
               </div>
             </Group>
             <Switch label={p.preservePitch} hint={p.preservePitchHint} checked={o.preservePitch} onChange={(preservePitch) => set({ preservePitch })} />
-            <Slider label={p.pitch} {...LIMITS.pitch} value={o.pitch} defaultValue={0} format={semiLabel} onChange={(pitch) => set({ pitch })} />
+            <Slider label={p.pitch} min={-R.pitch} max={R.pitch} step={LIMITS.pitch.step} value={o.pitch} defaultValue={0} format={semiLabel} onChange={(pitch) => set({ pitch })} />
+            {tempoUp && (
+              <LockNote
+                text={`${f(fx.effectsBase, { min: tempoUp.ranges.speed[0], max: tempoUp.ranges.speed[1], pitch: tempoUp.ranges.pitch })} — ${planName(tempoUp.id)}`}
+                cta={t.plan.upgrade}
+              />
+            )}
             <RobloxTempoCard options={o} />
           </>
         )}
@@ -490,7 +512,7 @@ export default function SettingsPanel() {
         {tab === "effects" && (
           <>
             {/* Efek dasar (semua plan) */}
-            <Slider label={p.volume} {...LIMITS.volume} value={o.volume} defaultValue={0} format={dbLabel} onChange={(volume) => set({ volume })} />
+            <Slider label={p.volume} min={-R.volume} max={R.volume} step={LIMITS.volume.step} value={o.volume} defaultValue={0} format={dbLabel} onChange={(volume) => set({ volume })} />
             <Switch label={p.normalize} hint={p.normalizeHint} checked={o.normalize} onChange={(normalize) => set({ normalize })} />
 
             {/* Efek bertingkat: EQ & reverb (Pro), 8D (Studio) */}
@@ -528,8 +550,9 @@ export default function SettingsPanel() {
               <TimeInput key={`e${o.trimEnd}`} label={p.trimEnd} value={o.trimEnd} onCommit={(trimEnd) => set({ trimEnd })} />
             </div>
             <p className="-mt-3 text-[12.5px] leading-relaxed text-fg-3">{p.trimHint}</p>
-            <Slider label={p.fadeIn} {...LIMITS.fade} value={o.fadeIn} defaultValue={0} format={secLabel} onChange={(fadeIn) => set({ fadeIn })} />
-            <Slider label={p.fadeOut} {...LIMITS.fade} value={o.fadeOut} defaultValue={0} format={secLabel} onChange={(fadeOut) => set({ fadeOut })} />
+            <Slider label={p.fadeIn} min={0} max={R.fade} step={LIMITS.fade.step} value={o.fadeIn} defaultValue={0} format={secLabel} onChange={(fadeIn) => set({ fadeIn })} />
+            <Slider label={p.fadeOut} min={0} max={R.fade} step={LIMITS.fade.step} value={o.fadeOut} defaultValue={0} format={secLabel} onChange={(fadeOut) => set({ fadeOut })} />
+            {levelUp && <LockNote text={`${f(fx.effectsLevel, { volume: levelUp.ranges.volume, fade: levelUp.ranges.fade })} — ${planName(levelUp.id)}`} cta={t.plan.upgrade} />}
           </>
         )}
       </div>

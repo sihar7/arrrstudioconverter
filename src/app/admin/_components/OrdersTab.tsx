@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Cart, Check, Copy, Xmark } from "iconoir-react";
+import { Cart, Check, Copy, MediaImage, OpenNewWindow, Trash, Xmark } from "iconoir-react";
 import EmptyState from "@/components/shared/EmptyState";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -14,9 +14,10 @@ import { useToast } from "@/hooks/useToast";
 import { copyText } from "@/lib/utils";
 import { rupiah } from "@/lib/planFeatures";
 import type { Order, OrderStatus } from "@/type/billing";
-import { getOrders, orderAction, type OrderFilter } from "../_service/admin.service";
-import { errorText, useAdminData, useAuthGuard } from "../_hooks/useAdmin";
-import { ErrorBox, ListBox, ListSkeleton, RefreshButton, Toolbar, ago, dateShort, nf } from "./parts";
+import { deleteOrder, getOrders, orderAction, proofUrl, purgeOrders, type OrderFilter } from "../_service/admin.service";
+import { errorText, useAdminConfirm, useAdminData, useAuthGuard } from "../_hooks/useAdmin";
+import { ADMIN_EVENT } from "../_hooks/useAdminEvents";
+import { ErrorBox, ListBox, ListSkeleton, PurgeButton, RefreshButton, Toolbar, ago, dateShort, nf } from "./parts";
 
 const COLS = "md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_130px_130px_auto]";
 
@@ -50,6 +51,38 @@ export default function OrdersTab({ onChanged }: { onChanged: () => void }) {
   const [approve, setApprove] = useState<Order | null>(null);
   const [reject, setReject] = useState<Order | null>(null);
   const [note, setNote] = useState("");
+  const [proof, setProof] = useState<Order | null>(null);
+  const [confirm, confirmDialog] = useAdminConfirm();
+
+  // Event realtime (order baru / dibayar / bukti) → muat ulang daftar tanpa menunggu polling
+  useEffect(() => {
+    const onEvent = () => reload();
+    window.addEventListener(ADMIN_EVENT, onEvent);
+    return () => window.removeEventListener(ADMIN_EVENT, onEvent);
+  }, [reload]);
+
+  const remove = async (o: Order) => {
+    const ok = await confirm({
+      title: "Hapus order",
+      message:
+        o.status === "paid"
+          ? `Order ${o.id} (lunas) dihapus dari catatan beserta buktinya. Plan user TIDAK dicabut — atur di menu User & plan bila perlu.`
+          : `Order ${o.id} beserta bukti pembayarannya dihapus permanen.`,
+      action: "Hapus",
+    });
+    if (!ok) return;
+    setBusy(o.id);
+    try {
+      await deleteOrder(o.id);
+      toast(`Order ${o.id} dihapus`, "ok");
+      reload();
+      onChanged();
+    } catch (e) {
+      if (!guard(e)) toast(errorText(e), "err");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const run = async (o: Order, action: "approve" | "reject", reason?: string) => {
     setBusy(o.id);
@@ -79,7 +112,23 @@ export default function OrdersTab({ onChanged }: { onChanged: () => void }) {
 
   return (
     <div>
-      <Toolbar actions={<RefreshButton loading={loading} onClick={reload} />}>
+      <Toolbar
+        actions={
+          <>
+            <PurgeButton
+              label="Hapus tertutup"
+              title="Hapus order tertutup"
+              message="Semua order yang dibatalkan, kedaluwarsa, atau ditolak dihapus beserta buktinya. Order lunas tetap disimpan sebagai catatan pendapatan."
+              run={purgeOrders}
+              onDone={() => {
+                reload();
+                onChanged();
+              }}
+            />
+            <RefreshButton loading={loading} onClick={reload} />
+          </>
+        }
+      >
         <Segmented label="Filter order" value={filter} options={FILTERS} onChange={setFilter} className="w-full sm:w-[340px]" />
       </Toolbar>
 
@@ -151,9 +200,21 @@ export default function OrdersTab({ onChanged }: { onChanged: () => void }) {
                 </div>
                 <div className="flex flex-col items-start gap-1">
                   <Badge tone={st.tone}>{st.label}</Badge>
+                  {o.proofAt ? (
+                    <button
+                      type="button"
+                      onClick={() => setProof(o)}
+                      className="inline-flex min-h-6 cursor-pointer items-center gap-1 text-[12px] font-semibold text-fg underline decoration-line-2 underline-offset-4 hover:decoration-fg"
+                    >
+                      <MediaImage width={13} height={13} aria-hidden="true" />
+                      Lihat bukti
+                    </button>
+                  ) : (
+                    (o.status === "awaiting" || o.status === "confirming") && <span className="text-[12px] text-fg-3">Belum ada bukti</span>
+                  )}
                   {o.note && <p className="max-w-[160px] truncate text-[12px] text-fg-3" title={o.note}>{o.note}</p>}
                 </div>
-                <div className="flex flex-wrap gap-2 md:justify-end">
+                <div className="flex flex-wrap items-center gap-2 md:justify-end">
                   {actionable && (
                     <>
                       <Button size="sm" variant="ghost" disabled={busy === o.id} onClick={() => setReject(o)} icon={<Xmark aria-hidden="true" />}>
@@ -164,6 +225,7 @@ export default function OrdersTab({ onChanged }: { onChanged: () => void }) {
                       </Button>
                     </>
                   )}
+                  <IconButton label={`Hapus order ${o.id}`} size="sm" disabled={busy === o.id} icon={<Trash width={16} height={16} />} onClick={() => remove(o)} className="hover:text-err" />
                 </div>
               </li>
             );
@@ -206,6 +268,51 @@ export default function OrdersTab({ onChanged }: { onChanged: () => void }) {
       </Dialog>
 
       <Dialog
+        open={proof != null}
+        onClose={() => setProof(null)}
+        title="Bukti pembayaran"
+        sub={proof ? `Order ${proof.id} · ${proof.displayName} · ${rupiah(proof.amount)}` : undefined}
+        width="max-w-[560px]"
+        footer={
+          proof && (
+            <>
+              <a
+                href={proofUrl(proof.id, proof.proofAt)}
+                target="_blank"
+                rel="noreferrer"
+                className="caps inline-flex min-h-11 items-center gap-2 px-3 text-[11px] text-fg-2 hover:text-fg"
+              >
+                <OpenNewWindow width={14} height={14} aria-hidden="true" />
+                Buka ukuran penuh
+              </a>
+              {(proof.status === "awaiting" || proof.status === "confirming" || proof.status === "expired") && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setApprove(proof);
+                    setProof(null);
+                  }}
+                  icon={<Check aria-hidden="true" />}
+                >
+                  Lanjut konfirmasi
+                </Button>
+              )}
+            </>
+          )
+        }
+      >
+        {proof && (
+          <div className="flex flex-col gap-3">
+            <p className="text-[13px] text-fg-2">
+              Cocokkan nominal <strong className="font-mono text-fg">{rupiah(proof.amount)}</strong> (kode unik +{proof.uniqueCode}) dengan bukti ini.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={proofUrl(proof.id, proof.proofAt)} alt={`Bukti pembayaran order ${proof.id}`} className="max-h-[60dvh] w-full rounded-s border border-line/60 bg-bg object-contain" />
+          </div>
+        )}
+      </Dialog>
+
+      <Dialog
         open={reject != null}
         onClose={() => setReject(null)}
         title="Tolak pembayaran"
@@ -226,6 +333,7 @@ export default function OrdersTab({ onChanged }: { onChanged: () => void }) {
           {({ id, describedBy }) => <Textarea id={id} aria-describedby={describedBy} rows={3} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />}
         </Field>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

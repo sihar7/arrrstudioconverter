@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, Copy, Download, Timer, WarningCircle, Xmark } from "iconoir-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Copy, Download, MediaImage, Timer, Upload, WarningCircle, Xmark } from "iconoir-react";
 import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import Spinner from "@/components/ui/Spinner";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
-import { ApiError, copyText, formatDate } from "@/lib/utils";
+import { ApiError, cn, copyText, formatDate } from "@/lib/utils";
 import { rupiah } from "@/lib/planFeatures";
 import type { OrderDetail } from "@/type/billing";
-import { getOrder, orderAction } from "../_service/billing.service";
+import { compressImage, getOrder, orderAction, uploadProof } from "../_service/billing.service";
 
 const POLL_MS = 8000;
 
@@ -151,6 +151,10 @@ export default function CheckoutDialog({
                 </p>
               </div>
 
+              <div className="sm:col-span-2">
+                <ProofUpload order={order} onChange={onChange} />
+              </div>
+
               <ol className="flex flex-col gap-2.5 border-t border-line/60 pt-5 sm:col-span-2">
                 {c.steps.map((s, i) => (
                   <li key={s} className="flex gap-3 text-[14px] text-fg-2">
@@ -171,7 +175,14 @@ export default function CheckoutDialog({
               icon={<Spinner className="size-6" />}
               title={c.confirmingTitle}
               sub={c.confirmingSub}
-              extra={<p className="mt-4 font-display text-[22px] font-bold tabular-nums">{rupiah(order.amount)}</p>}
+              extra={
+                <>
+                  <p className="mt-4 font-display text-[22px] font-bold tabular-nums">{rupiah(order.amount)}</p>
+                  <div className="mt-6 w-full text-left">
+                    <ProofUpload order={order} onChange={onChange} />
+                  </div>
+                </>
+              }
             />
           )}
 
@@ -196,6 +207,60 @@ export default function CheckoutDialog({
         </div>
       )}
     </Dialog>
+  );
+}
+
+/** Unggah / ganti bukti pembayaran — gambar dikecilkan di browser sebelum dikirim */
+function ProofUpload({ order, onChange }: { order: OrderDetail; onChange: (o: OrderDetail) => void }) {
+  const { t } = useT();
+  const c = t.pricing.checkout;
+  const toast = useToast();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const image = await compressImage(file).catch(() => {
+        throw new Error(c.proofInvalid);
+      });
+      const r = await uploadProof(order.id, image);
+      setPreview(image);
+      onChange(r.order);
+      toast(c.proofSent, "ok");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e), "err");
+    } finally {
+      setBusy(false);
+      if (input.current) input.current.value = "";
+    }
+  };
+
+  const sent = Boolean(order.proofAt);
+  return (
+    <div className="flex items-center gap-3 rounded-s border border-line/60 bg-bg/40 p-3">
+      {preview ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={preview} alt="" className="size-12 shrink-0 rounded-xs object-cover" />
+      ) : (
+        <span aria-hidden="true" className={cn("flex size-12 shrink-0 items-center justify-center rounded-xs bg-raised", sent ? "text-ok" : "text-fg-3")}>
+          {sent ? <Check width={20} height={20} strokeWidth={2} /> : <MediaImage width={20} height={20} />}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-[13.5px] font-semibold">
+          {c.proofTitle}
+          {sent && <span className="caps text-[9.5px] text-ok">{c.proofSent}</span>}
+        </p>
+        <p className="text-[12px] leading-snug text-fg-3">{c.proofHint}</p>
+      </div>
+      <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void pick(e.target.files?.[0])} />
+      <Button size="sm" variant={sent ? "ghost" : "tonal"} loading={busy} onClick={() => input.current?.click()} icon={<Upload aria-hidden="true" />} className="shrink-0">
+        {busy ? c.proofUploading : sent ? c.proofReplace : c.proofPick}
+      </Button>
+    </div>
   );
 }
 
