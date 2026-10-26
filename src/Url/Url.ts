@@ -25,6 +25,9 @@ const Url = {
   youtubePlayer: "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
   youtubeSwData: "https://www.youtube.com/sw.js_data",
   youtubeHome: "https://www.youtube.com",
+  // Jembatan YouTube di Google Apps Script (scripts/youtube-bridge.gs) — "Web app URL" hasil deploy.
+  // Kosong = nonaktif. Di Vercel jadi jalur utama karena IP datacenter diblokir YouTube
+  youtubeBridge: "",
   ytdlpRelease: "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
 
   arrWebsite: "https://arrstudioweb.vercel.app/en",
