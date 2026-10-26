@@ -42,15 +42,20 @@ jobs:
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
-        # Tanpa sertifikat Apple: tanda tangan ad-hoc ("-") supaya tetap bisa dibuka di Mac Apple Silicon
+        # Tanpa sertifikat Apple: tanda tangan ad-hoc ("-") supaya tetap bisa dibuka di Mac Apple Silicon.
+        # CSC_LINK hanya di-export bila secret diisi — CSC_LINK="" dibaca electron-builder sebagai path file
+        # (→ "desktop not a file").
         run: |
-          EXTRA=""
-          if [ -z "$CSC_LINK" ]; then EXTRA="-c.mac.identity=-"; fi
-          npx electron-builder --mac --publish never $EXTRA
+          if [ -n "$MAC_CSC_LINK" ]; then
+            export CSC_LINK="$MAC_CSC_LINK" CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
+            npx electron-builder --mac --publish never
+          else
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+            npx electron-builder --mac --publish never -c.mac.identity=-
+          fi
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          MAC_CSC_LINK: ${{ secrets.CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
       # Installer + latest*.yml + .blockmap (dibutuhkan auto-update electron-updater)
       - uses: actions/upload-artifact@v4
