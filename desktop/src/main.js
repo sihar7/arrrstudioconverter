@@ -2,11 +2,13 @@
 // Membungkus web produksi (login, kuota, riwayat tetap satu akun dengan web), plus fitur native:
 // download langsung ke folder, progres taskbar/dock, notifikasi, menu klik kanan, update otomatis.
 const path = require("node:path");
-const { app, BrowserWindow, nativeTheme, screen, session, shell } = require("electron");
-const { APP_ORIGIN, APP_URL, COLORS, IN_APP_HOSTS, UA_TOKEN } = require("./config");
+const { app, BrowserWindow, screen, session, shell } = require("electron");
+const { APP_ORIGIN, APP_URL, IN_APP_HOSTS, UA_TOKEN } = require("./config");
 const store = require("./store");
 const downloads = require("./downloads");
 const updater = require("./updater");
+const chrome = require("./chrome");
+require("./youtube"); // daftarkan IPC YouTube-di-dalam-app
 const { attachContextMenu, buildAppMenu } = require("./menu");
 
 const OFFLINE_FILE = path.join(__dirname, "offline.html");
@@ -60,11 +62,12 @@ function createWindow() {
   const { maximized, ...bounds } = restoreBounds();
   win = new BrowserWindow({
     ...bounds,
-    minWidth: 400,
+    minWidth: 640,
     minHeight: 560,
     show: false,
     title: "ARRR Studio Converter",
-    backgroundColor: nativeTheme.shouldUseDarkColors ? COLORS.dark : COLORS.light,
+    // Tanpa title bar bawaan: web menggambar title bar + sidebar sendiri (lihat chrome.js)
+    ...chrome.windowOptions(),
     // Versi terpasang memakai ikon dari exe/app bundle; saat dev pakai PNG dari build/
     icon: app.isPackaged ? undefined : path.join(__dirname, "..", "build", "icon-win.png"),
     autoHideMenuBar: process.platform === "win32",
@@ -130,6 +133,7 @@ function createWindow() {
   });
 
   attachContextMenu(win);
+  chrome.attach(win);
   downloads.attach(win);
   startUrl().then((url) => !win.isDestroyed() && win.loadURL(url));
 }

@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { SfClock, SfCrown, SfCube, SfGear, SfLock, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
+import { SfClock, SfCrown, SfCube, SfCutout, SfEnlarge, SfGear, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
 import type { IosTone } from "@/components/ui/AppIcon";
 import { useT } from "@/hooks/useT";
 import { useScrolled } from "@/hooks/useScrollState";
@@ -32,8 +32,12 @@ const TAB_NAV = NAV.filter((n) => n.href !== "/pricing");
 // Menu khusus member (sudah login Discord) — disisipkan setelah Audio saya, ikut grup "Studio" di desktop
 export const MEMBER_NAV = [{ href: "/skybox", key: "skybox", icon: SfCube, tone: "teal" }] as const satisfies readonly NavItem[];
 
-// Menu khusus admin aplikasi (lihat isAppAdmin di BE) — hanya muncul di navbar untuk admin.
-export const ADMIN_NAV = [{ href: "/obfuscator", key: "obfuscator", icon: SfLock, tone: "green" }] as const satisfies readonly NavItem[];
+// Alat gambar (member) — dropdown "Gambar" di desktop, kelompok sendiri di dock app desktop
+export const IMAGE_NAV = [
+  { href: "/remove-bg", key: "removeBg", icon: SfCutout, tone: "indigo" },
+  { href: "/upscale", key: "upscale", icon: SfEnlarge, tone: "yellow" },
+] as const satisfies readonly NavItem[];
+
 
 export type NavItem = { href: string; key: string; icon: SfIcon; tone: IosTone };
 
@@ -49,20 +53,22 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
   const { t } = useT();
   const scrolled = useScrolled();
   const { data: me } = useMeQuery();
-  const isAdmin = Boolean(me?.user?.isAdmin);
   const loggedIn = Boolean(me?.user);
-  const items: readonly NavItem[] = [...NAV.slice(0, 2), ...(loggedIn ? MEMBER_NAV : []), ...NAV.slice(2), ...(isAdmin ? ADMIN_NAV : [])];
+  const imageItems: readonly NavItem[] = loggedIn ? IMAGE_NAV : [];
+  // Menu admin (Obfuscator) ada di menu profil, bukan navbar — lihat UserMenu
+  const items: readonly NavItem[] = [...NAV.slice(0, 2), ...(loggedIn ? MEMBER_NAV : []), ...imageItems, ...NAV.slice(2)];
   const activeHref = items.find((n) => pathname.startsWith(n.href))?.href;
   // Desktop: Converter + Audio saya + Skybox digabung ke dropdown "Studio"; sisanya tetap tautan datar.
   const grouped = new Set<string>(["/converter", "/library", "/skybox"]);
+  const imageHrefs = new Set<string>(imageItems.map((n) => n.href));
   const groupItems = items.filter((n) => grouped.has(n.href));
-  const flatItems = items.filter((n) => !grouped.has(n.href));
+  const flatItems = items.filter((n) => !grouped.has(n.href) && !imageHrefs.has(n.href));
 
   return (
     <>
       <header
         className={cn(
-          "top-0 z-50 h-[var(--nav-h)] animate-[nav-in_.8s_var(--ease)_both] border-b transition-[background-color,border-color,box-shadow] duration-300 ease-[var(--ease)]",
+          "top-0 z-50 h-[var(--nav-h)] desk:hidden animate-[nav-in_.8s_var(--ease)_both] border-b transition-[background-color,border-color,box-shadow] duration-300 ease-[var(--ease)]",
           overlay ? "fixed inset-x-0" : "sticky",
           // Latar + garis bawah hanya muncul setelah discroll; bentuk bar tetap sama (tanpa morph "island")
           scrolled
@@ -86,6 +92,7 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
             </span>
             <nav aria-label="Main" className="hidden h-full items-stretch gap-1 xl:flex">
               {groupItems.length > 0 && <NavMenu label={t.nav.studio} items={groupItems} activeHref={activeHref} />}
+              {imageItems.length > 0 && <NavMenu label={t.nav.images} items={imageItems} activeHref={activeHref} />}
               {flatItems.map(({ href, key }) => {
                 const active = href === activeHref;
                 return (
@@ -138,7 +145,8 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
         </div>
       </header>
 
-      {/* Tab bar di SEMUA halaman untuk perangkat sentuh (lihat varian tabless) — pindah menu selalu satu ketukan */}
+      {/* Tab bar di SEMUA halaman untuk perangkat sentuh (lihat varian tabless) — pindah menu selalu satu ketukan.
+          App desktop memakai sidebar + title bar sendiri (layout/desktop) → navbar & tab bar web disembunyikan. */}
       <TabBar activeHref={activeHref} />
       {/* Di luar <header>: backdrop-filter membuat elemen fixed di dalamnya ikut terkunci ke header */}
       <ScrollTopFab lifted />
@@ -156,7 +164,7 @@ function TabBar({ activeHref }: { activeHref?: string }) {
   return (
     <nav
       aria-label="Mobile"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] tabless:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] tabless:hidden desk:hidden"
     >
       <ul className="tabbar-glass pointer-events-auto relative mx-auto grid h-[60px] max-w-[440px] grid-cols-4 rounded-full p-1">
         {/* Aktif = garis bawah yang meluncur antar tab dengan pegas (konvensi garis bawah situs) */}

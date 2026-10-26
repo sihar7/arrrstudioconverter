@@ -5,11 +5,15 @@ import { NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import Button from "@/components/ui/Button";
+import { getDesktop } from "@/type/desktop";
 
 const KEY = "arrc_consent";
 type Choice = "all" | "essential";
 
-/** Banner persetujuan cookie — muncul sekali per perangkat, di atas tab bar HP */
+/**
+ * Banner persetujuan cookie — muncul sekali per perangkat, di atas tab bar HP.
+ * App desktop: tidak ditampilkan (aplikasi, bukan situs; hanya cookie sesi yang wajib).
+ */
 export default function CookieConsent() {
   const { t } = useT();
   const C = t.consent;
@@ -22,7 +26,7 @@ export default function CookieConsent() {
     try {
       saved = localStorage.getItem(KEY);
     } catch {}
-    if (saved) return;
+    if (saved || getDesktop()) return;
     // Tunda sedikit supaya tidak berebut perhatian dengan konten pertama
     const id = setTimeout(() => setOpen(true), 900);
     return () => clearTimeout(id);
@@ -42,7 +46,7 @@ export default function CookieConsent() {
       aria-labelledby="consent-title"
       aria-hidden={!open}
       className={cn(
-        "fixed inset-x-4 z-50 transition-[transform,opacity] duration-500 ease-[var(--ease)] bottom-[calc(88px+env(safe-area-inset-bottom))] sm:inset-x-auto sm:left-6 sm:w-[400px] tabless:bottom-6",
+        "fixed inset-x-4 z-50 transition-[transform,opacity] duration-500 ease-[var(--ease)] bottom-[calc(88px+env(safe-area-inset-bottom))] sm:inset-x-auto sm:left-6 sm:w-[400px] tabless:bottom-6 desk:bottom-[calc(var(--dock-h)+16px)]",
         open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
       )}
     >

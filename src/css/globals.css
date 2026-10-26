@@ -14,6 +14,11 @@
     @slot;
   }
 }
+/* App desktop (data-shell="desktop" di <html>, dipasang skrip head sebelum paint): kulit aplikasi —
+   title bar + bottom bar sendiri, tanpa navbar/tab bar/footer web. Didefinisikan SETELAH tabless supaya menang. */
+@custom-variant desk (&:where([data-shell="desktop"], [data-shell="desktop"] *));
+/* macOS dengan title bar sendiri: tombol lampu lalu lintas ada di pojok kiri atas title bar */
+@custom-variant mac (&:where([data-titlebar="darwin"] *));
 
 @theme inline {
   --color-bg: var(--bg);
@@ -105,3 +110,79 @@ html.theme-switching *::after {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Kulit app desktop (Electron) ─────────────────────────────────────────────────────────────
+   --bar-h  = tinggi title bar sendiri (tombol jendela Windows digambar Electron di atasnya, sama tinggi)
+   --dock-h = tinggi bottom bar navigasi (menempel di tepi bawah jendela)
+   --caption-w = ruang tombol jendela Windows di kanan (Window Controls Overlay; 0 di macOS/tanpa overlay) */
+html[data-shell="desktop"] {
+  --bar-h: 48px;
+  --nav-h: var(--bar-h);
+  --dock-h: 60px;
+  --caption-w: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
+  user-select: none;
+}
+/* Teks konten tetap bisa diseleksi; yang tidak bisa hanya kerangka aplikasi (rasa native) */
+html[data-shell="desktop"] :is(main, [role="dialog"], [role="menu"], input, textarea) {
+  user-select: text;
+}
+
+/* Area seret jendela (title bar sendiri). Elemen interaktif di dalamnya selalu bisa diklik. */
+.app-drag {
+  -webkit-app-region: drag;
+}
+html[data-titlebar] :is(a, button, input, select, textarea, label, summary, [role="button"], [role="menu"], [role="radiogroup"], [tabindex]) {
+  -webkit-app-region: no-drag;
+}
+
+/* Halaman tanpa title bar sendiri (admin, dsb.) tetap dapat title bar polos untuk menyeret jendela.
+   Kulit aplikasi & login desktop menggambar title bar sendiri → ditandai .desk-own-bar */
+html[data-titlebar] body:not(:has(.desk-own-bar)) {
+  padding-top: var(--bar-h);
+}
+html[data-titlebar] body:not(:has(.desk-own-bar))::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 80;
+  height: var(--bar-h);
+  background: var(--bg);
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
+  -webkit-app-region: drag;
+}
+html[data-titlebar] body:not(:has(.desk-own-bar)) :is(.min-h-dvh) {
+  min-height: calc(100dvh - var(--bar-h));
+}
+
+/* Halaman YouTube (view native menutupi area konten): toast tampil inline di toolbar-nya, bukan di pojok */
+html[data-yt-view] [data-toaster] {
+  display: none;
+}
+
+/* Scrollbar tipis ala aplikasi; jalurnya di antara title bar & bottom bar (tidak tertimpa tombol jendela) */
+html[data-shell="desktop"]::-webkit-scrollbar,
+html[data-shell="desktop"] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+html[data-shell="desktop"]::-webkit-scrollbar-thumb,
+html[data-shell="desktop"] ::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--fg) 22%, transparent) padding-box;
+}
+html[data-shell="desktop"]::-webkit-scrollbar-thumb:hover,
+html[data-shell="desktop"] ::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--fg) 38%, transparent);
+}
+html[data-shell="desktop"]::-webkit-scrollbar-track,
+html[data-shell="desktop"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+html[data-titlebar]::-webkit-scrollbar-track {
+  margin-top: var(--bar-h);
+}
+html[data-shell="desktop"]:has(.desk-shell)::-webkit-scrollbar-track {
+  margin-bottom: var(--dock-h);
+}
+

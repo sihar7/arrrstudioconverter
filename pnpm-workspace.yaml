@@ -1,2 +1,5 @@
 allowBuilds:
   unrs-resolver: set this to true or false
+minimumReleaseAgeExclude:
+  - onnxruntime-common@1.31.1
+  - onnxruntime-web@1.31.1

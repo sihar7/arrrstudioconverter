@@ -20,13 +20,13 @@ export default function Footer({ withTabBar = false }: { withTabBar?: boolean })
   const { t } = useT();
   const f = t.footer;
   const hydrated = useHydrated();
-  // App desktop = fokus fitur: tanpa footer marketing (tema & bahasa tetap ada di navbar)
-  if (hydrated && getDesktop()) return withTabBar ? <div aria-hidden="true" className="h-[calc(68px+env(safe-area-inset-bottom))] tabless:hidden" /> : null;
+  // App desktop = fokus fitur: tanpa footer marketing (bahasa & tema ada di title bar)
+  if (hydrated && getDesktop()) return null;
   const col = "caps text-fg-3";
   const link = "link-line text-[14px] text-fg-2 transition-colors hover:text-fg";
 
   return (
-    <footer className={cn("relative isolate overflow-hidden", withTabBar && "pb-[calc(68px+env(safe-area-inset-bottom))] tabless:pb-0")}>
+    <footer className={cn("relative isolate overflow-hidden desk:hidden", withTabBar && "pb-[calc(68px+env(safe-area-inset-bottom))] tabless:pb-0")}>
       <hr className="engrave" />
       {/* Forged hanya muncul di kolam cahaya bawah — sama seperti latar halaman, dibalik arahnya */}
       <div

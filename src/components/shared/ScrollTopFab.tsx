@@ -78,7 +78,7 @@ export default function ScrollTopFab({ lifted, deepAfter = 400 }: { lifted?: boo
       className={cn(
         "tabbar-glass fixed right-4 z-40 grid size-12 cursor-pointer place-items-center rounded-full text-fg transition-[translate,scale,opacity,bottom] duration-[var(--spring-dur)] ease-[var(--spring-bounce)] active:scale-90 active:duration-100 sm:right-6",
         lifted
-          ? "bottom-[calc(80px+env(safe-area-inset-bottom)+var(--fab-lift,0px))] tabless:bottom-[calc(24px+var(--fab-lift,0px))]"
+          ? "bottom-[calc(80px+env(safe-area-inset-bottom)+var(--fab-lift,0px))] tabless:bottom-[calc(24px+var(--fab-lift,0px))] desk:bottom-[calc(var(--dock-h)+16px+var(--fab-lift,0px))]"
           : "bottom-[calc(24px+var(--fab-lift,0px))]",
         visible ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none translate-y-4 scale-75 opacity-0",
       )}

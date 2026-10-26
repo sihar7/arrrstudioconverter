@@ -1,5 +1,6 @@
-// Download: file hasil convert (/api/files/…?dl=1) & ekspor blob langsung disimpan ke folder download,
-// progres di taskbar/dock, notifikasi saat selesai, status dikirim ke web lewat IPC (toast di halaman).
+// Download: file hasil convert (/api/files/…?dl=1) & ekspor blob disimpan sesuai pilihan pengguna —
+// "ask" = dialog Simpan tiap kali (default) · "folder" = langsung ke folder pilihan tanpa dialog.
+// Progres di taskbar/dock, notifikasi saat selesai, status dikirim ke web lewat IPC (toast di halaman).
 const fs = require("node:fs");
 const path = require("node:path");
 const { app, BrowserWindow, dialog, ipcMain, Notification, shell } = require("electron");
@@ -15,6 +16,20 @@ const downloadDir = () => {
   const dir = store.get("downloadDir", "");
   return dir && fs.existsSync(dir) ? dir : app.getPath("downloads");
 };
+
+// Pengguna lama yang sudah memilih folder lewat menu tetap otomatis ke folder itu
+const saveMode = () => {
+  const mode = store.get("saveMode");
+  return mode === "ask" || mode === "folder" ? mode : store.get("downloadDir") ? "folder" : "ask";
+};
+
+/** Dialog Simpan dibuka di folder terakhir yang dipakai (fallback: folder pilihan) */
+const lastSaveDir = () => {
+  const dir = store.get("lastSaveDir", "");
+  return dir && fs.existsSync(dir) ? dir : downloadDir();
+};
+
+const saveSettings = () => ({ mode: saveMode(), folder: downloadDir(), isDefault: !store.get("downloadDir") });
 
 /** nama.mp3 → "nama (1).mp3" bila sudah ada, supaya file lama tidak tertimpa */
 function uniquePath(dir, filename) {
@@ -47,11 +62,14 @@ function attach(win) {
 
   win.webContents.session.on("will-download", (_event, item) => {
     const id = ++seq;
-    const savePath = uniquePath(downloadDir(), item.getFilename());
-    const name = path.basename(savePath);
-    item.setSavePath(savePath);
+    const ask = saveMode() === "ask";
+    if (ask) {
+      item.setSaveDialogOptions({ title: "Simpan file", defaultPath: path.join(lastSaveDir(), item.getFilename()) });
+    } else {
+      item.setSavePath(uniquePath(downloadDir(), item.getFilename()));
+    }
     active.set(id, item);
-    send({ id, type: "started", name });
+    send({ id, type: "started", name: item.getFilename() });
 
     item.on("updated", (_e, state) => {
       updateProgressBar(win);
@@ -59,6 +77,10 @@ function attach(win) {
     });
 
     item.once("done", (_e, state) => {
+      // Mode "ask": path baru diketahui setelah dialog Simpan ditutup
+      const savePath = item.getSavePath();
+      const name = savePath ? path.basename(savePath) : item.getFilename();
+      if (ask && state === "completed" && savePath) store.set("lastSaveDir", path.dirname(savePath));
       active.delete(id);
       item.removeAllListeners("updated");
       updateProgressBar(win);
@@ -78,7 +100,7 @@ function attach(win) {
 
 async function chooseFolder(win) {
   const r = await dialog.showOpenDialog(win, {
-    title: "Pilih folder download",
+    title: "Pilih folder penyimpanan",
     defaultPath: downloadDir(),
     properties: ["openDirectory", "createDirectory"],
   });
@@ -104,5 +126,14 @@ handle("download:show", (_e, id) => {
 handle("download:openFolder", () => shell.openPath(downloadDir()));
 handle("download:getFolder", () => downloadDir());
 handle("download:chooseFolder", (e) => chooseFolder(BrowserWindow.fromWebContents(e.sender)));
+handle("download:getSettings", () => saveSettings());
+handle("download:setMode", (_e, mode) => {
+  if (mode === "ask" || mode === "folder") store.set("saveMode", mode);
+  return saveSettings();
+});
+handle("download:resetFolder", () => {
+  store.set("downloadDir", "");
+  return saveSettings();
+});
 
 module.exports = { attach, chooseFolder, downloadDir };

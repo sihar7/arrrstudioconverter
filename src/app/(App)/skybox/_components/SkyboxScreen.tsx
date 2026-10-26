@@ -17,7 +17,7 @@ import { DEFAULT_ADJUST, edgeMismatch, imageDataToPng, loadBitmap, type SkyAdjus
 import { FACE_PROP, FACES, guessFace, type FaceId } from "../_lib/skyMath";
 import { makeZip, saveBlob } from "../_lib/zip";
 import SkyPreview from "./SkyPreview";
-import DropZone from "./DropZone";
+import DropZone from "@/components/shared/ImageDropZone";
 import FaceCross from "./FaceCross";
 import AdjustPanel from "./AdjustPanel";
 import MergePanel from "./MergePanel";

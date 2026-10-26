@@ -85,6 +85,37 @@ export function SfCube(p: SfIconProps) {
   );
 }
 
+/** person.crop.rectangle.dashed — Hapus background (siluet di bingkai putus-putus) */
+export function SfCutout(p: SfIconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="4" strokeDasharray="2.6 2.4" />
+      <circle cx="12" cy="9.6" r="2.7" fill={p.filled ? "currentColor" : "none"} />
+      <path fill={p.filled ? "currentColor" : "none"} d="M6.8 18.4c.7-2.6 2.8-4 5.2-4s4.5 1.4 5.2 4Z" />
+    </Svg>
+  );
+}
+
+/** arrow.up.left.and.arrow.down.right — Upscale (panah membesar dari bingkai kecil) */
+export function SfEnlarge(p: SfIconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3.5" y="11.5" width="9" height="9" rx="2.4" fill={p.filled ? "currentColor" : "none"} fillOpacity={p.filled ? 0.25 : 0} />
+      <path d="M13.5 3.5h7v7M20.5 3.5l-7.5 7.5" />
+    </Svg>
+  );
+}
+
+/** play.rectangle — YouTube di dalam app desktop */
+export function SfPlayRect(p: SfIconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="2.5" y="5" width="19" height="14" rx="4.2" fill={p.filled ? "currentColor" : "none"} />
+      <path d="M10 9.2v5.6l4.8-2.8z" fill={p.filled ? "var(--surface, #fff)" : "currentColor"} stroke={p.filled ? "none" : "currentColor"} strokeWidth={p.filled ? 0 : 1.4} />
+    </Svg>
+  );
+}
+
 /** crown — Harga / paket */
 export function SfCrown(p: SfIconProps) {
   return (

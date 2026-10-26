@@ -14,7 +14,7 @@ export default function DesktopBridge() {
     const desktop = getDesktop();
     if (!desktop) return;
     return desktop.onDownload((e) => {
-      if (e.type === "done") toast(lang === "en" ? `Saved to Downloads · ${e.name}` : `Tersimpan di folder download · ${e.name}`, "ok");
+      if (e.type === "done") toast(lang === "en" ? `Saved · ${e.name}` : `Tersimpan · ${e.name}`, "ok");
       if (e.type === "failed") toast(lang === "en" ? `Download failed · ${e.name}` : `Download gagal · ${e.name}`, "err");
     });
   }, [lang, toast]);

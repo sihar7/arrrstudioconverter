@@ -1,13 +1,14 @@
 // Menu aplikasi + menu klik kanan (salin/tempel link YouTube harus jalan di input)
 const { app, clipboard, Menu, shell } = require("electron");
-const { APP_URL } = require("./config");
+const { NAV_SHORTCUTS } = require("./config");
+const { navigate } = require("./chrome");
 const downloads = require("./downloads");
 const updater = require("./updater");
 
 const isMac = process.platform === "darwin";
 
 function buildAppMenu(getWindow) {
-  const go = (p) => getWindow()?.loadURL(`${APP_URL}${p}`);
+  const go = (p) => navigate(getWindow(), p);
   const template = [
     ...(isMac
       ? [
@@ -29,13 +30,12 @@ function buildAppMenu(getWindow) {
     {
       label: "File",
       submenu: [
-        { label: "Converter", accelerator: "CmdOrCtrl+1", click: () => go("/converter") },
-        { label: "Audio saya", accelerator: "CmdOrCtrl+2", click: () => go("/library") },
-        { label: "Riwayat", accelerator: "CmdOrCtrl+3", click: () => go("/history") },
-        { label: "Pengaturan", accelerator: "CmdOrCtrl+,", click: () => go("/settings") },
+        // Urutan sama dengan bottom bar web (Studio · Gambar · Pustaka)
+        ...NAV_SHORTCUTS.map(({ label, path }, i) => ({ label, accelerator: `CmdOrCtrl+${i + 1}`, click: () => go(path) })),
+        { label: "Pengaturan (folder simpan, tema…)", accelerator: "CmdOrCtrl+,", click: () => go("/settings") },
         { type: "separator" },
-        { label: "Buka folder download", accelerator: "CmdOrCtrl+Shift+D", click: () => shell.openPath(downloads.downloadDir()) },
-        { label: "Ganti folder download…", click: () => downloads.chooseFolder(getWindow()) },
+        { label: "Buka folder penyimpanan", accelerator: "CmdOrCtrl+Shift+D", click: () => shell.openPath(downloads.downloadDir()) },
+        { label: "Ganti folder penyimpanan…", click: () => downloads.chooseFolder(getWindow()) },
         { type: "separator" },
         isMac ? { role: "close", label: "Tutup jendela" } : { role: "quit", label: "Keluar" },
       ],

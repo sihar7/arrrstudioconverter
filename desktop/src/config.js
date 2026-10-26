@@ -16,5 +16,18 @@ module.exports = {
   // macOS tanpa sertifikat Apple tidak bisa auto-install update → cukup beri tahu & buka halaman download
   MAC_AUTO_INSTALL: false,
   UPDATE_INTERVAL_MS: 6 * 60 * 60 * 1000,
-  COLORS: { dark: "#0f0f11", light: "#f4f4f5" },
+  // Sama dengan token web (--bg / --fg di src/css/theme/tokens.css) supaya title bar & overlay menyatu
+  COLORS: { dark: { bg: "#0d0e10", fg: "#e3e5e8" }, light: { bg: "#f2f3f5", fg: "#141517" } },
+  // Tinggi title bar web (--bar-h) = tinggi tombol jendela Windows
+  TITLE_BAR_HEIGHT: 48,
+  // Menu bottom bar web (urutan sama) → pintasan CmdOrCtrl+1…
+  NAV_SHORTCUTS: [
+    { label: "Converter", path: "/converter" },
+    { label: "YouTube", path: "/youtube" },
+    { label: "Skybox", path: "/skybox" },
+    { label: "Hapus background", path: "/remove-bg" },
+    { label: "Upscale", path: "/upscale" },
+    { label: "Audio saya", path: "/library" },
+    { label: "Riwayat", path: "/history" },
+  ],
 };

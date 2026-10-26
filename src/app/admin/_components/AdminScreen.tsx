@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Activity, Cart, ClockRotateRight, Folder, Group, HomeSimple, LogOut, Menu, Server, ShieldCheck, Xmark } from "iconoir-react";
+import { Activity, ArrowLeft, Cart, ClockRotateRight, Folder, Group, HomeSimple, LogOut, Menu, Server, ShieldCheck, Xmark } from "iconoir-react";
 import { LogoMark } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/PrefToggles";
 import PageLoader from "@/components/shared/PageLoader";
@@ -293,6 +294,14 @@ export default function AdminScreen() {
                 </li>
               </ol>
             </nav>
+            <Link
+              href="/converter"
+              className="state-layer ios-press inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-fg/[0.07] px-3.5 text-[13px] font-semibold text-fg-2 transition-colors hover:bg-fg/[0.12] hover:text-fg"
+            >
+              <ArrowLeft width={15} height={15} />
+              <span className="hidden sm:inline">Kembali ke Converter</span>
+              <span className="sm:hidden">Converter</span>
+            </Link>
             {pending > 0 && tab !== "orders" && (
               <button
                 type="button"

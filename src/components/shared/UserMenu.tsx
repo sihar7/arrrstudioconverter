@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, NavArrowDown } from "iconoir-react";
-import { SfClock, SfCrown, SfGear } from "@/components/icons/SfIcons";
+import { LogOut, NavArrowDown, ShieldCheck } from "iconoir-react";
+import { SfClock, SfCrown, SfGear, SfLock } from "@/components/icons/SfIcons";
 import AppIcon from "@/components/ui/AppIcon";
 import { useLogoutMutation, useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
@@ -142,6 +142,23 @@ export default function UserMenu() {
           </AppIcon>
           {t.nav.settings}
         </Link>
+        {u.isAdmin && (
+          <>
+            <div className="my-1.5 h-px bg-line" />
+            <Link role="menuitem" href="/obfuscator" className={item} onClick={() => setOpen(false)}>
+              <AppIcon tone="green" size={28}>
+                <SfLock filled />
+              </AppIcon>
+              {t.nav.obfuscator}
+            </Link>
+            <Link role="menuitem" href="/admin" className={item} onClick={() => setOpen(false)}>
+              <AppIcon tone="indigo" size={28}>
+                <ShieldCheck width={16} height={16} strokeWidth={2} />
+              </AppIcon>
+              {t.nav.admin}
+            </Link>
+          </>
+        )}
         <div className="my-1.5 h-px bg-line" />
         <button
           role="menuitem"

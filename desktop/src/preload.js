@@ -5,10 +5,25 @@ const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slic
 const origin = arg("arrr-origin");
 
 if (origin && location.origin === origin) {
+  // Navigasi dari menu aplikasi: diteruskan ke router web kalau sudah terdaftar, kalau belum muat halaman biasa
+  let navHandler = null;
+  ipcRenderer.on("app:navigate", (_e, path) => (navHandler ? navHandler(path) : location.assign(path)));
+
   contextBridge.exposeInMainWorld("arrDesktop", {
     isDesktop: true,
     version: arg("arrr-version"),
     platform: process.platform,
+    /** Jendela tanpa title bar bawaan → web menggambar title bar + sidebar sendiri */
+    titleBar: true,
+    /** Tema web aktif → warna tombol jendela (overlay Windows) & latar jendela */
+    setTheme: (theme) => ipcRenderer.send("window:theme", theme),
+    /** cb(path) dipanggil saat menu aplikasi meminta pindah halaman → fungsi unsubscribe */
+    onNavigate(cb) {
+      navHandler = cb;
+      return () => {
+        if (navHandler === cb) navHandler = null;
+      };
+    },
     /** cb({ id, type: started|progress|done|cancelled|failed, name?, received?, total? }) → fungsi unsubscribe */
     onDownload(cb) {
       const listener = (_e, payload) => cb(payload);
@@ -19,5 +34,30 @@ if (origin && location.origin === origin) {
     openDownloadsFolder: () => ipcRenderer.invoke("download:openFolder"),
     getDownloadsFolder: () => ipcRenderer.invoke("download:getFolder"),
     chooseDownloadsFolder: () => ipcRenderer.invoke("download:chooseFolder"),
+    /** { mode: "ask" | "folder", folder, isDefault } */
+    getSaveSettings: () => ipcRenderer.invoke("download:getSettings"),
+    setSaveMode: (mode) => ipcRenderer.invoke("download:setMode", mode),
+    resetDownloadsFolder: () => ipcRenderer.invoke("download:resetFolder"),
+    /** YouTube asli di dalam app (desktop/src/youtube.js) — area dalam px CSS relatif jendela */
+    youtube: {
+      show: (rect) => ipcRenderer.send("yt:show", rect),
+      setBounds: (rect) => ipcRenderer.send("yt:bounds", rect),
+      hide: (pause) => ipcRenderer.send("yt:hide", pause),
+      nav: (action) => ipcRenderer.send("yt:nav", action),
+      freeze: () => ipcRenderer.invoke("yt:freeze"),
+      unfreeze: () => ipcRenderer.send("yt:unfreeze"),
+      getState: () => ipcRenderer.invoke("yt:state"),
+      onState(cb) {
+        const listener = (_e, s) => cb(s);
+        ipcRenderer.on("yt:state", listener);
+        return () => ipcRenderer.removeListener("yt:state", listener);
+      },
+      /** cb({ url }) — klik kanan "Tambah ke antrean Converter" di dalam YouTube */
+      onAdd(cb) {
+        const listener = (_e, p) => cb(p);
+        ipcRenderer.on("yt:add", listener);
+        return () => ipcRenderer.removeListener("yt:add", listener);
+      },
+    },
   });
 }

@@ -9,12 +9,14 @@ const backend = (process.env.BACKEND_URL || (dev ? Url.backendApiDev : Url.backe
 // vercel.live = toolbar komentar di deployment preview Vercel.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://vercel.live`,
+  // wasm-unsafe-eval: hanya izin kompilasi WebAssembly (runtime AI Hapus background & Upscale), bukan eval JS
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${dev ? " 'unsafe-eval'" : ""} https://vercel.live`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob:",
   "font-src 'self' data:",
-  `connect-src 'self' https://vercel.live wss://ws-us3.pusher.com${dev ? " ws: http://localhost:*" : ""}`,
+  // huggingface.co + *.hf.co: unduh model AI (sekali, lalu di-cache browser)
+  `connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://huggingface.co https://*.hf.co${dev ? " ws: http://localhost:*" : ""}`,
   "frame-src https://vercel.live",
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -42,6 +44,8 @@ const nextConfig: NextConfig = {
       // Aset statis di public/ (logo, tekstur material) → cache 1 tahun (rule "Add Expires headers").
       // Ganti isi file = ganti nama file (mis. forged-dark-2.webp) supaya cache lama tidak terpakai.
       { source: "/:dir(brand|material)/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      // Runtime WASM AI: nama file mengikuti versi onnxruntime-web → cache seminggu cukup
+      { source: "/ort/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=604800" }] },
       // Favicon: URL-nya sudah ber-hash (?icon.xxx) dari Next → aman di-cache lama
       { source: "/:icon(icon.png|apple-icon.png)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
       // Respons API tidak boleh di-cache proxy/CDN bersama & tidak diindeks

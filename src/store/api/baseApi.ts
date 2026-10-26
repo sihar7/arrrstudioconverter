@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { useHydrated } from "@/hooks/useHydrated";
 import type { MeResponse } from "@/type/auth";
 import type { HistoryItem } from "@/type/history";
 import type { RobloxProfile } from "@/type/roblox";
@@ -35,7 +36,6 @@ export const baseApi = createApi({
 });
 
 export const {
-  useMeQuery,
   useLogoutMutation,
   useDevLoginMutation,
   useHistoryQuery,
@@ -43,3 +43,14 @@ export const {
   useDeleteHistoryMutation,
   useClearHistoryMutation,
 } = baseApi;
+
+/**
+ * Sesi/kuota yang aman untuk hydration: selama komponen ini masih di-hydrate, hasilnya selalu "memuat"
+ * (sama dengan HTML server). Tanpa ini, boundary yang hydrate belakangan bisa mendapati sesi sudah terjawab
+ * (mis. app desktop yang langsung memeriksa sesi) → hydration mismatch.
+ */
+export function useMeQuery() {
+  const hydrated = useHydrated();
+  const result = baseApi.useMeQuery();
+  return hydrated ? result : { ...result, data: undefined, currentData: undefined, isLoading: true, isSuccess: false, isError: false };
+}

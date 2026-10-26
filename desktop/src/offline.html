@@ -7,12 +7,12 @@
     <title>ARRR Studio Converter</title>
     <style>
       :root {
-        --bg: #f4f4f5; --surface: #ffffff; --fg: #17171a; --fg-2: #6c6c75; --line: #e4e4e7;
-        --btn: #17171a; --btn-fg: #f4f4f5; --ease: cubic-bezier(.2, .8, .2, 1);
+        --bg: #f2f3f5; --surface: #ffffff; --fg: #141517; --fg-2: #5f636b; --line: #d3d6da;
+        --btn: #141517; --btn-fg: #f2f3f5; --ease: cubic-bezier(.2, .8, .2, 1);
         color-scheme: light dark;
       }
       @media (prefers-color-scheme: dark) {
-        :root { --bg: #0f0f11; --surface: #17171a; --fg: #f4f4f5; --fg-2: #a3a3ab; --line: #2c2c31; --btn: #f4f4f5; --btn-fg: #0f0f11; }
+        :root { --bg: #0d0e10; --surface: #18191c; --fg: #e3e5e8; --fg-2: #8b9098; --line: #3a3d43; --btn: #e3e5e8; --btn-fg: #0d0e10; }
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; }
@@ -22,6 +22,9 @@
         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
         -webkit-font-smoothing: antialiased; user-select: none;
       }
+      /* Jendela tanpa title bar bawaan → strip atas setinggi title bar app untuk menyeret jendela */
+      .drag { position: fixed; inset: 0 0 auto; height: 48px; -webkit-app-region: drag; }
+      button { -webkit-app-region: no-drag; }
       main { width: min(420px, 100%); text-align: center; animation: rise .5s var(--ease) both; }
       img { width: 220px; height: auto; margin: 0 auto 28px; display: block; }
       @media (prefers-color-scheme: light) { img { filter: drop-shadow(0 6px 18px rgba(0,0,0,.18)); } }
@@ -42,6 +45,7 @@
     </style>
   </head>
   <body>
+    <div class="drag" aria-hidden="true"></div>
     <main>
       <img src="assets/logo.png" alt="ARRR Studio Converter" />
       <h1>Tidak bisa terhubung</h1>

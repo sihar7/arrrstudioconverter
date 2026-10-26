@@ -282,7 +282,7 @@ export default function QueueCard({
 
       {/* Dock aksi pilihan — menempel di bawah layar selama antrean terlihat (di atas tab bar HP) */}
       {selection.length > 0 && (
-        <div className="sticky bottom-[calc(80px+env(safe-area-inset-bottom))] z-20 px-3 pb-3 tabless:bottom-6">
+        <div className="sticky bottom-[calc(80px+env(safe-area-inset-bottom))] z-20 px-3 pb-3 tabless:bottom-6 desk:bottom-[calc(var(--dock-h)+16px)]">
           <div
             role="region"
             aria-label={c.pickBar}

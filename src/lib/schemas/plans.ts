@@ -58,6 +58,12 @@ export interface PlanLimits {
   library: LibraryLevel;
   /** antrean server didahulukan */
   priority: boolean;
+  /** Alat gambar (Hapus background & Upscale, diproses di perangkat): sisi terpanjang hasil maksimal (px) */
+  imageMaxSide: number;
+  /** skala upscale yang boleh dipilih */
+  upscaleScales: readonly (2 | 4)[];
+  /** latar hasil hapus background: basic = transparan & putih · full = + warna bebas & blur foto asli */
+  imageBg: "basic" | "full";
 }
 
 export const PLANS: Record<PlanId, PlanLimits> = {
@@ -77,6 +83,9 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     bulkRoblox: 0,
     library: "off",
     priority: false,
+    imageMaxSide: 1024,
+    upscaleScales: [2],
+    imageBg: "basic",
   },
   pro: {
     id: "pro",
@@ -94,6 +103,9 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     bulkRoblox: 10,
     library: "basic",
     priority: false,
+    imageMaxSide: 2560,
+    upscaleScales: [2, 4],
+    imageBg: "full",
   },
   studio: {
     id: "studio",
@@ -111,6 +123,9 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     bulkRoblox: null,
     library: "full",
     priority: true,
+    imageMaxSide: 4096,
+    upscaleScales: [2, 4],
+    imageBg: "full",
   },
 };
 

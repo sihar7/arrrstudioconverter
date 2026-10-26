@@ -42,3 +42,6 @@ next-env.d.ts
 
 # runtime (hasil konversi dev dari converter API)
 /storage/
+
+# runtime onnxruntime-web (disalin scripts/copy-ort.mjs)
+/public/ort/

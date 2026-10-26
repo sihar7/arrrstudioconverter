@@ -39,7 +39,8 @@ export const viewport: Viewport = {
 };
 
 // Pasang tema sebelum paint (tanpa kedip). Default gelap.
-const themeScript = `try{var t=localStorage.getItem('arrc_theme');document.documentElement.dataset.theme=t==='light'?'light':'dark'}catch(e){document.documentElement.dataset.theme='dark'}`;
+// App desktop (bridge preload sudah ada sebelum skrip ini jalan): kulit aplikasi + title bar sendiri.
+const themeScript = `try{var h=document.documentElement,t=localStorage.getItem('arrc_theme');h.dataset.theme=t==='light'?'light':'dark';var d=window.arrDesktop;if(d){h.dataset.shell='desktop';if(d.titleBar)h.dataset.titlebar=d.platform}}catch(e){document.documentElement.dataset.theme='dark'}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

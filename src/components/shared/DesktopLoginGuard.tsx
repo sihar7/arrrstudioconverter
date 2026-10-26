@@ -21,6 +21,11 @@ function Guard() {
   const router = useRouter();
   const { data: me, isLoading } = useMeQuery();
 
+  // Penanda kulit app desktop untuk varian CSS `desk:` (cadangan — normalnya sudah dipasang skrip head)
+  useEffect(() => {
+    document.documentElement.dataset.shell = "desktop";
+  }, []);
+
   useEffect(() => {
     if (pathname === "/") {
       router.replace("/converter");

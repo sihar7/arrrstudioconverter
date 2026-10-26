@@ -7,7 +7,7 @@ import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import Button from "@/components/ui/Button";
 import Segmented from "@/components/ui/Segmented";
 import Switch from "@/components/ui/Switch";
-import DropZone from "./DropZone";
+import DropZone from "@/components/shared/ImageDropZone";
 
 export interface SourceInfo {
   name: string;

@@ -40,7 +40,8 @@ export default function Toaster() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-4 bottom-4 z-[100] flex flex-col items-end gap-2 sm:left-auto sm:right-6 sm:w-[380px]"
+      data-toaster=""
+      className="pointer-events-none fixed inset-x-4 bottom-4 z-[100] flex flex-col items-end gap-2 sm:left-auto sm:right-6 sm:w-[380px] desk:bottom-[calc(var(--dock-h)+16px)]"
     >
       {items.map((t) => (
         <ToastRow key={t.id} toast={t} />

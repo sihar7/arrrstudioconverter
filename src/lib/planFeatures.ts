@@ -44,5 +44,8 @@ export function planFeatures(id: PlanId, t: Dictionary): PlanFeature[] {
       included: p.bulkRoblox !== 0,
     },
     { text: f.priority, included: p.priority },
+    { text: fmt(f.imageMax, { n: p.imageMaxSide, label: p.imageMaxSide >= 4096 ? "4K" : p.imageMaxSide >= 2560 ? "2K" : "HD" }), included: true },
+    { text: fmt(f.upscale, { list: p.upscaleScales.map((x) => `${x}×`).join(" / ") }), included: true },
+    { text: f.imageBgFull, included: p.imageBg === "full" },
   ];
 }
