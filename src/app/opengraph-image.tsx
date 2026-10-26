@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import Url from "@/Url/Url";
 
 // Gambar preview link (Discord / WhatsApp / TikTok / X) — dibuat saat build, palet grafit + silver dari tokens.css
 
@@ -39,7 +40,7 @@ const BARS = Array.from({ length: 34 }, (_, i) => {
   return Math.max(10, Math.round(300 * env * wob));
 });
 
-const CHIPS = ["MP3 · OGG · WAV · FLAC", "Bulk upload", "Place permission"];
+const CHIPS = ["YouTube → audio", "Skybox", "AI gambar", "Web · Desktop"];
 
 export default async function Image() {
   const [logo, display, body, mono] = await Promise.all([
@@ -97,11 +98,11 @@ export default async function Image() {
                 letterSpacing: -3.5,
               }}
             >
-              <span>Convert &amp; upload</span>
-              <span style={{ color: C.silver }}>Roblox audio.</span>
+              <span>Studio kecil</span>
+              <span style={{ color: C.silver }}>untuk Roblox.</span>
             </div>
             <div style={{ display: "flex", marginTop: 26, fontFamily: headFont, fontWeight: 500, fontSize: 25, lineHeight: 1.4, color: C.fg2, maxWidth: 580 }}>
-              Dari link YouTube jadi aset audio Roblox — lengkap dengan izin place, dalam satu alur.
+              YouTube jadi audio Roblox, panorama jadi skybox — sekali alur.
             </div>
           </div>
 
@@ -146,7 +147,7 @@ export default async function Image() {
             ))}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", fontFamily: monoFont, fontSize: 18, color: C.fg2 }}>
-            arrrstudioconverter.vercel.app
+            {new URL(Url.site).host}
           </div>
         </div>
       </div>
