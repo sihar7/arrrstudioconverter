@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { SfClock, SfCrown, SfGear, SfLock, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
+import { SfClock, SfCrown, SfCube, SfGear, SfLock, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
 import type { IosTone } from "@/components/ui/AppIcon";
 import { useT } from "@/hooks/useT";
 import { useScrolled } from "@/hooks/useScrollState";
@@ -13,6 +13,7 @@ import Logo, { LogoMark } from "@/components/shared/Logo";
 import UserMenu, { QuotaPill } from "@/components/shared/UserMenu";
 import { LangToggle, ThemeToggle } from "@/components/shared/PrefToggles";
 import ScrollTopFab from "@/components/shared/ScrollTopFab";
+import DownloadAppButton from "@/components/shared/DownloadAppButton";
 import MobileMenu from "./MobileMenu";
 import NavMenu from "./NavMenu";
 
@@ -27,6 +28,9 @@ export const NAV = [
 
 // Tab bar bawah HP maksimal 4 tujuan (label tetap terbaca di 375px) — Harga ada di menu & dropdown akun
 const TAB_NAV = NAV.filter((n) => n.href !== "/pricing");
+
+// Menu khusus member (sudah login Discord) — disisipkan setelah Audio saya, ikut grup "Studio" di desktop
+export const MEMBER_NAV = [{ href: "/skybox", key: "skybox", icon: SfCube, tone: "teal" }] as const satisfies readonly NavItem[];
 
 // Menu khusus admin aplikasi (lihat isAppAdmin di BE) — hanya muncul di navbar untuk admin.
 export const ADMIN_NAV = [{ href: "/obfuscator", key: "obfuscator", icon: SfLock, tone: "green" }] as const satisfies readonly NavItem[];
@@ -46,10 +50,11 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
   const scrolled = useScrolled();
   const { data: me } = useMeQuery();
   const isAdmin = Boolean(me?.user?.isAdmin);
-  const items: readonly NavItem[] = isAdmin ? [...NAV, ...ADMIN_NAV] : NAV;
+  const loggedIn = Boolean(me?.user);
+  const items: readonly NavItem[] = [...NAV.slice(0, 2), ...(loggedIn ? MEMBER_NAV : []), ...NAV.slice(2), ...(isAdmin ? ADMIN_NAV : [])];
   const activeHref = items.find((n) => pathname.startsWith(n.href))?.href;
-  // Desktop: Converter + Audio saya digabung ke dropdown "Studio"; sisanya tetap tautan datar.
-  const grouped = new Set<string>(["/converter", "/library"]);
+  // Desktop: Converter + Audio saya + Skybox digabung ke dropdown "Studio"; sisanya tetap tautan datar.
+  const grouped = new Set<string>(["/converter", "/library", "/skybox"]);
   const groupItems = items.filter((n) => grouped.has(n.href));
   const flatItems = items.filter((n) => !grouped.has(n.href));
 
@@ -123,6 +128,7 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
             <span className="hidden xl:contents">
               <QuotaPill />
             </span>
+            <DownloadAppButton active={pathname.startsWith("/download")} />
             <LangToggle />
             <ThemeToggle />
             <span aria-hidden="true" className="mx-1.5 hidden h-5 w-px bg-line sm:block" />
@@ -132,7 +138,7 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
         </div>
       </header>
 
-      {/* Tab bar tampil di SEMUA halaman (< xl) — termasuk landing, supaya pindah menu selalu satu ketukan */}
+      {/* Tab bar di SEMUA halaman untuk perangkat sentuh (lihat varian tabless) — pindah menu selalu satu ketukan */}
       <TabBar activeHref={activeHref} />
       {/* Di luar <header>: backdrop-filter membuat elemen fixed di dalamnya ikut terkunci ke header */}
       <ScrollTopFab lifted />
@@ -150,7 +156,7 @@ function TabBar({ activeHref }: { activeHref?: string }) {
   return (
     <nav
       aria-label="Mobile"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] xl:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] tabless:hidden"
     >
       <ul className="tabbar-glass pointer-events-auto relative mx-auto grid h-[60px] max-w-[440px] grid-cols-4 rounded-full p-1">
         {/* Aktif = garis bawah yang meluncur antar tab dengan pegas (konvensi garis bawah situs) */}

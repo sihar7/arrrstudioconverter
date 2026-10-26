@@ -9,6 +9,8 @@ import Logo from "@/components/shared/Logo";
 import { LangToggle, ThemeToggle } from "@/components/shared/PrefToggles";
 import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
+import { useHydrated } from "@/hooks/useHydrated";
+import { getDesktop } from "@/type/desktop";
 import type { Dictionary } from "@/utils/languages/id";
 
 type ErrKey = keyof Dictionary["login"]["errors"];
@@ -20,6 +22,9 @@ export default function LoginScreen() {
   const router = useRouter();
   const { data: me, isLoading } = useMeQuery();
   const [devLogin, { isLoading: devBusy }] = useDevLoginMutation();
+  // App desktop: wajib login (lihat DesktopLoginGuard) → tanpa "kembali ke landing" & "lanjut sebagai tamu"
+  const hydrated = useHydrated();
+  const inDesktop = hydrated && Boolean(getDesktop());
 
   const rawNext = params.get("next") ?? "/converter";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/converter";
@@ -63,9 +68,13 @@ export default function LoginScreen() {
       {/* Kanan — form */}
       <section className="mat flex flex-col bg-surface px-5 py-6 sm:px-10 lg:px-16">
         <div className="flex items-center justify-between">
-          <Link href="/" className="caps inline-flex min-h-11 items-center gap-1.5 text-fg-2 hover:text-fg">
-            <NavArrowLeft width={14} height={14} /> {t.common.back}
-          </Link>
+          {inDesktop ? (
+            <Logo />
+          ) : (
+            <Link href="/" className="caps inline-flex min-h-11 items-center gap-1.5 text-fg-2 hover:text-fg">
+              <NavArrowLeft width={14} height={14} /> {t.common.back}
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             <LangToggle />
             <ThemeToggle />
@@ -132,16 +141,20 @@ export default function LoginScreen() {
             )}
           </div>
 
-          <div className="caps my-8 flex items-center gap-4 text-[10.5px] text-fg-3">
-            <span className="h-px flex-1 bg-line" />
-            {t.common.or}
-            <span className="h-px flex-1 bg-line" />
-          </div>
+          {!inDesktop && (
+            <>
+              <div className="caps my-8 flex items-center gap-4 text-[10.5px] text-fg-3">
+                <span className="h-px flex-1 bg-line" />
+                {t.common.or}
+                <span className="h-px flex-1 bg-line" />
+              </div>
 
-          <Link href="/converter" className="caps group inline-flex min-h-11 items-center gap-2 self-start text-fg">
-            {l.guest}
-            <ArrowRight width={16} height={16} className="transition-transform group-hover:translate-x-1" />
-          </Link>
+              <Link href="/converter" className="caps group inline-flex min-h-11 items-center gap-2 self-start text-fg">
+                {l.guest}
+                <ArrowRight width={16} height={16} className="transition-transform group-hover:translate-x-1" />
+              </Link>
+            </>
+          )}
 
           <p className="mt-12 text-[12.5px] leading-relaxed text-fg-3">{l.terms}</p>
         </div>

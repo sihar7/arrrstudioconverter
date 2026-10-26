@@ -51,7 +51,7 @@ export default function SelectionDock({
   if (!open) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 xl:bottom-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 tabless:bottom-6">
       <div
         ref={ref}
         role="toolbar"

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Discord } from "iconoir-react";
+import { ArrowRight, Discord, Download } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { ButtonLink } from "@/components/ui/Button";
+import { useHydrated } from "@/hooks/useHydrated";
+import { getDesktop } from "@/type/desktop";
 
 /**
  * Hero sinematik: permukaan forged penuh disorot lampu studio (kanan atas + mengikuti kursor),
@@ -12,6 +14,8 @@ import { ButtonLink } from "@/components/ui/Button";
 export default function Hero() {
   const { t } = useT();
   const l = t.landing;
+  const hydrated = useHydrated();
+  const inDesktop = hydrated && Boolean(getDesktop());
   return (
     <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
       {/* Material + cahaya (dekoratif) */}
@@ -22,7 +26,20 @@ export default function Hero() {
         <div className="hero-veil absolute inset-0" />
       </div>
 
-      <div className="mx-auto flex w-full max-w-[var(--wrap)] flex-1 flex-col justify-end px-4 pb-[calc(68px+env(safe-area-inset-bottom)+32px)] pt-[calc(var(--nav-h)+48px)] sm:px-8 xl:pb-12">
+      <div className="mx-auto flex w-full max-w-[var(--wrap)] flex-1 flex-col justify-end px-4 pb-[calc(68px+env(safe-area-inset-bottom)+32px)] pt-[calc(var(--nav-h)+48px)] sm:px-8 tabless:pb-12">
+        {/* Pengumuman app desktop — paling atas supaya langsung terlihat (disembunyikan di dalam app desktop) */}
+        {!inDesktop && (
+          <Link
+            href="/download"
+            className="rise group mb-8 inline-flex min-h-11 w-fit max-w-full items-center gap-3 rounded-full border border-line/70 bg-[var(--glass)] py-1.5 pl-1.5 pr-4 text-[13.5px] text-fg backdrop-blur-md transition-colors hover:border-line-2"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ios-blue)] px-2.5 py-1 text-[12px] font-semibold text-white">
+              <Download width={13} height={13} /> {l.badgeNew}
+            </span>
+            <span className="truncate font-medium">{l.desktopBadge}</span>
+            <ArrowRight width={14} height={14} className="shrink-0 text-fg-2 transition-transform duration-300 group-hover:translate-x-1" />
+          </Link>
+        )}
         <p className="rise eyebrow">{l.eyebrow}</p>
         <h1 className="rise mt-6 font-display text-[clamp(40px,6.2vw,100px)] font-bold leading-[0.96] tracking-[-0.045em] [animation-delay:80ms]">
           <span className="block">{l.title1}</span>

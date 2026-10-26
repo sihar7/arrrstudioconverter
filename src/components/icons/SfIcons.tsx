@@ -75,6 +75,16 @@ export function SfClock(p: SfIconProps) {
   );
 }
 
+/** cube.transparent — Skybox (kubus 6 sisi) */
+export function SfCube(p: SfIconProps) {
+  return (
+    <Svg {...p}>
+      <path fill={p.filled ? "currentColor" : "none"} fillOpacity={p.filled ? 0.22 : 0} d="M12 2.8l8 4.5v9.4l-8 4.5-8-4.5V7.3Z" />
+      <path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4" />
+    </Svg>
+  );
+}
+
 /** crown — Harga / paket */
 export function SfCrown(p: SfIconProps) {
   return (

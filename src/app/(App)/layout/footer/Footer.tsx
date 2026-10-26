@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowUpRight, Discord } from "iconoir-react";
 import Url from "@/Url/Url";
 import { useT } from "@/hooks/useT";
+import { useHydrated } from "@/hooks/useHydrated";
+import { getDesktop } from "@/type/desktop";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/shared/Logo";
 import { LangToggle, ThemeToggle } from "@/components/shared/PrefToggles";
@@ -17,11 +19,14 @@ import { NAV } from "../header/Header";
 export default function Footer({ withTabBar = false }: { withTabBar?: boolean }) {
   const { t } = useT();
   const f = t.footer;
+  const hydrated = useHydrated();
+  // App desktop = fokus fitur: tanpa footer marketing (tema & bahasa tetap ada di navbar)
+  if (hydrated && getDesktop()) return withTabBar ? <div aria-hidden="true" className="h-[calc(68px+env(safe-area-inset-bottom))] tabless:hidden" /> : null;
   const col = "caps text-fg-3";
   const link = "link-line text-[14px] text-fg-2 transition-colors hover:text-fg";
 
   return (
-    <footer className={cn("relative isolate overflow-hidden", withTabBar && "pb-[calc(68px+env(safe-area-inset-bottom))] xl:pb-0")}>
+    <footer className={cn("relative isolate overflow-hidden", withTabBar && "pb-[calc(68px+env(safe-area-inset-bottom))] tabless:pb-0")}>
       <hr className="engrave" />
       {/* Forged hanya muncul di kolam cahaya bawah — sama seperti latar halaman, dibalik arahnya */}
       <div
@@ -62,6 +67,11 @@ export default function Footer({ withTabBar = false }: { withTabBar?: boolean })
           <nav aria-label={f.studio}>
             <p className={col}>{f.studio}</p>
             <ul className="mt-5 flex flex-col gap-3">
+              <li>
+                <Link href="/download" className={link}>
+                  {f.desktopApp}
+                </Link>
+              </li>
               <li>
                 <a href={Url.arrWebsite} target="_blank" rel="noreferrer" className={cn(link, "inline-flex items-center gap-1")}>
                   Website <ArrowUpRight width={13} height={13} aria-hidden="true" />

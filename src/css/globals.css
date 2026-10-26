@@ -4,6 +4,16 @@
 
 /* Tema terang dipicu atribut data-theme di <html> */
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
+/* Tanpa tab bar bawah: perangkat ber-mouse (laptop/desktop, app desktop) ATAU layar ≥ 1024px.
+   Tab bar khusus HP/tablet sentuh; di desktop navigasi cukup navbar atas → tidak dobel. */
+@custom-variant tabless {
+  @media (hover: hover) and (pointer: fine) {
+    @slot;
+  }
+  @media (width >= 64rem) {
+    @slot;
+  }
+}
 
 @theme inline {
   --color-bg: var(--bg);

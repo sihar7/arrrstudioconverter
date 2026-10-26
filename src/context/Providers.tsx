@@ -6,6 +6,7 @@ import { useAppSelector } from "@/store/hooks";
 import Toaster from "@/components/shared/Toaster";
 import TopLoader from "@/components/shared/TopLoader";
 import CookieConsent from "@/components/shared/CookieConsent";
+import DesktopLoginGuard from "@/components/shared/DesktopLoginGuard";
 
 /** Terapkan tema & bahasa ke <html> setiap preferensi berubah */
 function HtmlSync() {
@@ -22,6 +23,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <StoreProvider>
       <HtmlSync />
+      <DesktopLoginGuard />
       <TopLoader />
       {children}
       <Toaster />

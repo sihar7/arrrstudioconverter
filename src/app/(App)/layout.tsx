@@ -1,5 +1,6 @@
 import Header from "./layout/header/Header";
 import Footer from "./layout/footer/Footer";
+import DesktopBridge from "@/components/shared/DesktopBridge";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
@@ -9,6 +10,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         {children}
       </main>
       <Footer withTabBar />
+      <DesktopBridge />
     </div>
   );
 }

@@ -42,7 +42,7 @@ export default function CookieConsent() {
       aria-labelledby="consent-title"
       aria-hidden={!open}
       className={cn(
-        "fixed inset-x-4 z-50 transition-[transform,opacity] duration-500 ease-[var(--ease)] bottom-[calc(88px+env(safe-area-inset-bottom))] sm:inset-x-auto sm:left-6 sm:w-[400px] xl:bottom-6",
+        "fixed inset-x-4 z-50 transition-[transform,opacity] duration-500 ease-[var(--ease)] bottom-[calc(88px+env(safe-area-inset-bottom))] sm:inset-x-auto sm:left-6 sm:w-[400px] tabless:bottom-6",
         open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
       )}
     >

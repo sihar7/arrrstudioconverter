@@ -1,0 +1,63 @@
+# Build installer desktop: Windows (NSIS .exe) & macOS (universal .dmg + .zip untuk auto-update).
+# Nama file TANPA versi → link "releases/latest/download/<nama>" di halaman /download web selalu valid.
+appId: app.arrrstudio.converter
+productName: ARRR Studio Converter
+copyright: © 2026 ARRR Studio
+directories:
+  output: dist
+  buildResources: build
+files:
+  - src/**/*
+  - package.json
+asar: true
+
+publish:
+  provider: github
+  owner: sihar7
+  repo: arrrstudioconverter
+  releaseType: release
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ARRR-Studio-Converter-Setup.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: ARRR Studio Converter
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  deleteAppDataOnUninstall: false
+
+mac:
+  icon: build/icon.icns
+  category: public.app-category.music
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  artifactName: ARRR-Studio-Converter-mac.${ext}
+  hardenedRuntime: true
+  # Tanpa sertifikat Apple → build tetap jadi (ad-hoc). Isi secret CSC_LINK/APPLE_* di GitHub untuk sign + notarize.
+  notarize: false
+
+dmg:
+  title: ARRR Studio Converter
+  iconSize: 96
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 190
+    - x: 400
+      y: 190
+      type: link
+      path: /Applications

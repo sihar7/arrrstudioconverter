@@ -1,0 +1,25 @@
+{
+  "name": "arrr-studio-converter-desktop",
+  "productName": "ARRR Studio Converter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aplikasi desktop ARRR Studio Converter (Windows & macOS) — YouTube ke audio Roblox",
+  "author": "ARRR Studio",
+  "homepage": "https://arrrstudioconverter.vercel.app",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "cross-env ARRR_APP_URL=http://localhost:3000 electron .",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "pack": "electron-builder --dir --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0"
+  }
+}
