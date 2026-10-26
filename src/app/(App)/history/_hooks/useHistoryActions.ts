@@ -2,12 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { baseApi, useClearHistoryMutation, useDeleteHistoryMutation } from "@/store/api/baseApi";
+import { baseApi } from "@/store/api/baseApi";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
-import { useConfirm } from "@/hooks/useConfirm";
-import { applyPermission, applyPermissionMany, checkStatus, uploadEntry } from "../_service/history.service";
+import { applyPermission, applyPermissionMany, checkStatus, deleteMany, uploadEntry } from "../_service/history.service";
 import { canGoPublic, needsCheck } from "../_utils/helpers";
 import type { HistoryEntry, HistoryItem } from "@/type/history";
 import type { UploadForm } from "@/type/roblox";
@@ -19,9 +18,6 @@ export function useHistoryActions() {
   const toast = useToast();
   const { t, f } = useT();
   const [checking, setChecking] = useState(false);
-  const [del] = useDeleteHistoryMutation();
-  const [clear, { isLoading: clearing }] = useClearHistoryMutation();
-  const [confirm, confirmDialog] = useConfirm();
 
   const errMsg = useCallback(
     (e: unknown) => (e instanceof ApiError ? (e.code === "NETWORK" ? t.toast.network : e.message) : String(e)),
@@ -113,20 +109,31 @@ export function useHistoryActions() {
     [apiKey, toast, t, f, refresh, errMsg],
   );
 
-  const remove = useCallback(
-    async (id: string) => {
-      if (!(await confirm(t.history.deleteConfirm))) return;
-      await del(id);
-      toast(t.toast.deleted, "ok");
+  /** Hapus banyak riwayat (konfirmasi lewat DeleteDialog); archive = aset yang sudah diupload diarsipkan di Roblox */
+  const [deleting, setDeleting] = useState(false);
+  const removeMany = useCallback(
+    async (items: HistoryItem[], archive: boolean) => {
+      if (!items.length) return false;
+      setDeleting(true);
+      try {
+        const r = await deleteMany(
+          items.map((i) => i.id),
+          archive,
+          apiKey,
+        );
+        toast(r.archived ? f(t.history.archivedSummary, { n: r.deleted, a: r.archived }) : f(t.history.deletedSummary, { n: r.deleted }), "ok");
+        if (r.archiveFailed) toast(f(t.history.archiveFailed, { n: r.archiveFailed }), "err");
+        refresh();
+        return true;
+      } catch (e) {
+        toast(errMsg(e), "err");
+        return false;
+      } finally {
+        setDeleting(false);
+      }
     },
-    [del, toast, t, confirm],
+    [apiKey, toast, t, f, refresh, errMsg],
   );
 
-  const clearAll = useCallback(async () => {
-    if (!(await confirm(t.history.clearConfirm))) return;
-    await clear();
-    toast(t.toast.deleted, "ok");
-  }, [clear, toast, t, confirm]);
-
-  return { apiKey, checking, clearing, checkAll, publishing, publishMany, setPermission, upload, remove, clearAll, confirmDialog };
+  return { apiKey, checking, deleting, checkAll, publishing, publishMany, setPermission, upload, removeMany };
 }

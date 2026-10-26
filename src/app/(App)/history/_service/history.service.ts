@@ -39,3 +39,11 @@ export function uploadEntry(apiKey: string, entry: HistoryEntry, form: UploadFor
     },
   });
 }
+
+/** Hapus banyak riwayat; archive + apiKey → aset yang sudah diupload ikut diarsipkan di Roblox */
+export function deleteMany(ids: string[], archive: boolean, apiKey?: string) {
+  return apiFetch<{ deleted: number; archived: number; archiveFailed: number; failed: Record<string, string> }>("/api/history/delete", {
+    method: "POST",
+    json: { ids, archive, apiKey: archive ? apiKey : undefined },
+  });
+}
