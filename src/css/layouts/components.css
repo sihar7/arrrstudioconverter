@@ -66,11 +66,15 @@
   }
 }
 
-/* State layer: overlay currentColor 8% hover · 10% fokus · 12% tekan */
-.state-layer {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
+/* State layer: overlay currentColor 8% hover · 10% fokus · 12% tekan.
+   Base di @layer components → utilitas Tailwind (fixed/absolute/overflow-*) tetap menang;
+   tanpa layer, `position: relative` di sini menimpa `fixed` (FAB kembali ke atas tidak melayang). */
+@layer components {
+  .state-layer {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
 }
 .state-layer::before {
   content: "";
