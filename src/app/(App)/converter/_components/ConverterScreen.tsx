@@ -37,7 +37,7 @@ const GuestGate = dynamic(() => import("@/components/shared/GuestGate"), { ssr: 
 const ShortcutsDialog = dynamic(() => import("./ShortcutsDialog"), { ssr: false });
 
 export default function ConverterScreen() {
-  const { t } = useT();
+  const { t, f } = useT();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const toast = useToast();
@@ -66,13 +66,18 @@ export default function ConverterScreen() {
   const selectAll = () => setPicked([...selection, ...uploadableKeys.filter((k) => !selection.includes(k))]);
 
   const openBulk = () => {
-    const keys = selection.length ? selection : uploadableKeys;
+    let keys = selection.length ? selection : uploadableKeys;
     if (!keys.length) return;
-    // Upload massal hanya plan tertentu (Pro+); satu item tetap boleh lewat dialog tunggal
-    if (keys.length > 1 && !PLANS[me?.plan?.id ?? "free"].bulkRoblox) {
+    // Upload massal per plan: 0 = terkunci (satu item tetap boleh lewat dialog tunggal), n = maks n, null = tanpa batas
+    const max = PLANS[me?.plan?.id ?? "free"].bulkRoblox;
+    if (keys.length > 1 && max === 0) {
       toast(t.plan.bulkLocked, "info");
       router.push("/pricing");
       return;
+    }
+    if (max != null && max > 0 && keys.length > max) {
+      toast(f(t.plan.bulkLimit, { n: max }), "info");
+      keys = keys.slice(0, max);
     }
     // Belum login / belum ada API key → dialog tunggal yang menjelaskan langkahnya
     const first = bulkItems.find((i) => i.key === keys[0])!;

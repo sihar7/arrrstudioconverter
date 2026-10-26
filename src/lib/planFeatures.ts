@@ -14,6 +14,7 @@ export const rupiah = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
 
 export function planFeatures(id: PlanId, t: Dictionary): PlanFeature[] {
   const p = PLANS[id];
+  const r = p.ranges;
   const f = t.pricing.features;
   const list = p.formats.map((x) => x.toUpperCase()).join(", ");
   const allFormats = p.formats.length === PLANS.studio.formats.length;
@@ -26,14 +27,22 @@ export function planFeatures(id: PlanId, t: Dictionary): PlanFeature[] {
     { text: p.parallel === 1 ? f.parallelOne : fmt(f.parallel, { n: p.parallel }), included: true },
     { text: fmt(f.fileTtl, { n: p.fileTtlHours }), included: true },
     { text: fmt(f.history, { n: p.historyMax }), included: true },
-    { text: fmt(f.effectsBase, { min: p.ranges.speed[0], max: p.ranges.speed[1], pitch: p.ranges.pitch }), included: true },
-    { text: fmt(f.effectsLevel, { volume: p.ranges.volume, fade: p.ranges.fade }), included: true },
-    { text: f.smartCompress, included: p.smartCompress },
-    { text: f.eq, included: p.effects.includes("eq") },
-    { text: f.reverb, included: p.effects.includes("reverb") },
+    { text: fmt(f.effectsBase, { min: r.speed[0], max: r.speed[1], pitch: r.pitch }), included: true },
+    { text: fmt(f.effectsLevel, { volume: r.volume, fade: r.fade }), included: true },
+    {
+      text: p.smartCompress === "max" ? f.compressMax : p.smartCompress === "standard" ? f.compressStandard : f.smartCompress,
+      included: p.smartCompress !== "off",
+    },
+    p.effects.includes("eq")
+      ? { text: fmt(f.eqRange, { b0: r.bass[0], b1: r.bass[1], t0: r.treble[0], t1: r.treble[1] }), included: true }
+      : { text: f.eq, included: false },
+    p.effects.includes("reverb") ? { text: fmt(f.reverbRange, { n: r.reverb }), included: true } : { text: f.reverb, included: false },
     { text: f.spatial8d, included: p.effects.includes("spatial8d") },
-    { text: f.library, included: p.library },
-    { text: f.bulk, included: p.bulkRoblox },
+    { text: p.library === "full" ? f.libraryFull : p.library === "basic" ? f.libraryBasic : f.library, included: p.library !== "off" },
+    {
+      text: p.bulkRoblox == null ? f.bulkUnlimited : p.bulkRoblox > 0 ? fmt(f.bulkMax, { n: p.bulkRoblox }) : f.bulk,
+      included: p.bulkRoblox !== 0,
+    },
     { text: f.priority, included: p.priority },
   ];
 }

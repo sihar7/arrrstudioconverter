@@ -1,4 +1,5 @@
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
+import type { CompressLevel } from "@/lib/schemas/plans";
 
 /** Pecah teks input jadi kandidat link (spasi / baris baru / koma) */
 export function extractLinks(text: string): string[] {
@@ -76,13 +77,15 @@ export function parseLinks(text: string, queued: Set<string>): ParsedLink[] {
 // PERKIRAAN UKURAN — untuk ringkasan setelan & statistik antrean
 // ============================================================
 
-/** Perkiraan ukuran file (byte) untuk durasi tertentu dengan opsi saat ini */
-export function estimateBytes(o: AudioOptions, seconds: number) {
+/** Perkiraan ukuran file (byte) untuk durasi tertentu dengan opsi saat ini.
+ *  level = tingkat kompres pintar plan (Pro "standard" ±25%, Studio "max" ±40% lebih kecil) */
+export function estimateBytes(o: AudioOptions, seconds: number, level: CompressLevel = "standard") {
   const ch = o.mono ? 1 : 2;
   if (o.format === "wav") return seconds * o.sampleRate * ch * 2;
   if (o.format === "flac") return seconds * o.sampleRate * ch * 2 * 0.58;
-  // Lossy: bitrate × durasi; kompres pintar rata-rata ±35% lebih kecil, mono ±35%
-  const factor = (o.compress ? 0.65 : 1) * (o.mono ? 0.65 : 1);
+  // Lossy: bitrate × durasi × hemat kompres pintar (perkiraan), mono ±35%
+  const saver = !o.compress || level === "off" ? 1 : level === "max" ? 0.6 : 0.75;
+  const factor = saver * (o.mono ? 0.65 : 1);
   return (seconds * o.bitrate * 1000 * factor) / 8;
 }
 

@@ -129,8 +129,8 @@ export default function LibraryScreen() {
   }
 
   // Audio saya khusus plan tertentu (Pro+) — server juga menolak dengan 403 PLAN_REQUIRED
-  if (!PLANS[me.plan?.id ?? "free"].library) {
-    const need = t.plan.names[cheapestPlan((p) => p.library)];
+  if (PLANS[me.plan?.id ?? "free"].library === "off") {
+    const need = t.plan.names[cheapestPlan((p) => p.library !== "off")];
     return (
       <div className="flex flex-col gap-8">
         {header}
@@ -170,6 +170,9 @@ export default function LibraryScreen() {
     );
   }
 
+  const fullLib = PLANS[me.plan?.id ?? "free"].library === "full";
+  const fullPlan = t.plan.names[cheapestPlan((p) => p.library === "full")];
+
   return (
     <div className="flex flex-col gap-8 pb-24">
       <PageHeader
@@ -178,11 +181,17 @@ export default function LibraryScreen() {
         sub={L.sub}
         actions={
           <>
-            {lib.assets.length > 0 && (
-              <Button variant="tonal" icon={<Download width={16} height={16} />} onClick={() => setExportOpen(true)}>
-                {L.export}
-              </Button>
-            )}
+            {/* Muat semua & ekspor khusus plan "full" (Studio); di bawahnya tampil terkunci → ke halaman Harga */}
+            {lib.assets.length > 0 &&
+              (fullLib ? (
+                <Button variant="tonal" icon={<Download width={16} height={16} />} onClick={() => setExportOpen(true)}>
+                  {L.export}
+                </Button>
+              ) : (
+                <ButtonLink href="/pricing" variant="subtle" icon={<Lock width={16} height={16} />} title={f(L.fullLocked, { plan: fullPlan })}>
+                  {L.export} · {fullPlan}
+                </ButtonLink>
+              ))}
             {lib.ownerType === "user" &&
               (lib.loadingAll != null ? (
                 <Button variant="tonal" icon={<Pause width={16} height={16} />} onClick={lib.stopLoadAll}>
@@ -190,9 +199,15 @@ export default function LibraryScreen() {
                 </Button>
               ) : (
                 <>
-                  <Button variant="tonal" disabled={lib.loading} onClick={() => void lib.loadAll()}>
-                    {L.loadAll}
-                  </Button>
+                  {fullLib ? (
+                    <Button variant="tonal" disabled={lib.loading} onClick={() => void lib.loadAll()}>
+                      {L.loadAll}
+                    </Button>
+                  ) : (
+                    <ButtonLink href="/pricing" variant="subtle" icon={<Lock width={16} height={16} />} title={f(L.fullLocked, { plan: fullPlan })}>
+                      {L.loadAll} · {fullPlan}
+                    </ButtonLink>
+                  )}
                   <Button variant="primary" loading={lib.loading} icon={<Refresh width={16} height={16} />} onClick={() => lib.load()}>
                     {lib.loading ? L.loading : L.load}
                   </Button>

@@ -198,6 +198,7 @@ export default function SettingsPanel() {
   };
   const tempoUp = wider((r) => r.speed[1] - r.speed[0] + r.pitch);
   const levelUp = wider((r) => r.volume + r.fade);
+  const eqUp = wider((r) => r.bass[1] + r.treble[1] + r.reverb);
   const fx = t.pricing.features;
   const lockedFormats = FORMAT_OPTIONS.filter((fo) => !limits.formats.includes(fo.value));
 
@@ -410,10 +411,10 @@ export default function SettingsPanel() {
               </Field>
             </div>
             <Switch
-              label={limits.smartCompress ? p.compress : `${p.compress} · ${planName(cheapestPlan((pl) => pl.smartCompress))}`}
-              hint={p.compressHint}
+              label={limits.smartCompress !== "off" ? p.compress : `${p.compress} · ${planName(cheapestPlan((pl) => pl.smartCompress !== "off"))}`}
+              hint={limits.smartCompress === "max" ? fx.compressMax : limits.smartCompress === "standard" ? fx.compressStandard : p.compressHint}
               checked={o.compress}
-              disabled={!limits.smartCompress}
+              disabled={limits.smartCompress === "off"}
               onChange={(compress) => set({ compress })}
             />
             <Switch label={p.mono} hint={p.monoHint} checked={o.mono} onChange={(mono) => set({ mono })} />
@@ -518,12 +519,38 @@ export default function SettingsPanel() {
             {/* Efek bertingkat: EQ & reverb (Pro), 8D (Studio) */}
             <Group title={t.pricing.features.eq}>
               {!hasFx("eq") && <LockNote text={lockedText(cheapestPlan((pl) => pl.effects.includes("eq")))} cta={t.plan.upgrade} />}
-              <Slider label={p.bass} {...LIMITS.bass} value={o.bass} defaultValue={0} format={dbLabel} disabled={!hasFx("eq")} onChange={(bass) => set({ bass })} />
-              <Slider label={p.treble} {...LIMITS.treble} value={o.treble} defaultValue={0} format={dbLabel} disabled={!hasFx("eq")} onChange={(treble) => set({ treble })} />
+              {/* Terkunci → tampil rentang penuh (nonaktif); terbuka → rentang sesuai plan */}
+              <Slider
+                label={p.bass}
+                min={hasFx("eq") ? R.bass[0] : LIMITS.bass.min}
+                max={hasFx("eq") ? R.bass[1] : LIMITS.bass.max}
+                step={LIMITS.bass.step}
+                value={o.bass}
+                defaultValue={0}
+                format={dbLabel}
+                disabled={!hasFx("eq")}
+                onChange={(bass) => set({ bass })}
+              />
+              <Slider
+                label={p.treble}
+                min={hasFx("eq") ? R.treble[0] : LIMITS.treble.min}
+                max={hasFx("eq") ? R.treble[1] : LIMITS.treble.max}
+                step={LIMITS.treble.step}
+                value={o.treble}
+                defaultValue={0}
+                format={dbLabel}
+                disabled={!hasFx("eq")}
+                onChange={(treble) => set({ treble })}
+              />
+              {hasFx("eq") && eqUp && (
+                <LockNote text={`${f(fx.eqRange, { b0: eqUp.ranges.bass[0], b1: eqUp.ranges.bass[1], t0: eqUp.ranges.treble[0], t1: eqUp.ranges.treble[1] })} · ${f(fx.reverbRange, { n: eqUp.ranges.reverb })} — ${planName(eqUp.id)}`} cta={t.plan.upgrade} />
+              )}
             </Group>
             <Slider
               label={hasFx("reverb") ? p.reverb : `${p.reverb} · ${fxPlan("reverb")}`}
-              {...LIMITS.reverb}
+              min={0}
+              max={hasFx("reverb") ? R.reverb : LIMITS.reverb.max}
+              step={LIMITS.reverb.step}
               value={o.reverb}
               defaultValue={0}
               format={(v) => `${v}%`}
@@ -560,7 +587,7 @@ export default function SettingsPanel() {
       {/* Kaki panel: perkiraan ukuran + cek kecocokan Roblox (satu baris) */}
       <div className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line/70 bg-bg/40 px-5 py-3 text-[12.5px]">
         <span className="font-mono tabular-nums text-fg-2" title={c.estimateLabel}>
-          {f(c.estimate, { size: formatBytes(estimateBytes(o, 240)) })}
+          {f(c.estimate, { size: formatBytes(estimateBytes(o, 240, limits.smartCompress)) })}
         </span>
         {robloxOk ? (
           <span className="flex items-center gap-1.5 text-ok">

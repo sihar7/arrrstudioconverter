@@ -27,7 +27,7 @@ export default function NavMenu({
   const { t } = useT();
   const { data: me } = useMeQuery();
   // Label gembok "Pro" di Audio saya bila plan user belum membukanya (guest: tidak ditampilkan)
-  const libraryLock = me?.user && !PLANS[me.plan?.id ?? "free"].library ? t.plan.names[cheapestPlan((p) => p.library)] : null;
+  const libraryLock = me?.user && PLANS[me.plan?.id ?? "free"].library === "off" ? t.plan.names[cheapestPlan((p) => p.library !== "off")] : null;
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

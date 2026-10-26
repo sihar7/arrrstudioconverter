@@ -16,6 +16,11 @@ export type PlanId = (typeof PLAN_IDS)[number];
 export const EFFECT_IDS = ["eq", "reverb", "spatial8d"] as const;
 export type EffectId = (typeof EFFECT_IDS)[number];
 
+/** Kompres pintar: off · standard (hemat) · max (super hemat, VBR paling agresif yang masih transparan) */
+export type CompressLevel = "off" | "standard" | "max";
+/** Audio saya: off · basic (lihat, arsip, izin) · full (+ muat semua & ekspor) */
+export type LibraryLevel = "off" | "basic" | "full";
+
 export interface PlanLimits {
   id: PlanId;
   /** lagu per 24 jam; null = tanpa batas */
@@ -29,18 +34,28 @@ export interface PlanLimits {
   maxBitrate: 96 | 128 | 192 | 256 | 320;
   formats: readonly AudioFormat[];
   effects: readonly EffectId[];
-  /** rentang efek dasar: speed [min, max]×, pitch ±semitone, volume ±dB, fade in/out maks detik */
-  ranges: { speed: readonly [number, number]; pitch: number; volume: number; fade: number };
-  /** kompres pintar: VBR + bitrate menyesuaikan sumber → file jauh lebih kecil */
-  smartCompress: boolean;
+  /**
+   * Rentang efek: speed [min, max]×, pitch ±semitone, volume ±dB, fade maks detik,
+   * bass/treble [min, max] dB (hanya berlaku bila efek "eq" ada), reverb maks % (bila "reverb" ada)
+   */
+  ranges: {
+    speed: readonly [number, number];
+    pitch: number;
+    volume: number;
+    fade: number;
+    bass: readonly [number, number];
+    treble: readonly [number, number];
+    reverb: number;
+  };
+  smartCompress: CompressLevel;
   /** lama file hasil bisa diunduh (jam) */
   fileTtlHours: number;
   /** entri riwayat yang disimpan */
   historyMax: number;
-  /** upload massal ke Roblox */
-  bulkRoblox: boolean;
-  /** halaman "Audio saya": kelola, arsipkan & atur izin audio Roblox milik sendiri */
-  library: boolean;
+  /** upload massal ke Roblox: 0 = tidak bisa, n = maks n lagu sekali kirim, null = tanpa batas */
+  bulkRoblox: number | null;
+  /** halaman "Audio saya" (kelola, arsip & izin audio Roblox milik sendiri) */
+  library: LibraryLevel;
   /** antrean server didahulukan */
   priority: boolean;
 }
@@ -55,12 +70,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     maxBitrate: 192,
     formats: ["mp3", "ogg"],
     effects: [],
-    ranges: { speed: [0.8, 1.25], pitch: 3, volume: 6, fade: 3 },
-    smartCompress: false,
+    ranges: { speed: [0.8, 1.25], pitch: 3, volume: 6, fade: 3, bass: [0, 0], treble: [0, 0], reverb: 0 },
+    smartCompress: "off",
     fileTtlHours: 1,
     historyMax: 50,
-    bulkRoblox: false,
-    library: false,
+    bulkRoblox: 0,
+    library: "off",
     priority: false,
   },
   pro: {
@@ -72,12 +87,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     maxBitrate: 256,
     formats: ["mp3", "ogg", "m4a"],
     effects: ["eq", "reverb"],
-    ranges: { speed: [0.5, 1.5], pitch: 7, volume: 12, fade: 8 },
-    smartCompress: true,
+    ranges: { speed: [0.5, 1.5], pitch: 7, volume: 12, fade: 8, bass: [-5, 10], treble: [-5, 8], reverb: 50 },
+    smartCompress: "standard",
     fileTtlHours: 24,
     historyMax: 300,
-    bulkRoblox: true,
-    library: true,
+    bulkRoblox: 10,
+    library: "basic",
     priority: false,
   },
   studio: {
@@ -89,12 +104,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     maxBitrate: 320,
     formats: ["mp3", "ogg", "m4a", "wav", "flac"],
     effects: ["eq", "reverb", "spatial8d"],
-    ranges: { speed: [0.5, 2], pitch: 12, volume: 20, fade: 15 },
-    smartCompress: true,
+    ranges: { speed: [0.5, 2], pitch: 12, volume: 20, fade: 15, bass: [-10, 20], treble: [-10, 15], reverb: 100 },
+    smartCompress: "max",
     fileTtlHours: 72,
     historyMax: 1000,
-    bulkRoblox: true,
-    library: true,
+    bulkRoblox: null,
+    library: "full",
     priority: true,
   },
 };
@@ -152,11 +167,15 @@ export function clampOptions(o: AudioOptions, plan: PlanLimits): AudioOptions {
   next.volume = clampNum(next.volume, -r.volume, r.volume);
   next.fadeIn = clampNum(next.fadeIn, 0, r.fade);
   next.fadeOut = clampNum(next.fadeOut, 0, r.fade);
-  if (!plan.smartCompress) next.compress = false;
+  if (plan.smartCompress === "off") next.compress = false;
   if (!plan.formats.includes(next.format)) next.format = plan.formats[0];
   if (next.bitrate > plan.maxBitrate) next.bitrate = plan.maxBitrate;
   if (!plan.effects.includes("eq")) Object.assign(next, { bass: 0, treble: 0 });
-  if (!plan.effects.includes("reverb")) next.reverb = 0;
+  else {
+    next.bass = clampNum(next.bass, r.bass[0], r.bass[1]);
+    next.treble = clampNum(next.treble, r.treble[0], r.treble[1]);
+  }
+  next.reverb = plan.effects.includes("reverb") ? clampNum(next.reverb, 0, r.reverb) : 0;
   if (!plan.effects.includes("spatial8d")) next.spatial8d = false;
   return next;
 }
