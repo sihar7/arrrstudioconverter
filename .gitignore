@@ -40,5 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# runtime (cache token bgutil, file sementara)
-/storage/tmp/
+# runtime (hasil konversi dev dari converter API)
+/storage/

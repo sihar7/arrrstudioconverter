@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
+import Url from "./src/Url/Url";
 
 const dev = process.env.NODE_ENV !== "production";
+// Semua proses server ada di backend (ARRSTUDIOCONVERTERBE); /api/* di-proxy ke sana → cookie tetap milik domain web
+const backend = (process.env.BACKEND_URL || (dev ? Url.backendApiDev : Url.backendApi)).replace(/\/$/, "");
 
 // CSP: script inline masih diperlukan (skrip tema anti-kedip + bootstrap Next); asal eksternal dibatasi.
 // vercel.live = toolbar komentar di deployment preview Vercel.
@@ -44,10 +47,9 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Ikon diimpor per-modul (bukan seluruh barrel) → bundle klien lebih kecil, compile lebih cepat
   experimental: { optimizePackageImports: ["iconoir-react"] },
-  // Paket yang memanggil binary / modul native → jangan di-bundle
-  serverExternalPackages: ["ffmpeg-static", "ioredis", "ioredis-mock", "archiver"],
-  // PO Token provider bgutil dipanggil yt-dlp lewat path (bukan import) → ikutkan manual ke function Vercel
-  outputFileTracingIncludes: { "/api/**/*": ["./vendor/bgutil/**/*"] },
+  async rewrites() {
+    return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com" },
