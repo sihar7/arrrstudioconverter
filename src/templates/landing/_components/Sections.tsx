@@ -7,6 +7,8 @@ import { useMeQuery } from "@/store/api/baseApi";
 import { ButtonLink } from "@/components/ui/Button";
 import { LogoMark } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils";
+import { rupiah } from "@/lib/planFeatures";
+import { PLANS, PLAN_PRICE } from "@/lib/schemas/plans";
 import Console from "./Console";
 
 const wrap = "mx-auto max-w-[var(--wrap)] px-4 sm:px-8";
@@ -183,50 +185,119 @@ export function Steps() {
   );
 }
 
-/** Paket akses — tabel spesifikasi; kolom member ditandai aksen */
+const NO = "—";
+const COLS = ["guest", "free", "pro", "studio"] as const;
+type Col = (typeof COLS)[number];
+
+/**
+ * Paket & harga — Tamu · Free · Pro · Studio. Semua angka diturunkan dari PLANS (sama dengan batas server &
+ * halaman Harga); kolom Pro ditandai aksen sebagai pilihan utama. Tamu = batas free tanpa login.
+ */
 export function Compare() {
-  const { t } = useT();
+  const { t, f } = useT();
+  const { data: me } = useMeQuery();
   const l = t.landing;
-  const yes = (v: string) => v !== "—";
+  const c = l.compare;
+  // Kuota tamu dari server bila pengunjung belum login (default 3)
+  const guestDaily = (!me?.user && me?.quota.limit) || 3;
+  const plan = (col: Col) => PLANS[col === "guest" ? "free" : col];
+
+  const rows: { label: string; get: (col: Col) => string }[] = [
+    {
+      label: c.price,
+      get: (col) => (col === "guest" || col === "free" ? c.free : `${rupiah(PLAN_PRICE[col])}${c.perMonth}`),
+    },
+    {
+      label: c.daily,
+      get: (col) => (col === "guest" ? f(c.perDay, { n: guestDaily }) : (plan(col).daily ?? c.unlimited).toString()),
+    },
+    { label: c.duration, get: (col) => f(c.minutes, { n: Math.floor(plan(col).maxDurationSec / 60) }) },
+    { label: c.quality, get: (col) => `${plan(col).maxBitrate} kbps` },
+    {
+      label: c.formats,
+      get: (col) => (plan(col).formats.length === PLANS.studio.formats.length ? c.allFormats : plan(col).formats.map((x) => x.toUpperCase()).join(", ")),
+    },
+    {
+      label: c.effects,
+      get: (col) => (plan(col).effects.includes("spatial8d") ? c.fxStudio : plan(col).effects.length ? c.fxPro : c.fxBasic),
+    },
+    {
+      label: c.compress,
+      get: (col) => ({ off: NO, standard: c.compressStandard, max: c.compressMax })[plan(col).smartCompress],
+    },
+    { label: c.publish, get: (col) => (col === "guest" ? NO : c.yes) },
+    {
+      label: c.bulk,
+      get: (col) => {
+        const n = plan(col).bulkRoblox;
+        return n == null ? c.unlimited : n > 0 ? f(c.bulkMax, { n }) : NO;
+      },
+    },
+    { label: c.library, get: (col) => ({ off: NO, basic: c.libraryBasic, full: c.libraryFull })[plan(col).library] },
+    { label: c.history, get: (col) => (col === "guest" ? NO : String(plan(col).historyMax)) },
+  ];
+
+  const head = (col: Col) => (col === "guest" ? l.guestPlan : t.plan.names[col]);
+
   return (
     <section className={cn(wrap, "py-24 sm:py-32")}>
       <div className="reveal max-w-4xl">
         <p className="eyebrow">{l.compareEyebrow}</p>
         <h2 className={cn(h2, "mt-5")}>{l.compareTitle}</h2>
       </div>
-      <div className="reveal mat mt-14 overflow-x-auto rounded-l border border-line/60 bg-surface [--d:100ms]">
-        <table className="w-full min-w-[520px] text-left text-[14.5px]">
+      <div className="reveal mat thin-scroll mt-14 overflow-x-auto rounded-l border border-line/60 bg-surface [--d:100ms]">
+        <table className="w-full min-w-[720px] table-fixed text-left text-[14px]">
+          <colgroup>
+            <col className="w-[26%]" />
+            {COLS.map((col) => (
+              <col key={col} />
+            ))}
+          </colgroup>
           <thead>
             <tr className="border-b border-line/60">
-              <th scope="col" className="w-1/2 px-5 py-5 sm:px-7" />
-              <th scope="col" className="caps px-5 py-5 text-[10.5px] text-fg-3 sm:px-7">
-                {l.guestPlan}
-              </th>
-              <th scope="col" className="caps relative px-5 py-5 text-[10.5px] text-fg sm:px-7">
-                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-accent" />
-                {l.memberPlan}
-              </th>
+              <th scope="col" className="px-5 py-5 sm:px-6" />
+              {COLS.map((col) => (
+                <th
+                  key={col}
+                  scope="col"
+                  className={cn("relative px-4 py-5 align-bottom sm:px-5", col === "pro" ? "bg-raised/50 text-fg" : col === "guest" ? "text-fg-3" : "text-fg")}
+                >
+                  {col === "pro" && <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-accent" />}
+                  <span className="caps block text-[10.5px]">{head(col)}</span>
+                  {col === "guest" && <span className="mt-1 block text-[11.5px] font-normal normal-case text-fg-3">{l.guestSub}</span>}
+                  {col === "pro" && <span className="mt-1 block text-[11.5px] font-normal normal-case text-fg-2">{t.pricing.popular}</span>}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {l.compareRows.map((r) => (
+            {rows.map((r) => (
               <tr key={r.label} className="border-b border-line/60 transition-colors last:border-b-0 hover:bg-raised/60">
-                <th scope="row" className="px-5 py-4 font-medium sm:px-7">
+                <th scope="row" className="px-5 py-3.5 font-medium sm:px-6">
                   {r.label}
                 </th>
-                <td className="px-5 py-4 text-fg-3 sm:px-7">{r.guest}</td>
-                <td className="bg-raised/40 px-5 py-4 font-medium text-fg sm:px-7">
-                  <span className="inline-flex items-center gap-2">
-                    {yes(r.member) && <Check width={15} height={15} strokeWidth={2.2} className="text-ok" aria-hidden="true" />}
-                    {r.member}
-                  </span>
-                </td>
+                {COLS.map((col) => {
+                  const v = r.get(col);
+                  return (
+                    <td key={col} className={cn("px-4 py-3.5 sm:px-5", col === "pro" && "bg-raised/40", v === NO ? "text-fg-3" : col === "guest" ? "text-fg-2" : "font-medium text-fg")}>
+                      <span className="inline-flex items-center gap-1.5">
+                        {v === c.yes && <Check width={15} height={15} strokeWidth={2.2} className="text-ok" aria-hidden="true" />}
+                        {v === NO ? <span aria-label={t.pricing.notIncluded.replace(/:$/, "")}>{NO}</span> : v}
+                      </span>
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="mt-4 text-[13px] text-fg-3">{l.compareNote}</p>
+      <div className="reveal mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between [--d:140ms]">
+        <p className="max-w-2xl text-[13px] leading-relaxed text-fg-3">{l.compareNote}</p>
+        <ButtonLink href="/pricing" variant="ghost" iconRight={<ArrowRight width={16} height={16} />} className="shrink-0 self-start sm:self-auto">
+          {l.compareCta}
+        </ButtonLink>
+      </div>
     </section>
   );
 }

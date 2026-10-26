@@ -9,6 +9,7 @@ export const ADMIN_EVENT = "arr:admin-event";
 export type LinkState = "connecting" | "live" | "offline";
 
 const SOUND_KEY = "arr-admin-sound";
+const eventKey = (e: AdminEvent) => `${e.type}:${e.orderId}:${e.at}`;
 const RETRY_MS = 15_000;
 
 const readSound = () => {
@@ -51,6 +52,7 @@ function chime() {
 export function useAdminEvents(onEvent: (e: AdminEvent) => void, enabled: boolean) {
   const [state, setState] = useState<LinkState>("connecting");
   const [events, setEvents] = useState<AdminEvent[]>([]);
+  const clearedAt = useRef(0);
   // Lazy init aman: panel admin (lonceng) baru dirender di klien setelah sesi termuat, jadi tidak ada beda SSR
   const [sound, setSoundState] = useState(() => (typeof window === "undefined" ? true : readSound()));
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(() =>
@@ -88,7 +90,9 @@ export function useAdminEvents(onEvent: (e: AdminEvent) => void, enabled: boolea
         } catch {
           return;
         }
-        setEvents((list) => [e, ...list].slice(0, 20));
+        // Event yang sudah dibersihkan / terkirim dobel (sambung ulang, dua koneksi sesaat) tidak ditampilkan lagi
+        if (e.at <= clearedAt.current) return;
+        setEvents((list) => (list.some((x) => eventKey(x) === eventKey(e)) ? list : [e, ...list].slice(0, 20)));
         window.dispatchEvent(new CustomEvent(ADMIN_EVENT, { detail: e }));
         cb.current(e);
         // Hanya event yang butuh perhatian admin yang berbunyi / muncul di desktop
@@ -125,5 +129,11 @@ export function useAdminEvents(onEvent: (e: AdminEvent) => void, enabled: boolea
     setPermission(await Notification.requestPermission());
   }, []);
 
-  return { state, events, sound, setSound, permission, requestDesktop, clear: () => setEvents([]) };
+  /** Bersihkan daftar: semua event sampai detik ini disembunyikan permanen (sampai panel dimuat ulang) */
+  const clear = useCallback(() => {
+    clearedAt.current = Date.now();
+    setEvents([]);
+  }, []);
+
+  return { state, events, sound, setSound, permission, requestDesktop, clear };
 }
