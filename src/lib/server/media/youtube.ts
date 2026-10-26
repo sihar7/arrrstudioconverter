@@ -7,7 +7,6 @@ import { config } from "../config";
 import { AppError } from "../http";
 import { getJson, K, setJson } from "../redis";
 import { run } from "./process";
-import { bridgeDownload, bridgeEnabled, bridgeInfo, bridgePlaylist, FINAL_CODES } from "./bridge";
 import { cobaltDownload, cobaltEnabled } from "./cobalt";
 import { innertubeDownload, innertubeInfo, isFinalError } from "./innertube";
 import { probe } from "./ffmpeg";
@@ -189,10 +188,7 @@ export async function videoInfo(videoId: string): Promise<VideoInfo> {
         return Number.isFinite(n) ? Math.round(n) : null;
       })
       .catch(() => null);
-  // Serverless: IP datacenter diblokir → jembatan Apps Script dulu
-  const inner = (
-    config.serverless && bridgeEnabled() ? bridgeInfo(videoId).catch(() => innertubeInfo(videoId)) : innertubeInfo(videoId)
-  ).catch(() => null);
+  const inner = innertubeInfo(videoId).catch(() => null);
 
   const [meta, it] = await Promise.all([oembed, inner]);
   const dur = it?.duration || (config.serverless ? null : await ytdlpDuration());
@@ -215,18 +211,6 @@ export async function playlist(listId: string): Promise<{ title: string; items: 
   const cacheKey = K("yt", "pl", listId);
   const cached = await getJson<{ title: string; items: PlaylistItem[] }>(cacheKey);
   if (cached) return cached;
-
-  // Jembatan (1 request InnerTube browse) lebih cepat dari spawn yt-dlp & lolos blokir IP datacenter
-  if (bridgeEnabled()) {
-    try {
-      const result = await bridgePlaylist(listId);
-      await setJson(cacheKey, result, 3600);
-      return result;
-    } catch (e) {
-      if (e instanceof AppError && FINAL_CODES.has(e.code)) throw new AppError(e.message, 404, e.code);
-      console.error(`[bridge] playlist ${listId}:`, (e as Error).message);
-    }
-  }
 
   const bin = await ytdlpBin();
   const r = await run(
@@ -343,26 +327,18 @@ async function doDownload(videoId: string, onProgress: (pct: number) => void): P
     }
   };
 
-  // Lokal: InnerTube langsung → jembatan → yt-dlp → cobalt.
-  // Serverless: jembatan dulu — dari IP datacenter jalur langsung hampir pasti kena bot check
-  const direct = (): Promise<SourceAudio> => innertubeDownload(videoId, dir, config.limits.maxDuration, onProgress);
-  const bridge = (): Promise<SourceAudio> => bridgeDownload(videoId, dir, config.limits.maxDuration, onProgress);
-  const paths: [string, () => Promise<SourceAudio>][] = [["innertube", direct]];
-  if (bridgeEnabled()) paths.splice(config.serverless ? 0 : 1, 0, ["bridge", bridge]);
-
-  for (const [label, attempt] of paths) {
-    try {
-      const res = await attempt();
-      await fsp.writeFile(infoPath, JSON.stringify({ id: videoId, title: res.title, duration: res.duration }));
-      return res;
-    } catch (e) {
-      if (isFinalError(e) || (e instanceof AppError && FINAL_CODES.has(e.code))) {
-        await fsp.rm(dir, { recursive: true, force: true });
-        throw e;
-      }
-      console.error(`[${label}] ${videoId}:`, (e as Error).message);
-      onProgress(0);
+  // Jalur utama: client InnerTube sendiri (cepat, tanpa PO token/env). Gagal → yt-dlp → cobalt
+  try {
+    const res = await innertubeDownload(videoId, dir, config.limits.maxDuration, onProgress);
+    await fsp.writeFile(infoPath, JSON.stringify({ id: videoId, title: res.title, duration: res.duration }));
+    return res;
+  } catch (e) {
+    if (isFinalError(e) || (e instanceof AppError && (e.code === "TOO_LONG" || e.code === "TOO_LARGE"))) {
+      await fsp.rm(dir, { recursive: true, force: true });
+      throw e;
     }
+    console.error(`[innertube] ${videoId}:`, (e as Error).message);
+    onProgress(0);
   }
 
   const blocked = cobaltEnabled() && (await getJson<boolean>(BLOCKED_KEY));
