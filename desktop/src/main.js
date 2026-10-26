@@ -8,7 +8,6 @@ const store = require("./store");
 const downloads = require("./downloads");
 const updater = require("./updater");
 const chrome = require("./chrome");
-require("./youtube"); // daftarkan IPC YouTube-di-dalam-app
 const { attachContextMenu, buildAppMenu } = require("./menu");
 
 const OFFLINE_FILE = path.join(__dirname, "offline.html");

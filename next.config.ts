@@ -42,6 +42,18 @@ const nextConfig: NextConfig = {
   // sub-path, isi Url.basePath; withBase() di kode sudah siap untuk itu.
   ...(Url.basePath ? { basePath: Url.basePath } : {}),
   poweredByHeader: false,
+  async redirects() {
+    // Domain lama (*.vercel.app produksi) → domain publik. Server hanya menerima request dari APP_URL
+    // (cek lintas situs), jadi pengunjung lama dialihkan supaya tidak kena "Permintaan lintas situs ditolak".
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "arrrstudioconverter.vercel.app" }],
+        destination: `${Url.site}/:path*`,
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

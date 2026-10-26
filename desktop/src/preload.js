@@ -40,26 +40,5 @@ if (origin && location.origin === origin && (!base || location.pathname === base
     getSaveSettings: () => ipcRenderer.invoke("download:getSettings"),
     setSaveMode: (mode) => ipcRenderer.invoke("download:setMode", mode),
     resetDownloadsFolder: () => ipcRenderer.invoke("download:resetFolder"),
-    /** YouTube asli di dalam app (desktop/src/youtube.js) — area dalam px CSS relatif jendela */
-    youtube: {
-      show: (rect) => ipcRenderer.send("yt:show", rect),
-      setBounds: (rect) => ipcRenderer.send("yt:bounds", rect),
-      hide: (pause) => ipcRenderer.send("yt:hide", pause),
-      nav: (action) => ipcRenderer.send("yt:nav", action),
-      freeze: () => ipcRenderer.invoke("yt:freeze"),
-      unfreeze: () => ipcRenderer.send("yt:unfreeze"),
-      getState: () => ipcRenderer.invoke("yt:state"),
-      onState(cb) {
-        const listener = (_e, s) => cb(s);
-        ipcRenderer.on("yt:state", listener);
-        return () => ipcRenderer.removeListener("yt:state", listener);
-      },
-      /** cb({ url }) — klik kanan "Tambah ke antrean Converter" di dalam YouTube */
-      onAdd(cb) {
-        const listener = (_e, p) => cb(p);
-        ipcRenderer.on("yt:add", listener);
-        return () => ipcRenderer.removeListener("yt:add", listener);
-      },
-    },
   });
 }

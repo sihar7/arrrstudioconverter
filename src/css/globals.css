@@ -154,11 +154,6 @@ html[data-titlebar] body:not(:has(.desk-own-bar)) :is(.min-h-dvh) {
   min-height: calc(100dvh - var(--bar-h));
 }
 
-/* Halaman YouTube (view native menutupi area konten): toast tampil inline di toolbar-nya, bukan di pojok */
-html[data-yt-view] [data-toaster] {
-  display: none;
-}
-
 /* Scrollbar tipis ala aplikasi; jalurnya di antara title bar & bottom bar (tidak tertimpa tombol jendela) */
 html[data-shell="desktop"]::-webkit-scrollbar,
 html[data-shell="desktop"] ::-webkit-scrollbar {

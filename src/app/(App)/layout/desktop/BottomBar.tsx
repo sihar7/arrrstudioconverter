@@ -48,7 +48,6 @@ export default function BottomBar() {
       id: "studio",
       label: t.nav.studio,
       icon: SfWaveform,
-      // YouTube: app v1.1+ = YouTube asli; app lama = versi web (cari + embed)
       items: [CONVERTER, YOUTUBE, ...(member ? [SKYBOX] : [])],
     },
     ...(member ? [{ id: "images", label: t.nav.images, icon: SfCutout, items: [REMOVE_BG, UPSCALE] }] : []),
