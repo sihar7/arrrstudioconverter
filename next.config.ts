@@ -57,6 +57,9 @@ const nextConfig: NextConfig = {
   // Ikon diimpor per-modul (bukan seluruh barrel) → bundle klien lebih kecil, compile lebih cepat
   experimental: {
     optimizePackageImports: ["iconoir-react"],
+    // Cache build Turbopack (default aktif di 16.4) + .next/cache yang dipulihkan Vercel pernah menyajikan CSS basi
+    // (aturan baru di globals.css hilang di produksi). Build selalu bersih — sedikit lebih lama, hasil pasti benar.
+    turbopackFileSystemCacheForBuild: false,
     // Gabungkan chunk JS sekecil mungkin jumlahnya: kunjungan pertama (landing) jadi 2–3 file, bukan ±14.
     // Biaya: chunk lebih besar & sedikit duplikasi antar-halaman — tetap ter-cache immutable 1 tahun.
     turbopackChunking: {
