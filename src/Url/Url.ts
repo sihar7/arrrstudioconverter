@@ -12,7 +12,7 @@ const Url = {
   desktopWindows: "https://github.com/sihar7/arrrstudioconverter/releases/latest/download/ARRR-Studio-Converter-Setup.exe",
   desktopMac: "https://github.com/sihar7/arrrstudioconverter/releases/latest/download/ARRR-Studio-Converter-mac.dmg",
 
-  // Web di root subdomain (bypass.arrstudio.com) → tanpa basePath. Bila suatu saat disajikan di sub-path, isi di sini (mis. "/bypass"):
+  // Web di root subdomain (bypass.arrrstudio.com) → tanpa basePath. Bila suatu saat disajikan di sub-path, isi di sini (mis. "/bypass"):
   // next.config memakainya sebagai basePath & withBase() memberi awalan pada fetch, <a> biasa, <img>, EventSource.
   basePath: "",
 

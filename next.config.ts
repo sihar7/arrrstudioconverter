@@ -38,7 +38,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Web di subdomain sendiri (bypass.arrstudio.com) → di root, tanpa basePath. Kalau suatu saat pindah ke
+  // Web di subdomain sendiri (bypass.arrrstudio.com) → di root, tanpa basePath. Kalau suatu saat pindah ke
   // sub-path, isi Url.basePath; withBase() di kode sudah siap untuk itu.
   ...(Url.basePath ? { basePath: Url.basePath } : {}),
   poweredByHeader: false,

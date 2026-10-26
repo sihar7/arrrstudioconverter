@@ -6,7 +6,7 @@ import "@/css/globals.css";
 // Tanpa web font: pakai font sistem (SF Pro di iPhone/Mac, Segoe UI Variable di Windows, Roboto di Android)
 // → nol request font (sebelumnya ±600 KB) dan rasa native ala iOS. Stack ada di globals.css.
 
-// VERCEL_PROJECT_PRODUCTION_URL otomatis = custom domain produksi (bypass.arrstudio.com) begitu domain itu aktif
+// VERCEL_PROJECT_PRODUCTION_URL otomatis = custom domain produksi (bypass.arrrstudio.com) begitu domain itu aktif
 const siteUrl =
   process.env.APP_URL ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");

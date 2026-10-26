@@ -5,8 +5,8 @@
   "private": true,
   "description": "Aplikasi desktop ARRR Studio Converter (Windows & macOS) — YouTube ke audio Roblox",
   "author": "ARRR Studio",
-  "homepage": "https://bypass.arrstudio.com",
-  "//appUrl": "Web yang dibuka app. Ganti ke https://bypass.arrstudio.com setelah domain itu aktif di Vercel + env Railway (APP_URL, DISCORD_REDIRECT_URI) + redirect Discord diganti.",
+  "homepage": "https://bypass.arrrstudio.com",
+  "//appUrl": "Web yang dibuka app. Ganti ke https://bypass.arrrstudio.com setelah domain itu aktif di Vercel + env Railway (APP_URL, DISCORD_REDIRECT_URI) + redirect Discord diganti.",
   "appUrl": "https://arrrstudioconverter.vercel.app",
   "main": "src/main.js",
   "scripts": {
