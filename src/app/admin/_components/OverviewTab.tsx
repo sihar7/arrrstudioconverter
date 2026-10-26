@@ -71,7 +71,10 @@ export default function OverviewTab({ onOpen }: { onOpen: (tab: "orders" | "user
   const mrr = b.subscribers.pro * PLAN_PRICE.pro + b.subscribers.studio * PLAN_PRICE.studio;
   const running = data.jobs.queued + data.jobs.downloading + data.jobs.processing;
   const values = data.daily.map((d) => (series === "count" ? d.count : d.revenue));
+  // Batas atas sumbu dibulatkan (1·2·5 × 10ⁿ) supaya label sumbu rapi dan batang tertinggi tidak selalu mentok atas
   const max = Math.max(1, ...values);
+  const mag = 10 ** Math.floor(Math.log10(max));
+  const top = ([1, 2, 5, 10].find((m) => m * mag >= max) ?? 10) * mag;
   const total = values.reduce((a, v) => a + v, 0);
   const fmtTotal = Math.max(1, data.formats.reduce((a, f) => a + f.count, 0));
   const freeUsers = Math.max(0, data.users - subs);
@@ -146,30 +149,48 @@ export default function OverviewTab({ onOpen }: { onOpen: (tab: "orders" | "user
               <p className="font-display text-[26px] font-bold tabular-nums tracking-[-0.03em]">{fmtValue(total)}</p>
               <p className="text-[13px] text-fg-3">14 hari terakhir · UTC</p>
             </div>
-            <div className="relative h-48">
-              {/* Garis bantu tipis */}
-              <div aria-hidden="true" className="absolute inset-0 flex flex-col justify-between">
-                {[0, 1, 2, 3].map((i) => (
-                  <span key={i} className="h-px bg-line/50" />
-                ))}
+            {/* Sumbu Y (0 · ½ · maks "bulat") + batang ramping berlebar tetap; hari kosong = garis tipis */}
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3" aria-hidden="true">
+              <div className="flex h-52 flex-col justify-between pb-px text-right font-mono text-[11px] leading-none text-fg-3">
+                <span className="-translate-y-1/2">{fmtValue(top)}</span>
+                <span>{fmtValue(top / 2)}</span>
+                <span className="translate-y-1/2">0</span>
               </div>
-              <div className="relative flex h-full items-end gap-1.5" aria-hidden="true">
+              <div className="relative h-52">
+                <div className="absolute inset-0 flex flex-col justify-between">
+                  <span className="h-px bg-line/40" />
+                  <span className="h-px bg-line/40" />
+                  <span className="h-px bg-line" />
+                </div>
+                <div className="relative flex h-full items-end">
+                  {data.daily.map((d, i) => {
+                    const v = values[i];
+                    return (
+                      <div key={d.day} className="group relative flex h-full flex-1 items-end justify-center px-[3px]" title={`${d.day}: ${fmtValue(v)}`}>
+                        <span className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 -translate-y-[calc(100%+6px)] whitespace-nowrap rounded-xs bg-fg px-1.5 py-0.5 font-mono text-[11px] text-bg opacity-0 transition-opacity group-hover:opacity-100" style={{ bottom: `${(v / top) * 100}%` }}>
+                          {fmtValue(v)}
+                        </span>
+                        <div
+                          className={
+                            v > 0
+                              ? "w-full max-w-[26px] rounded-t-xs bg-accent/80 transition-[height,background-color] duration-500 ease-[var(--ease)] group-hover:bg-accent-strong"
+                              : "h-0.5 w-full max-w-[26px] bg-line transition-colors group-hover:bg-line-2"
+                          }
+                          style={v > 0 ? { height: `${(v / top) * 100}%` } : undefined}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <span />
+              <div className="mt-2 flex font-mono text-[10.5px] text-fg-3">
                 {data.daily.map((d, i) => (
-                  <div key={d.day} className="group relative flex h-full flex-1 flex-col justify-end" title={`${d.day}: ${fmtValue(values[i])}`}>
-                    <span className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-xs bg-fg px-1.5 py-0.5 font-mono text-[11px] text-bg opacity-0 transition-opacity group-hover:opacity-100">
-                      {fmtValue(values[i])}
-                    </span>
-                    <div
-                      className="w-full rounded-t-xs bg-accent/75 transition-[height,background-color] duration-500 ease-[var(--ease)] group-hover:bg-accent-strong"
-                      style={{ height: `${Math.max(1.5, (values[i] / max) * 100)}%` }}
-                    />
-                  </div>
+                  <span key={d.day} className="flex-1 text-center">
+                    {i === 0 || d.day.endsWith("-01") ? `${d.day.slice(8)}/${d.day.slice(5, 7)}` : d.day.slice(8)}
+                  </span>
                 ))}
               </div>
-            </div>
-            <div className="mt-2 flex justify-between font-mono text-[11px] text-fg-3" aria-hidden="true">
-              <span>{data.daily[0]?.day.slice(5)}</span>
-              <span>{data.daily.at(-1)?.day.slice(5)}</span>
             </div>
             <table className="sr-only">
               <caption>{series === "count" ? "Convert per hari" : "Pendapatan per hari (Rupiah)"}</caption>

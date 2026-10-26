@@ -287,7 +287,7 @@ export default function AdminScreen() {
           </div>
         </header>
 
-        <main id="main" tabIndex={-1} className="w-full max-w-[1280px] flex-1 px-4 pb-16 pt-8 outline-none sm:px-8 sm:pt-10">
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[1520px] flex-1 px-4 pb-16 pt-8 outline-none sm:px-8 sm:pt-10">
           <div className="mb-8">
             <h1 className="font-display text-[clamp(26px,3.2vw,36px)] font-bold leading-[1.05] tracking-[-0.03em]">{current.title}</h1>
             <p className="mt-2 text-[14px] text-fg-2">{current.sub}</p>
