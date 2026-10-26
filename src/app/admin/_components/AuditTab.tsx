@@ -18,6 +18,7 @@ const ACTION: Record<string, string> = {
   "file.delete": "Hapus file",
   "maintenance.cleanup": "Bersihkan storage",
   "maintenance.revoke-admin": "Cabut sesi admin",
+  "system.janitor": "Jalankan janitor",
 };
 
 const COLS = "md:grid-cols-[170px_minmax(0,1.4fr)_minmax(0,1fr)_120px]";

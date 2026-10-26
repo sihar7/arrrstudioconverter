@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { enqueue } from "@/store/slices/converterSlice";
 import { shortName } from "@/lib/shortName";
 import { useT } from "@/hooks/useT";
 import PageHeader from "@/components/shared/PageHeader";
@@ -10,10 +11,14 @@ import PageLoader from "@/components/shared/PageLoader";
 import SourceCard from "./SourceCard";
 import QueueCard from "./QueueCard";
 import SettingsPanel from "./SettingsPanel";
+import StatsBar from "./StatsBar";
 import StepGuide, { STEP_TARGETS } from "./StepGuide";
+import { useAddSource } from "../_hooks/useAddSource";
 import { useQueueRunner } from "../_hooks/useQueueRunner";
 import { useAudioPreview } from "../_hooks/useAudioPreview";
 import { useRobloxUpload } from "../_hooks/useRobloxUpload";
+import { useShortcuts } from "../_hooks/useShortcuts";
+import { useBatchSignals } from "../_hooks/useBatchSignals";
 
 // Dialog berat di-load saat dibutuhkan saja (lazy)
 const RobloxUploadDialog = dynamic(() => import("@/components/roblox/RobloxUploadDialog"), {
@@ -25,18 +30,24 @@ const BulkUploadDialog = dynamic(() => import("@/components/roblox/BulkUploadDia
   loading: () => <PageLoader variant="inline" />,
 });
 const GuestGate = dynamic(() => import("@/components/shared/GuestGate"), { ssr: false });
+const ShortcutsDialog = dynamic(() => import("./ShortcutsDialog"), { ssr: false });
 
 export default function ConverterScreen() {
   const { t } = useT();
+  const dispatch = useAppDispatch();
   const [gate, setGate] = useState(false);
+  const [help, setHelp] = useState(false);
   const [uploadKey, setUploadKey] = useState<string | null>(null);
   const [bulk, setBulk] = useState<string[] | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const items = useAppSelector((s) => s.converter.items);
   const uploadItem = items.find((i) => i.key === uploadKey) ?? null;
 
+  const src = useAddSource();
   const preview = useAudioPreview();
   const roblox = useRobloxUpload();
+  const signals = useBatchSignals();
   useQueueRunner({ onGuestLimit: () => setGate(true), onDone: roblox.autoUpload });
 
   const bulkItems = items.filter(roblox.uploadable);
@@ -57,14 +68,27 @@ export default function ConverterScreen() {
   };
   const bulkEntries = (bulk ?? []).flatMap((k) => bulkItems.filter((i) => i.key === k));
 
+  useShortcuts({
+    onFocusInput: () => {
+      inputRef.current?.focus();
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    onPasteLinks: (text) => void src.submit(text),
+    onConvertAll: () => dispatch(enqueue()),
+    onEscape: () => setPicked([]),
+    onHelp: () => setHelp(true),
+  });
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <PageHeader eyebrow={t.converter.eyebrow} title={t.converter.title} sub={t.converter.sub} actions={<StepGuide />} />
 
+      <StatsBar />
+
       {/* Mobile: sumber → pengaturan → antrean. Desktop: pengaturan di kolom kanan (sticky). */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[auto_1fr]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] lg:grid-rows-[auto_1fr]">
         <div id={STEP_TARGETS[0]} className="min-w-0 scroll-mt-28 lg:col-start-1">
-          <SourceCard />
+          <SourceCard ref={inputRef} src={src} />
         </div>
         <div id={STEP_TARGETS[1]} className="min-w-0 scroll-mt-28 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1">
           <SettingsPanel />
@@ -81,6 +105,8 @@ export default function ConverterScreen() {
             onClearSelection={() => setPicked([])}
             onUploadMany={openBulk}
             blockReason={roblox.blockReason}
+            onShowShortcuts={() => setHelp(true)}
+            notify={{ on: signals.notify, supported: signals.notifySupported, toggle: () => void signals.toggleNotify() }}
           />
         </div>
       </div>
@@ -107,6 +133,7 @@ export default function ConverterScreen() {
           }}
         />
       )}
+      {help && <ShortcutsDialog open onClose={() => setHelp(false)} />}
       {gate && <GuestGate open onClose={() => setGate(false)} />}
     </div>
   );

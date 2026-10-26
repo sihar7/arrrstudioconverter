@@ -4,6 +4,10 @@ export interface SessionUser {
   displayName: string;
   avatarUrl: string | null;
   loginAt: number;
+  /** email Discord — hanya dikirim ke klien bila user adalah admin */
+  email?: string | null;
+  /** true bila user termasuk admin aplikasi (fitur admin seperti Obfuscator) */
+  isAdmin?: boolean;
 }
 
 export interface QuotaInfo {

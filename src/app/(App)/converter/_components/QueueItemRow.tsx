@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState } from "react";
 import Image from "next/image";
-import { Check, Copy, Download, Pause, Play, Refresh, Upload, WarningTriangle, Xmark } from "iconoir-react";
+import { Check, Copy, Download, NavArrowDown, NavArrowUp, Pause, Play, Refresh, Upload, WarningTriangle, Xmark } from "iconoir-react";
 import { isRunning, type ItemStatus, type QueueItem } from "@/store/slices/converterSlice";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
@@ -26,14 +26,17 @@ interface Props {
   selectable: boolean;
   /** Urutan pilihan (1-based) atau null */
   selectIndex: number | null;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   onSelect: () => void;
+  onMove: (dir: -1 | 1) => void;
   onConvert: () => void;
   onRemove: () => void;
   onTogglePlay: () => void;
   onUpload: () => void;
 }
 
-function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, onSelect, onConvert, onRemove, onTogglePlay, onUpload }: Props) {
+function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, canMoveUp, canMoveDown, onSelect, onMove, onConvert, onRemove, onTogglePlay, onUpload }: Props) {
   const { t, f, lang } = useT();
   const toast = useToast();
   const running = isRunning(item.status);
@@ -50,7 +53,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, onS
   return (
     <li
       className={cn(
-        "grid grid-cols-[96px_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-line px-4 py-4 transition-colors duration-200 last:border-b-0 sm:grid-cols-[112px_minmax(0,1fr)_auto] sm:px-5",
+        "group/row grid grid-cols-[96px_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-line/70 px-4 py-4 transition-colors duration-200 last:border-b-0 hover:bg-fg/[0.02] sm:grid-cols-[120px_minmax(0,1fr)_auto] sm:px-5",
         selected && "bg-fg/[0.035]",
       )}
     >
@@ -67,7 +70,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, onS
             src={item.thumbnail}
             alt=""
             fill
-            sizes="112px"
+            sizes="120px"
             unoptimized
             loading="lazy"
             className={cn(
@@ -101,7 +104,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, onS
         </button>
       ) : (
         <div className="relative aspect-video w-full self-start overflow-hidden rounded-s bg-raised">
-          <Image src={item.thumbnail} alt="" fill sizes="112px" unoptimized loading="lazy" className="object-cover" />
+          <Image src={item.thumbnail} alt="" fill sizes="120px" unoptimized loading="lazy" className="object-cover" />
           <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white">{formatDuration(outDur)}</span>
         </div>
       )}
@@ -139,6 +142,11 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, onS
                 {t.converter.status.done}
               </Badge>
               <span className="text-[12px] text-fg-3">{f(t.converter.expires, { time: formatClock(item.result!.expiresAt, lang) })}</span>
+              {item.options && Math.abs(item.options.speed - 1) > 1e-6 && (
+                <span className="rounded-xs bg-raised px-2 py-0.5 font-mono text-[11.5px] text-fg-2">
+                  {f(t.converter.inRoblox, { speed: Number(item.options.speed.toFixed(2)) })}
+                </span>
+              )}
               {(item.result!.duration ?? 0) > ROBLOX_SOFT_LIMIT_SEC && (
                 <span className="text-[12px] text-warn">{t.converter.robloxLimit}</span>
               )}
@@ -176,6 +184,13 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, onS
 
       {/* Aksi */}
       <div className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 sm:col-span-1 sm:flex-nowrap sm:self-center">
+        {/* Urutan proses — hanya untuk yang belum dikirim; di desktop muncul saat hover baris */}
+        {item.status === "idle" && (canMoveUp || canMoveDown) && (
+          <span className="mr-auto flex sm:mr-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:transition-opacity [@media(hover:hover)]:group-focus-within/row:opacity-100 [@media(hover:hover)]:group-hover/row:opacity-100">
+            <IconButton label={t.converter.moveUp} size="sm" disabled={!canMoveUp} icon={<NavArrowUp width={16} height={16} />} onClick={() => onMove(-1)} />
+            <IconButton label={t.converter.moveDown} size="sm" disabled={!canMoveDown} icon={<NavArrowDown width={16} height={16} />} onClick={() => onMove(1)} />
+          </span>
+        )}
         {item.status === "idle" && (
           <Button size="sm" variant="ghost" onClick={onConvert}>
             {t.converter.convert}

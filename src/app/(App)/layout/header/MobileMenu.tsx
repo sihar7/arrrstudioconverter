@@ -8,13 +8,13 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { QuotaPill } from "@/components/shared/UserMenu";
 import IconButton from "@/components/ui/IconButton";
-import { NAV } from "./Header";
+import { NAV, type NavItem } from "./Header";
 
 /**
  * Menu navigasi HP (< xl): panel turun dari atas berisi tujuan utama + deskripsi singkat.
  * <dialog> modal → fokus terkunci, Esc menutup; tertutup otomatis saat pindah halaman.
  */
-export default function MobileMenu({ activeHref }: { activeHref?: string }) {
+export default function MobileMenu({ activeHref, items = NAV }: { activeHref?: string; items?: readonly NavItem[] }) {
   const { t } = useT();
   const pathname = usePathname();
   const ref = useRef<HTMLDialogElement>(null);
@@ -59,7 +59,7 @@ export default function MobileMenu({ activeHref }: { activeHref?: string }) {
           </div>
         </div>
         <ul className="grid grid-cols-1 gap-px bg-line/60 sm:grid-cols-2">
-          {NAV.map(({ href, key, icon: Icon }, i) => {
+          {items.map(({ href, key, icon: Icon }, i) => {
             const active = href === activeHref;
             return (
               <li key={href} className="menu-item bg-raised" style={{ animationDelay: `${60 + i * 40}ms` }}>
@@ -80,8 +80,10 @@ export default function MobileMenu({ activeHref }: { activeHref?: string }) {
                     <Icon width={20} height={20} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold">{t.nav[key]}</span>
-                    <span className="mt-0.5 block truncate text-[12.5px] text-fg-3">{t.nav.desc[key]}</span>
+                    <span className="block text-[15px] font-semibold">{t.nav[key as keyof typeof t.nav] as string}</span>
+                    <span className="mt-0.5 block truncate text-[12.5px] text-fg-3">
+                      {t.nav.desc[key as keyof typeof t.nav.desc]}
+                    </span>
                   </span>
                   <NavArrowRight
                     width={16}

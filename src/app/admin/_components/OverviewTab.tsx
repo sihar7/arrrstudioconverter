@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash, UserXmark } from "iconoir-react";
+import { UserXmark } from "iconoir-react";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
 import { useToast } from "@/hooks/useToast";
 import { formatBytes } from "@/lib/utils";
-import { getStats, runMaintenance } from "../_service/admin.service";
+import { getStats, revokeAdminSessions } from "../_service/admin.service";
 import { errorText, useAdminConfirm, useAdminData, useAuthGuard } from "../_hooks/useAdmin";
 import { ErrorBox, RefreshButton, StatTile, Toolbar, nf } from "./parts";
+import SystemCard from "./SystemCard";
 
 const uptime = (s: number) => {
   const d = Math.floor(s / 86400);
@@ -25,30 +26,22 @@ export default function OverviewTab() {
   const toast = useToast();
   const guard = useAuthGuard();
   const [confirm, dialog] = useAdminConfirm();
-  const [busy, setBusy] = useState<string | null>(null);
+  const [revoking, setRevoking] = useState(false);
 
-  const maintain = async (action: "cleanup" | "revoke-admin-sessions") => {
-    if (action === "revoke-admin-sessions") {
-      const ok = await confirm({
-        title: "Cabut semua sesi admin",
-        message: "Semua perangkat yang masuk sebagai admin (termasuk perangkat ini) akan keluar. Lanjutkan?",
-        action: "Cabut",
-      });
-      if (!ok) return;
-    }
-    setBusy(action);
+  const revoke = async () => {
+    const ok = await confirm({
+      title: "Cabut semua sesi admin",
+      message: "Semua perangkat yang masuk sebagai admin (termasuk perangkat ini) akan keluar. Lanjutkan?",
+      action: "Cabut",
+    });
+    if (!ok) return;
+    setRevoking(true);
     try {
-      const r = await runMaintenance(action);
-      if (action === "cleanup") {
-        toast(`Bersih: ${r.files ?? 0} file, ${r.cache ?? 0} cache, ${r.rows ?? 0} baris basi`, "ok");
-        void reload();
-      } else {
-        router.replace("/admin/login");
-      }
+      await revokeAdminSessions();
+      router.replace("/admin/login");
     } catch (e) {
       if (!guard(e)) toast(errorText(e), "err");
-    } finally {
-      setBusy(null);
+      setRevoking(false);
     }
   };
 
@@ -143,45 +136,27 @@ export default function OverviewTab() {
         </CardBox>
       </div>
 
+      <SystemCard />
+
       <CardBox>
-        <CardHeader title="Perawatan" />
-        <div className="grid gap-px bg-line/60 sm:grid-cols-2">
-          <div className="flex flex-col gap-4 bg-surface p-5">
-            <div>
-              <p className="text-[15px] font-semibold">Bersihkan storage</p>
-              <p className="mt-1 text-[14px] leading-relaxed text-fg-2">
-                Hapus file hasil yang kedaluwarsa, cache sumber lama, dan baris sesi/counter basi. Otomatis juga tiap 10 menit.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="self-start"
-              loading={busy === "cleanup"}
-              onClick={() => maintain("cleanup")}
-              icon={<Trash aria-hidden="true" />}
-            >
-              Bersihkan sekarang
-            </Button>
+        <CardHeader title="Keamanan" />
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[15px] font-semibold">Cabut semua sesi admin</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-fg-2">
+              Pakai kalau curiga password admin bocor. Ganti juga ADMIN_PASSWORD_HASH di server.
+            </p>
           </div>
-          <div className="flex flex-col gap-4 bg-surface p-5">
-            <div>
-              <p className="text-[15px] font-semibold">Cabut semua sesi admin</p>
-              <p className="mt-1 text-[14px] leading-relaxed text-fg-2">
-                Pakai kalau curiga password admin bocor. Ganti juga ADMIN_PASSWORD_HASH di server.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="danger"
-              className="self-start"
-              loading={busy === "revoke-admin-sessions"}
-              onClick={() => maintain("revoke-admin-sessions")}
-              icon={<UserXmark aria-hidden="true" />}
-            >
-              Cabut sesi admin
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="danger"
+            className="shrink-0 self-start sm:self-auto"
+            loading={revoking}
+            onClick={revoke}
+            icon={<UserXmark aria-hidden="true" />}
+          >
+            Cabut sesi admin
+          </Button>
         </div>
       </CardBox>
       {dialog}

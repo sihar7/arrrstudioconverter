@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/utils";
-import type { AdminAuditEntry, AdminFile, AdminJob, AdminMe, AdminStats, AdminUser } from "@/type/admin";
+import type { AdminAuditEntry, AdminFile, AdminJob, AdminMe, AdminStats, AdminUser, JanitorReport, SystemReport } from "@/type/admin";
 
 // Semua panggilan admin → /api/admin/* (di-proxy ke BE). Cookie sesi admin httpOnly, path /api/admin.
 
@@ -27,5 +27,12 @@ export const deleteFile = (id: string) => apiFetch<{ ok: true }>(`/api/admin/fil
 
 export const getAudit = () => apiFetch<{ items: AdminAuditEntry[] }>("/api/admin/audit", { cache: "no-store" });
 
-export const runMaintenance = (action: "cleanup" | "revoke-admin-sessions") =>
-  apiFetch<Record<string, number>>("/api/admin/maintenance", { method: "POST", json: { action } });
+export const revokeAdminSessions = () =>
+  apiFetch<{ sessions: number }>("/api/admin/maintenance", { method: "POST", json: { action: "revoke-admin-sessions" } });
+
+/** Cek kesehatan: database, storage, tools, janitor, jobs, config, process */
+export const getSystem = () => apiFetch<SystemReport>("/api/admin/system", { cache: "no-store" });
+
+/** Jalankan janitor (bersihkan storage & DB) sekarang → laporan janitor + cek sistem terbaru */
+export const runJanitorNow = () =>
+  apiFetch<{ janitor: JanitorReport; system: SystemReport }>("/api/admin/system", { method: "POST" });

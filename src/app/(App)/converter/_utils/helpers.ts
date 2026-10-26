@@ -25,3 +25,64 @@ export function semiLabel(v: number) {
 export function secLabel(v: number) {
   return `${v.toFixed(1)} s`;
 }
+
+// ============================================================
+// DETEKSI LINK — dibaca langsung saat mengetik (feedback sebelum Tambah)
+// ============================================================
+
+export type LinkKind = "video" | "short" | "music" | "playlist" | "id" | "invalid";
+
+export interface ParsedLink {
+  raw: string;
+  kind: LinkKind;
+  /** videoId (11 karakter) atau playlistId */
+  id: string | null;
+  /** videoId sudah ada di antrean (belum selesai) */
+  dup: boolean;
+}
+
+const YT_HOST = /(^|\.)(youtube\.com|youtu\.be|youtube-nocookie\.com)$/i;
+const VID = /^[A-Za-z0-9_-]{11}$/;
+
+export function parseLink(raw: string): Omit<ParsedLink, "dup"> {
+  if (VID.test(raw)) return { raw, kind: "id", id: raw };
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch {
+    return { raw, kind: "invalid", id: null };
+  }
+  if (!YT_HOST.test(url.hostname)) return { raw, kind: "invalid", id: null };
+  const path = url.pathname.split("/").filter(Boolean);
+  const v = url.searchParams.get("v");
+  const list = url.searchParams.get("list");
+  if (url.hostname.endsWith("youtu.be") && path[0] && VID.test(path[0])) return { raw, kind: "video", id: path[0] };
+  if ((path[0] === "shorts" || path[0] === "live" || path[0] === "embed") && path[1] && VID.test(path[1]))
+    return { raw, kind: path[0] === "shorts" ? "short" : "video", id: path[1] };
+  if (v && VID.test(v)) return { raw, kind: url.hostname.startsWith("music.") ? "music" : "video", id: v };
+  if (list) return { raw, kind: "playlist", id: list };
+  return { raw, kind: "invalid", id: null };
+}
+
+/** Semua link di teks + tanda duplikat terhadap antrean */
+export function parseLinks(text: string, queued: Set<string>): ParsedLink[] {
+  return extractLinks(text).map((raw) => {
+    const p = parseLink(raw);
+    return { ...p, dup: p.kind !== "playlist" && p.id != null && queued.has(p.id) };
+  });
+}
+
+// ============================================================
+// PERKIRAAN UKURAN — untuk ringkasan setelan & statistik antrean
+// ============================================================
+
+/** Perkiraan ukuran file (byte) untuk durasi tertentu dengan opsi saat ini */
+export function estimateBytes(o: AudioOptions, seconds: number) {
+  const ch = o.mono ? 1 : 2;
+  if (o.format === "wav") return seconds * o.sampleRate * ch * 2;
+  if (o.format === "flac") return seconds * o.sampleRate * ch * 2 * 0.58;
+  // Lossy: bitrate × durasi; kompres pintar rata-rata ±20% lebih kecil, mono ±35%
+  const factor = (o.compress ? 0.8 : 1) * (o.mono ? 0.65 : 1);
+  return (seconds * o.bitrate * 1000 * factor) / 8;
+}
+

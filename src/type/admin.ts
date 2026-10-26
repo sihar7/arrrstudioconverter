@@ -73,3 +73,38 @@ export interface AdminAuditEntry {
   ipHash: string;
   ok: boolean;
 }
+
+// Sama dengan BE: lib/server/health.ts & janitor.ts
+export type CheckStatus = "ok" | "warn" | "error";
+
+export interface SystemCheck {
+  name: string;
+  status: CheckStatus;
+  message: string;
+  data?: Record<string, unknown>;
+}
+
+export interface SystemReport {
+  status: CheckStatus;
+  at: number;
+  uptimeSec: number;
+  checks: SystemCheck[];
+}
+
+export interface JanitorReport {
+  at: number;
+  ms: number;
+  expiredFiles: number;
+  expiredRows: number;
+  orphanDirs: number;
+  orphanRows: number;
+  tmpFiles: number;
+  cacheDirs: number;
+  evictedFiles: number;
+  evictedRows: number;
+  auditRows: number;
+  diskMb: number;
+  dbMb: number;
+  pressure: boolean;
+  error: string | null;
+}

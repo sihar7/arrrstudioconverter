@@ -659,3 +659,14 @@ html[data-theme="light"] .btn-plate {
     opacity: 0;
   }
 }
+
+/* Isi tab berganti: muncul halus dari bawah (konten baru, bukan geser layout) */
+.fade-swap {
+  animation: fade-swap var(--base) var(--ease-decel) both;
+}
+@keyframes fade-swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppStore } from "@/store/hooks";
 import { addItems } from "@/store/slices/converterSlice";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
@@ -23,6 +23,7 @@ const fromPlaylist = (items: PlaylistItem[]): VideoInfo[] =>
 /** Input link → info video / playlist → masuk antrean */
 export function useAddSource() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const toast = useToast();
   const { t, f } = useT();
   const [value, setValue] = useState("");
@@ -31,8 +32,9 @@ export function useAddSource() {
   const [suggestion, setSuggestion] = useState<PlaylistSuggestion | null>(null);
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
 
-  const submit = useCallback(async () => {
-    const links = extractLinks(value);
+  /** text = sumber lain (mis. Ctrl+V global); default isi kolom input */
+  const submit = useCallback(async (text?: string) => {
+    const links = extractLinks(text ?? value);
     if (!links.length) {
       setError(t.converter.sourceHelp);
       return;
@@ -68,14 +70,19 @@ export function useAddSource() {
     };
     await Promise.all([worker(), worker(), worker()]);
 
-    const videos = results.flat();
+    // Duplikat (sudah di antrean & belum selesai) dilewati slice — beri tahu jumlahnya
+    const queued = new Set(store.getState().converter.items.filter((i) => i.status !== "done" && i.status !== "error").map((i) => i.videoId));
+    const seen = new Set<string>();
+    const videos = results.flat().filter((v) => !queued.has(v.videoId) && !seen.has(v.videoId) && seen.add(v.videoId));
+    const dups = results.flat().length - videos.length;
     if (videos.length) dispatch(addItems(videos));
+    if (dups) toast(f(t.converter.dupSkipped, { n: dups }), "info");
 
-    if (invalid && !videos.length) setError(lastError);
+    if (invalid && !videos.length && !dups) setError(lastError);
     else if (invalid) toast(f(t.converter.invalidLinks, { n: invalid }), "err");
-    if (videos.length) setValue("");
+    if ((videos.length || dups) && text === undefined) setValue("");
     setBusy(false);
-  }, [value, dispatch, toast, t, f]);
+  }, [value, dispatch, store, toast, t, f]);
 
   const addPlaylist = useCallback(async () => {
     if (!suggestion) return;

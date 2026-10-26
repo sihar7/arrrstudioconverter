@@ -31,11 +31,22 @@ export interface QueueItem {
   upload: UploadState;
 }
 
+/** Preset buatan user (disimpan per perangkat) */
+export interface CustomPreset {
+  id: string;
+  name: string;
+  options: AudioOptions;
+}
+
 export interface ConverterState {
   options: AudioOptions;
-  preset: PresetId | "custom";
+  /** PresetId bawaan, id preset user ("u:xxxx"), atau "custom" (diubah manual) */
+  preset: PresetId | "custom" | `u:${string}`;
   autoUpload: boolean;
   autoPermission: PermissionMode;
+  /** Langsung convert begitu link ditambahkan */
+  autoConvert: boolean;
+  customPresets: CustomPreset[];
   items: QueueItem[];
 }
 
@@ -46,8 +57,12 @@ const initialState: ConverterState = {
   preset: "normal",
   autoUpload: false,
   autoPermission: "none",
+  autoConvert: false,
+  customPresets: [],
   items: [],
 };
+
+export const MAX_CUSTOM_PRESETS = 8;
 
 const RUNNING: ItemStatus[] = ["pending", "queued", "downloading", "processing"];
 export const isRunning = (s: ItemStatus) => RUNNING.includes(s);
@@ -84,9 +99,40 @@ const converterSlice = createSlice({
       if (action.payload.enabled !== undefined) state.autoUpload = action.payload.enabled;
       if (action.payload.permission !== undefined) state.autoPermission = action.payload.permission;
     },
-    hydrateConverter(state, action: PayloadAction<Partial<Pick<ConverterState, "options" | "preset" | "autoUpload" | "autoPermission">>>) {
+    setAutoConvert(state, action: PayloadAction<boolean>) {
+      state.autoConvert = action.payload;
+    },
+    savePreset(state, action: PayloadAction<string>) {
+      const name = action.payload.trim().slice(0, 24);
+      if (!name) return;
+      // Nama sama → timpa (bukan duplikat)
+      const same = state.customPresets.find((p) => p.name.toLowerCase() === name.toLowerCase());
+      if (same) {
+        same.options = state.options;
+        state.preset = `u:${same.id}`;
+        return;
+      }
+      const id = nanoid(6);
+      state.customPresets = [...state.customPresets, { id, name, options: state.options }].slice(-MAX_CUSTOM_PRESETS);
+      state.preset = `u:${id}`;
+    },
+    applyCustomPreset(state, action: PayloadAction<string>) {
+      const p = state.customPresets.find((c) => c.id === action.payload);
+      if (!p) return;
+      state.options = { ...DEFAULT_OPTIONS, ...p.options };
+      state.preset = `u:${p.id}`;
+    },
+    deletePreset(state, action: PayloadAction<string>) {
+      state.customPresets = state.customPresets.filter((p) => p.id !== action.payload);
+      if (state.preset === `u:${action.payload}`) state.preset = "custom";
+    },
+    hydrateConverter(
+      state,
+      action: PayloadAction<Partial<Pick<ConverterState, "options" | "preset" | "autoUpload" | "autoPermission" | "autoConvert" | "customPresets">>>,
+    ) {
       Object.assign(state, action.payload);
       state.options = { ...DEFAULT_OPTIONS, ...state.options };
+      state.customPresets = Array.isArray(state.customPresets) ? state.customPresets : [];
     },
 
     addItems(state, action: PayloadAction<VideoInfo[]>) {
@@ -100,13 +146,14 @@ const converterSlice = createSlice({
           author: v.author,
           thumbnail: v.thumbnail,
           duration: v.duration,
-          status: "idle",
+          // Auto-convert: langsung masuk antrean server dengan opsi saat ini
+          status: state.autoConvert ? "pending" : "idle",
           progress: 0,
           jobId: null,
           error: null,
           result: null,
-          options: null,
-          autoUpload: false,
+          options: state.autoConvert ? state.options : null,
+          autoUpload: state.autoConvert && state.autoUpload,
           upload: emptyUpload,
         });
       }
@@ -151,6 +198,17 @@ const converterSlice = createSlice({
     removeItem(state, action: PayloadAction<string>) {
       state.items = state.items.filter((i) => i.key !== action.payload);
     },
+    /** Pindahkan item satu langkah ke atas/bawah (urutan proses & unduhan) */
+    moveItem(state, action: PayloadAction<{ key: string; dir: -1 | 1 }>) {
+      const i = state.items.findIndex((it) => it.key === action.payload.key);
+      const j = i + action.payload.dir;
+      if (i < 0 || j < 0 || j >= state.items.length) return;
+      [state.items[i], state.items[j]] = [state.items[j], state.items[i]];
+    },
+    removeMany(state, action: PayloadAction<string[]>) {
+      const drop = new Set(action.payload);
+      state.items = state.items.filter((i) => !drop.has(i.key) || isRunning(i.status));
+    },
     clearFinished(state) {
       state.items = state.items.filter((i) => i.status !== "done" && i.status !== "error");
     },
@@ -170,12 +228,18 @@ export const {
   applyPreset,
   resetOptions,
   setAutoUpload,
+  setAutoConvert,
+  savePreset,
+  applyCustomPreset,
+  deletePreset,
   hydrateConverter,
   addItems,
   enqueue,
   jobUpdated,
   itemFailed,
   removeItem,
+  moveItem,
+  removeMany,
   clearFinished,
   uploadUpdated,
   consumeAutoUpload,

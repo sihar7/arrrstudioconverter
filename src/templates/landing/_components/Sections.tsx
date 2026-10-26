@@ -1,7 +1,9 @@
 "use client";
 
-import { ArrowRight, Check } from "iconoir-react";
+import { useState } from "react";
+import { ArrowRight, Check, Lock, NavArrowDown } from "iconoir-react";
 import { useT } from "@/hooks/useT";
+import { useMeQuery } from "@/store/api/baseApi";
 import { ButtonLink } from "@/components/ui/Button";
 import { LogoMark } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils";
@@ -15,16 +17,19 @@ export function Numbers() {
   const { t } = useT();
   return (
     <section className="border-y border-line/60 bg-[var(--glass)] backdrop-blur-md">
+      {/* Divider seragam: garis kiri di tiap sel kecuali kolom pertama (2 kolom di HP, 4 kolom di desktop),
+          garis atas antar baris di HP. Padding konsisten → angka sejajar rapi. */}
       <dl className={cn(wrap, "grid grid-cols-2 md:grid-cols-4")}>
         {t.landing.numbers.map((n, i) => (
           <div
             key={n.label}
             className={cn(
-              "reveal flex flex-col-reverse gap-3 py-10 sm:py-12",
-              i % 2 === 1 && "border-l border-line/60 pl-5 sm:pl-8",
-              i >= 2 && "border-t border-line/60 md:border-t-0",
-              i === 2 && "md:border-l md:pl-8",
-              i > 0 && "md:pl-8",
+              "reveal flex flex-col-reverse gap-3 border-line/60 py-10 pr-4 sm:py-12",
+              // kolom pertama rata tepi; sisanya diberi garis kiri + jarak dari garis
+              i === 0 ? "pl-0" : "pl-5 sm:pl-7",
+              (i === 1 || i === 3) && "border-l",
+              (i === 2 || i === 3) && "border-t md:border-t-0",
+              i !== 0 && "md:border-l md:pl-7",
             )}
             style={{ ["--d" as string]: `${i * 80}ms` }}
           >
@@ -252,6 +257,106 @@ export function CtaBand() {
           </ButtonLink>
         </div>
       </div>
+    </section>
+  );
+}
+
+/** Showcase Obfuscator — 10 lapis proteksi script Luau. Showcase publik; tombol buka hanya untuk admin. */
+export function Obfuscator() {
+  const { t } = useT();
+  const o = t.landing;
+  const { data: me } = useMeQuery();
+  const isAdmin = Boolean(me?.user?.isAdmin);
+  return (
+    <section className="border-t border-line/60 bg-surface/70">
+      <div className={cn(wrap, "py-24 sm:py-32")}>
+        <div className="reveal flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-3xl">
+            <p className="eyebrow inline-flex items-center gap-2">
+              <Lock width={13} height={13} strokeWidth={2} aria-hidden="true" />
+              {o.obfEyebrow}
+            </p>
+            <h2 className={cn(h2, "mt-5")}>{o.obfTitle}</h2>
+            <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-fg-2">{o.obfSub}</p>
+          </div>
+          {isAdmin && (
+            <ButtonLink
+              href="/obfuscator"
+              variant="primary"
+              iconRight={<ArrowRight width={15} height={15} />}
+              className="self-start md:self-auto"
+            >
+              {o.obfCta}
+            </ButtonLink>
+          )}
+        </div>
+        <ol className="mt-14 grid gap-px overflow-hidden rounded-l border border-line/60 bg-line/60 sm:grid-cols-2 lg:grid-cols-5">
+          {o.obfLayers.map((layer, i) => (
+            <li
+              key={layer.title}
+              className="reveal group relative bg-surface p-6 transition-colors duration-500 hover:bg-raised"
+              style={{ ["--d" as string]: `${(i % 5) * 60}ms` }}
+            >
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-accent transition-transform duration-700 ease-[var(--ease)] group-hover:scale-x-100"
+              />
+              <span className="font-mono text-[12px] text-fg-3">{String(i + 1).padStart(2, "0")}</span>
+              <h3 className="mt-6 text-[15.5px] font-semibold tracking-[-0.01em]">{layer.title}</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-fg-2">{layer.desc}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-[13px] text-fg-3">{o.obfNote}</p>
+      </div>
+    </section>
+  );
+}
+
+/** FAQ — daftar pertanyaan yang bisa dibuka satu per satu (akordeon aksesibel). */
+export function Faq() {
+  const { t } = useT();
+  const l = t.landing;
+  const [open, setOpen] = useState(0);
+  return (
+    <section className={cn(wrap, "py-24 sm:py-32")}>
+      <div className="reveal max-w-4xl">
+        <p className="eyebrow">{l.faqEyebrow}</p>
+        <h2 className={cn(h2, "mt-5")}>{l.faqTitle}</h2>
+      </div>
+      <ul className="reveal mt-14 border-t border-line/60 [--d:100ms]">
+        {l.faq.map((item, i) => {
+          const isOpen = open === i;
+          return (
+            <li key={item.q} className="border-b border-line/60">
+              <h3>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpen(isOpen ? -1 : i)}
+                  className="state-layer flex w-full items-center justify-between gap-6 py-6 text-left transition-colors hover:text-fg"
+                >
+                  <span className="text-[16.5px] font-semibold tracking-[-0.01em]">{item.q}</span>
+                  <NavArrowDown
+                    width={20}
+                    height={20}
+                    aria-hidden="true"
+                    className={cn("shrink-0 text-fg-3 transition-transform duration-300", isOpen && "rotate-180 text-fg")}
+                  />
+                </button>
+              </h3>
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows,opacity] duration-300 ease-[var(--ease)]",
+                  isOpen ? "grid-rows-[1fr] pb-6 opacity-100" : "grid-rows-[0fr] opacity-0",
+                )}
+              >
+                <p className="overflow-hidden pr-8 text-[14.5px] leading-relaxed text-fg-2">{item.a}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

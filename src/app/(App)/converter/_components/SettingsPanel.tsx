@@ -1,15 +1,26 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Check, NavArrowDown } from "iconoir-react";
+import { Check, CheckCircle, FloppyDisk, Refresh, Sparks, WarningTriangle, Xmark } from "iconoir-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { applyPreset, resetOptions, setAutoUpload, setOptions } from "@/store/slices/converterSlice";
+import {
+  applyCustomPreset,
+  applyPreset,
+  deletePreset,
+  MAX_CUSTOM_PRESETS,
+  resetOptions,
+  savePreset,
+  setAutoUpload,
+  setOptions,
+} from "@/store/slices/converterSlice";
 import { updateRoblox } from "@/store/slices/robloxSlice";
 import { useMeQuery } from "@/store/api/baseApi";
-import { DEFAULT_OPTIONS, LIMITS, type AudioOptions } from "@/lib/schemas/convert.schema";
-import { cn, formatDuration, parseTime } from "@/lib/utils";
+import { DEFAULT_OPTIONS, LIMITS, ROBLOX_FORMATS, type AudioOptions } from "@/lib/schemas/convert.schema";
+import { summarize } from "@/lib/audioSummary";
+import { cn, formatBytes, formatDuration, parseTime } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
+import { useToast } from "@/hooks/useToast";
 import { useHydrated } from "@/hooks/useHydrated";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import Segmented from "@/components/ui/Segmented";
@@ -17,30 +28,14 @@ import Slider from "@/components/ui/Slider";
 import Switch from "@/components/ui/Switch";
 import Field, { Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
+import IconButton from "@/components/ui/IconButton";
 import { BITRATE_OPTIONS, FORMAT_OPTIONS, PRESET_ORDER, SPEED_QUICK } from "../_constants/converter.constants";
-import { dbLabel, secLabel, semiLabel, speedLabel } from "../_utils/helpers";
+import { dbLabel, estimateBytes, secLabel, semiLabel, speedLabel } from "../_utils/helpers";
+import RobloxTempoCard from "./RobloxTempoCard";
 
-function Section({ title, defaultOpen = true, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-b border-line/70 last:border-b-0">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="state-layer flex w-full cursor-pointer items-center justify-between px-5 py-4 text-left text-fg"
-      >
-        <span className="caps text-[11px] text-fg-2">{title}</span>
-        <NavArrowDown width={16} height={16} className={cn("text-fg-3 transition-transform duration-200", open && "rotate-180")} />
-      </button>
-      <div className={cn("grid transition-[grid-template-rows] duration-300 ease-[var(--ease)]", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
-        <div className="overflow-hidden">
-          <div className="flex flex-col gap-5 px-5 pb-5">{children}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+type Tab = "preset" | "output" | "tempo" | "effects" | "trim";
+const TABS: Tab[] = ["preset", "output", "tempo", "effects", "trim"];
+const ROBLOX_OPTIMAL: Partial<AudioOptions> = { format: "mp3", bitrate: 192, sampleRate: 44100, compress: true };
 
 /** Input waktu m:ss yang baru diterapkan saat blur / Enter (di-remount via key saat nilai luar berubah) */
 function TimeInput({ label, value, onCommit }: { label: string; value: number | null; onCommit: (v: number | null) => void }) {
@@ -71,8 +66,74 @@ function TimeInput({ label, value, onCommit }: { label: string; value: number | 
   );
 }
 
+/** Ubin preset: nama + deskripsi singkat; aktif = garis bawah aksen + centang */
+function PresetTile({
+  name,
+  desc,
+  active,
+  onClick,
+  onDelete,
+  deleteLabel,
+  className,
+}: {
+  name: string;
+  desc: string;
+  active: boolean;
+  onClick: () => void;
+  onDelete?: () => void;
+  deleteLabel?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("group relative", className)}>
+      <button
+        type="button"
+        aria-pressed={active}
+        onClick={onClick}
+        className={cn(
+          "state-layer relative flex h-[60px] w-full cursor-pointer flex-col items-start justify-center overflow-hidden rounded-s border px-3 text-left transition-[border-color,background-color,transform] duration-200 active:scale-[0.97]",
+          active ? "border-fg-3 bg-raised" : "border-line hover:border-line-2",
+          onDelete && "pr-9",
+        )}
+      >
+        <span className="flex w-full items-center gap-1.5 text-[13.5px] font-semibold text-fg">
+          <span className="truncate">{name}</span>
+          {active && <Check width={14} height={14} strokeWidth={2.2} aria-hidden="true" className="pick-pop shrink-0" />}
+        </span>
+        <span className="mt-0.5 w-full truncate text-[11.5px] text-fg-3">{desc}</span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent transition-transform duration-300 ease-[var(--ease)]",
+            active ? "scale-x-100" : "scale-x-0",
+          )}
+        />
+      </button>
+      {onDelete && (
+        <IconButton
+          label={deleteLabel ?? ""}
+          size="sm"
+          icon={<Xmark width={14} height={14} />}
+          onClick={onDelete}
+          className="absolute right-0 top-1/2 size-9 -translate-y-1/2 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
+        />
+      )}
+    </div>
+  );
+}
+
+function Group({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {title && <p className="caps text-[10.5px] text-fg-3">{title}</p>}
+      {children}
+    </div>
+  );
+}
+
 export default function SettingsPanel() {
   const dispatch = useAppDispatch();
+  const toast = useToast();
   const converter = useAppSelector((s) => s.converter);
   const roblox = useAppSelector((s) => s.roblox);
   const { data: me } = useMeQuery();
@@ -80,106 +141,200 @@ export default function SettingsPanel() {
   const hydrated = useHydrated();
   const o = hydrated ? converter.options : DEFAULT_OPTIONS;
   const preset = hydrated ? converter.preset : "normal";
+  const customPresets = hydrated ? converter.customPresets : [];
   const autoUpload = hydrated && converter.autoUpload;
   const autoPermission = converter.autoPermission;
-  const { t } = useT();
-  const p = t.converter.panel;
+  const { t, f } = useT();
+  const c = t.converter;
+  const p = c.panel;
+  const [tab, setTab] = useState<Tab>("preset");
+  const [presetName, setPresetName] = useState("");
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   const set = (patch: Partial<AudioOptions>) => dispatch(setOptions(patch));
   const lossless = o.format === "wav" || o.format === "flac";
   const canAuto = hydrated && Boolean(me?.user && roblox.apiKey && roblox.creatorId);
+  const isDefault = JSON.stringify(o) === JSON.stringify(DEFAULT_OPTIONS);
+  const robloxOk = (ROBLOX_FORMATS as readonly string[]).includes(o.format);
+  const chips = summarize(o, t);
+  const presetLabel = preset.startsWith("u:")
+    ? customPresets.find((cp) => `u:${cp.id}` === preset)?.name
+    : preset === "custom"
+      ? c.modified
+      : c.presetNames[preset as keyof typeof c.presetNames];
+
+  const onTabKey = (e: KeyboardEvent) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const i = (TABS.indexOf(tab) + (e.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length;
+    setTab(TABS[i]);
+    tabRefs.current[i]?.focus();
+  };
+
+  const save = () => {
+    const name = presetName.trim();
+    if (!name) return;
+    dispatch(savePreset(name));
+    setPresetName("");
+    toast(f(c.presetSaved, { name }), "ok");
+  };
 
   return (
-    <CardBox as="aside" className="rise overflow-hidden [animation-delay:120ms] lg:flex lg:max-h-[calc(100dvh-7rem)] lg:flex-col">
-      <CardHeader step={2} title={t.converter.guide[1].title} aside={<span className="caps text-[10px] text-fg-3">{t.converter.optional}</span>} />
-      <div className="thin-scroll lg:overflow-y-auto">
-        <Section title={p.presets}>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={p.presets}>
-            {PRESET_ORDER.map((id) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={preset === id}
-                onClick={() => dispatch(applyPreset(id))}
-                className={cn(
-                  "state-layer inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-s border px-3 text-[13px] font-medium transition-[background-color,border-color,color,transform,padding] duration-200 active:scale-[0.96]",
-                  preset === id ? "border-transparent bg-tonal pl-2 text-on-tonal" : "border-line-2 text-fg-2 hover:text-fg",
-                )}
-              >
-                {preset === id && <Check width={16} height={16} aria-hidden="true" />}
-                {t.converter.presetNames[id]}
-              </button>
-            ))}
-          </div>
-        </Section>
+    <CardBox as="aside" className="rise flex flex-col overflow-hidden [animation-delay:120ms] lg:max-h-[calc(100dvh-7rem)]">
+      <CardHeader
+        step={2}
+        title={c.guide[1].title}
+        aside={
+          <Button variant="subtle" size="sm" disabled={isDefault} onClick={() => dispatch(resetOptions())} icon={<Refresh width={14} height={14} />} className="-mr-3 h-9 px-3">
+            {p.resetAll}
+          </Button>
+        }
+      />
 
-        <Section title={p.output}>
-          <Segmented label={p.format} value={o.format} options={FORMAT_OPTIONS} onChange={(format) => set({ format })} />
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={p.bitrate}>
-              {({ id }) => (
-                <Select id={id} value={o.bitrate} disabled={lossless} onChange={(e) => set({ bitrate: Number(e.target.value) as AudioOptions["bitrate"] })}>
-                  {BITRATE_OPTIONS.map((b) => (
-                    <option key={b.value} value={b.value}>
-                      {b.label}
-                    </option>
+      {/* Ringkasan setelan aktif — selalu terlihat apa pun tab-nya */}
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-line/70 px-5 py-3" aria-live="polite">
+        <span className="inline-flex h-7 items-center rounded-xs bg-accent px-2 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-on-accent">
+          {presetLabel ?? c.modified}
+        </span>
+        <span className="inline-flex h-7 items-center rounded-xs bg-raised px-2 font-mono text-[11.5px] text-fg-2">
+          {o.format.toUpperCase()} · {lossless ? `${o.sampleRate / 1000} kHz` : `${o.bitrate} kbps`}
+          {o.mono && " · Mono"}
+        </span>
+        {chips.map((ch) => (
+          <span key={ch} className="inline-flex h-7 items-center rounded-xs bg-raised px-2 font-mono text-[11.5px] text-fg-2">
+            {ch}
+          </span>
+        ))}
+      </div>
+
+      {/* Tab — aktif = garis bawah (konvensi navbar) */}
+      <div role="tablist" aria-label={c.guide[1].title} onKeyDown={onTabKey} className="grid grid-cols-5 border-b border-line/70 px-2">
+        {TABS.map((id, i) => (
+          <button
+            key={id}
+            ref={(el) => {
+              tabRefs.current[i] = el;
+            }}
+            id={`tab-${id}`}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            aria-controls={`panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
+            onClick={() => setTab(id)}
+            className={cn(
+              "state-layer relative h-12 cursor-pointer truncate px-1 text-[12.5px] font-semibold transition-colors duration-200",
+              tab === id ? "text-fg" : "text-fg-3 hover:text-fg-2",
+            )}
+          >
+            {c.tabs[id]}
+            <span
+              aria-hidden="true"
+              className={cn(
+                "absolute inset-x-2 bottom-0 h-0.5 origin-center bg-accent transition-transform duration-300 ease-[var(--ease)]",
+                tab === id ? "scale-x-100" : "scale-x-0",
+              )}
+            />
+          </button>
+        ))}
+      </div>
+
+      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} key={tab} className="thin-scroll fade-swap flex min-h-[300px] flex-1 flex-col gap-6 overflow-y-auto p-5">
+        {tab === "preset" && (
+          <>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label={p.presets}>
+              {PRESET_ORDER.map((id, n) => (
+                <PresetTile
+                  key={id}
+                  name={c.presetNames[id]}
+                  desc={c.presetDesc[id]}
+                  active={preset === id}
+                  onClick={() => dispatch(applyPreset(id))}
+                  className={PRESET_ORDER.length % 2 && n === PRESET_ORDER.length - 1 ? "col-span-2" : undefined}
+                />
+              ))}
+            </div>
+
+            <Group title={c.myPresets}>
+              {customPresets.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {customPresets.map((cp) => (
+                    <PresetTile
+                      key={cp.id}
+                      name={cp.name}
+                      desc={summarize(cp.options, t).join(" · ") || `${cp.options.format.toUpperCase()} · ${p.summaryNone}`}
+                      active={preset === `u:${cp.id}`}
+                      onClick={() => dispatch(applyCustomPreset(cp.id))}
+                      onDelete={() => dispatch(deletePreset(cp.id))}
+                      deleteLabel={f(c.deletePreset, { name: cp.name })}
+                    />
                   ))}
-                </Select>
+                </div>
+              ) : (
+                <p className="-mt-1 text-[13px] leading-relaxed text-fg-3">{c.noCustom}</p>
               )}
-            </Field>
-            <Field label={p.sampleRate}>
-              {({ id }) => (
-                <Select id={id} value={o.sampleRate} onChange={(e) => set({ sampleRate: Number(e.target.value) as AudioOptions["sampleRate"] })}>
-                  <option value={44100}>44.1 kHz</option>
-                  <option value={48000}>48 kHz</option>
-                </Select>
-              )}
-            </Field>
-          </div>
-          <Switch label={p.compress} hint={p.compressHint} checked={o.compress} onChange={(compress) => set({ compress })} />
-          <Switch label={p.mono} hint={p.monoHint} checked={o.mono} onChange={(mono) => set({ mono })} />
-        </Section>
-
-        <Section title={p.tempo}>
-          <Slider label={p.speed} {...LIMITS.speed} value={o.speed} defaultValue={1} format={speedLabel} onChange={(speed) => set({ speed })} />
-          <div className="-mt-2 flex flex-wrap gap-1.5">
-            {SPEED_QUICK.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => set({ speed: s })}
-                className={cn(
-                  "state-layer h-8 cursor-pointer rounded-full border px-3 font-mono text-[12px] transition-colors",
-                  Math.abs(o.speed - s) < 1e-6 ? "border-transparent bg-accent text-on-accent" : "border-line-2 text-fg-2 hover:text-fg",
-                )}
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  save();
+                }}
               >
-                {s}×
-              </button>
-            ))}
-          </div>
-          <Switch label={p.preservePitch} hint={p.preservePitchHint} checked={o.preservePitch} onChange={(preservePitch) => set({ preservePitch })} />
-          <Slider label={p.pitch} {...LIMITS.pitch} value={o.pitch} defaultValue={0} format={semiLabel} onChange={(pitch) => set({ pitch })} />
-        </Section>
+                <Input
+                  aria-label={c.presetName}
+                  placeholder={c.presetName}
+                  maxLength={24}
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  disabled={customPresets.length >= MAX_CUSTOM_PRESETS && !customPresets.some((cp) => cp.name.toLowerCase() === presetName.trim().toLowerCase())}
+                  className="h-10 text-[14px]"
+                />
+                <Button type="submit" variant="tonal" size="sm" disabled={!presetName.trim()} icon={<FloppyDisk width={16} height={16} />} className="shrink-0">
+                  {c.savePreset}
+                </Button>
+              </form>
+            </Group>
+          </>
+        )}
 
-        <Section title={p.effects} defaultOpen={false}>
-          <Slider label={p.bass} {...LIMITS.bass} value={o.bass} defaultValue={0} format={dbLabel} onChange={(bass) => set({ bass })} />
-          <Slider label={p.treble} {...LIMITS.treble} value={o.treble} defaultValue={0} format={dbLabel} onChange={(treble) => set({ treble })} />
-          <Slider label={p.reverb} {...LIMITS.reverb} value={o.reverb} defaultValue={0} format={(v) => `${v}%`} onChange={(reverb) => set({ reverb })} />
-          <Slider label={p.volume} {...LIMITS.volume} value={o.volume} defaultValue={0} format={dbLabel} onChange={(volume) => set({ volume })} />
-          <Switch label={p.spatial8d} checked={o.spatial8d} onChange={(spatial8d) => set({ spatial8d })} />
-          <Switch label={p.normalize} hint={p.normalizeHint} checked={o.normalize} onChange={(normalize) => set({ normalize })} />
-        </Section>
-
-        <Section title={p.fadeTrim} defaultOpen={false}>
-          <Slider label={p.fadeIn} {...LIMITS.fade} value={o.fadeIn} defaultValue={0} format={secLabel} onChange={(fadeIn) => set({ fadeIn })} />
-          <Slider label={p.fadeOut} {...LIMITS.fade} value={o.fadeOut} defaultValue={0} format={secLabel} onChange={(fadeOut) => set({ fadeOut })} />
-          <div className="grid grid-cols-2 gap-3">
-            <TimeInput key={`s${o.trimStart}`} label={p.trimStart} value={o.trimStart} onCommit={(trimStart) => set({ trimStart })} />
-            <TimeInput key={`e${o.trimEnd}`} label={p.trimEnd} value={o.trimEnd} onCommit={(trimEnd) => set({ trimEnd })} />
-          </div>
-          <p className="-mt-2 text-[12.5px] leading-relaxed text-fg-3">{p.trimHint}</p>
-        </Section>
-
-        <Section title={p.roblox} defaultOpen={false}>
+        {tab === "output" && (
+          <>
+            <Segmented label={p.format} value={o.format} options={FORMAT_OPTIONS} onChange={(format) => set({ format })} />
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={p.bitrate}>
+                {({ id }) => (
+                  <Select id={id} value={o.bitrate} disabled={lossless} onChange={(e) => set({ bitrate: Number(e.target.value) as AudioOptions["bitrate"] })} className="h-11">
+                    {BITRATE_OPTIONS.map((b) => (
+                      <option key={b.value} value={b.value}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label={p.sampleRate}>
+                {({ id }) => (
+                  <Select id={id} value={o.sampleRate} onChange={(e) => set({ sampleRate: Number(e.target.value) as AudioOptions["sampleRate"] })} className="h-11">
+                    <option value={44100}>44.1 kHz</option>
+                    <option value={48000}>48 kHz</option>
+                  </Select>
+                )}
+              </Field>
+            </div>
+            <Switch label={p.compress} hint={p.compressHint} checked={o.compress} onChange={(compress) => set({ compress })} />
+            <Switch label={p.mono} hint={p.monoHint} checked={o.mono} onChange={(mono) => set({ mono })} />
+            <button
+              type="button"
+              onClick={() => set(ROBLOX_OPTIMAL)}
+              className="state-layer flex cursor-pointer items-start gap-3 rounded-s border border-dashed border-line-2 p-3 text-left transition-colors hover:border-fg-3"
+            >
+              <Sparks width={18} height={18} aria-hidden="true" className="mt-0.5 shrink-0 text-fg" />
+              <span>
+                <span className="block text-[13.5px] font-semibold text-fg">{c.optimizeRoblox}</span>
+                <span className="mt-0.5 block text-[12.5px] leading-snug text-fg-3">{c.optimizeRobloxHint}</span>
+              </span>
+            </button>
+        <div className="border-t border-line/60 pt-5">
           <Switch
             label={p.autoUpload}
             hint={canAuto ? undefined : p.autoUploadHint}
@@ -188,8 +343,9 @@ export default function SettingsPanel() {
             onChange={(enabled) => dispatch(setAutoUpload({ enabled }))}
           />
           {canAuto && autoUpload && (
-            <>
+            <div className="mt-4 flex flex-col gap-3">
               <Segmented
+                size="sm"
                 label={t.upload.permission}
                 value={autoPermission}
                 options={[
@@ -200,38 +356,94 @@ export default function SettingsPanel() {
                 onChange={(permission) => dispatch(setAutoUpload({ permission }))}
               />
               {autoPermission === "place" && (
-                <Field label={t.upload.placeId}>
-                  {({ id }) => (
-                    <Input
-                      id={id}
-                      inputMode="numeric"
-                      value={roblox.placeId}
-                      onChange={(e) => dispatch(updateRoblox({ placeId: e.target.value.replace(/\D/g, "") }))}
-                      className="font-mono"
-                    />
-                  )}
-                </Field>
+                <Input
+                  aria-label={t.upload.placeId}
+                  placeholder={t.upload.placeId}
+                  inputMode="numeric"
+                  value={roblox.placeId}
+                  onChange={(e) => dispatch(updateRoblox({ placeId: e.target.value.replace(/\D/g, "") }))}
+                  className="h-10 font-mono text-[14px]"
+                />
               )}
-            </>
+            </div>
           )}
           {!canAuto && (
-            <Link href="/settings" className="text-[13px] font-semibold text-fg underline decoration-line-2 underline-offset-4 hover:decoration-fg">
+            <Link href="/settings" className="mt-2 inline-block text-[13px] font-semibold text-fg underline decoration-line-2 underline-offset-4 hover:decoration-fg">
               {p.setupKey}
             </Link>
           )}
-        </Section>
-
-        <div className="p-5">
-          <Button
-            variant="subtle"
-            size="sm"
-            className="w-full"
-            disabled={JSON.stringify(o) === JSON.stringify(DEFAULT_OPTIONS)}
-            onClick={() => dispatch(resetOptions())}
-          >
-            {p.resetAll}
-          </Button>
         </div>
+          </>
+        )}
+
+        {tab === "tempo" && (
+          <>
+            <Group>
+              <Slider label={p.speed} {...LIMITS.speed} value={o.speed} defaultValue={1} format={speedLabel} onChange={(speed) => set({ speed })} />
+              <div className="-mt-1 grid grid-cols-5 gap-1.5">
+                {SPEED_QUICK.map((s) => {
+                  const on = Math.abs(o.speed - s) < 1e-6;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => set({ speed: s })}
+                      className={cn(
+                        "state-layer h-9 cursor-pointer rounded-xs border font-mono text-[12px] transition-colors active:scale-[0.96]",
+                        on ? "btn-plate border-transparent bg-accent text-on-accent" : "border-line text-fg-2 hover:border-line-2 hover:text-fg",
+                      )}
+                    >
+                      {s}×
+                    </button>
+                  );
+                })}
+              </div>
+            </Group>
+            <Switch label={p.preservePitch} hint={p.preservePitchHint} checked={o.preservePitch} onChange={(preservePitch) => set({ preservePitch })} />
+            <Slider label={p.pitch} {...LIMITS.pitch} value={o.pitch} defaultValue={0} format={semiLabel} onChange={(pitch) => set({ pitch })} />
+            <RobloxTempoCard options={o} />
+          </>
+        )}
+
+        {tab === "effects" && (
+          <>
+            <Slider label={p.bass} {...LIMITS.bass} value={o.bass} defaultValue={0} format={dbLabel} onChange={(bass) => set({ bass })} />
+            <Slider label={p.treble} {...LIMITS.treble} value={o.treble} defaultValue={0} format={dbLabel} onChange={(treble) => set({ treble })} />
+            <Slider label={p.reverb} {...LIMITS.reverb} value={o.reverb} defaultValue={0} format={(v) => `${v}%`} onChange={(reverb) => set({ reverb })} />
+            <Slider label={p.volume} {...LIMITS.volume} value={o.volume} defaultValue={0} format={dbLabel} onChange={(volume) => set({ volume })} />
+            <Switch label={p.spatial8d} checked={o.spatial8d} onChange={(spatial8d) => set({ spatial8d })} />
+            <Switch label={p.normalize} hint={p.normalizeHint} checked={o.normalize} onChange={(normalize) => set({ normalize })} />
+          </>
+        )}
+
+        {tab === "trim" && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <TimeInput key={`s${o.trimStart}`} label={p.trimStart} value={o.trimStart} onCommit={(trimStart) => set({ trimStart })} />
+              <TimeInput key={`e${o.trimEnd}`} label={p.trimEnd} value={o.trimEnd} onCommit={(trimEnd) => set({ trimEnd })} />
+            </div>
+            <p className="-mt-3 text-[12.5px] leading-relaxed text-fg-3">{p.trimHint}</p>
+            <Slider label={p.fadeIn} {...LIMITS.fade} value={o.fadeIn} defaultValue={0} format={secLabel} onChange={(fadeIn) => set({ fadeIn })} />
+            <Slider label={p.fadeOut} {...LIMITS.fade} value={o.fadeOut} defaultValue={0} format={secLabel} onChange={(fadeOut) => set({ fadeOut })} />
+          </>
+        )}
+      </div>
+
+      {/* Kaki panel: perkiraan ukuran + cek kecocokan Roblox (satu baris) */}
+      <div className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line/70 bg-bg/40 px-5 py-3 text-[12.5px]">
+        <span className="font-mono tabular-nums text-fg-2" title={c.estimateLabel}>
+          {f(c.estimate, { size: formatBytes(estimateBytes(o, 240)) })}
+        </span>
+        {robloxOk ? (
+          <span className="flex items-center gap-1.5 text-ok">
+            <CheckCircle width={15} height={15} aria-hidden="true" /> {c.robloxReady}
+          </span>
+        ) : (
+          <button type="button" onClick={() => set({ format: "mp3" })} className="state-layer flex cursor-pointer items-center gap-1.5 rounded-xs px-1 text-warn" title={c.robloxFix}>
+            <WarningTriangle width={15} height={15} aria-hidden="true" /> {c.robloxFormatBad} · <span className="underline underline-offset-2">{c.robloxFix}</span>
+          </button>
+        )}
       </div>
     </CardBox>
   );
