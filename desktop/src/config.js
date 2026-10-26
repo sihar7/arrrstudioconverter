@@ -1,9 +1,9 @@
 // Konfigurasi app desktop — satu tempat, jangan hardcode di modul lain
 const { app } = require("electron");
 
-// URL web (subdomain sendiri, di root). Boleh berisi path bila web disajikan di sub-path (APP_BASE ikut).
-// ARRR_APP_URL=http://localhost:3000 untuk mencoba web lokal (npm run dev)
-const APP_URL = (process.env.ARRR_APP_URL || "https://bypass.arrstudio.com").replace(/\/$/, "");
+// URL web — satu sumber: "appUrl" di package.json (ikut terbungkus di installer). Boleh berisi path bila web
+// disajikan di sub-path (APP_BASE ikut). ARRR_APP_URL=http://localhost:3000 untuk mencoba web lokal (npm run dev)
+const APP_URL = (process.env.ARRR_APP_URL || require("../package.json").appUrl).replace(/\/$/, "");
 const APP_ORIGIN = new URL(APP_URL).origin;
 const APP_BASE = new URL(APP_URL).pathname.replace(/\/$/, "");
 
