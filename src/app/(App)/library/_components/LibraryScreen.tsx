@@ -1,27 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Album, Check, Copy, Crown, Discord, Download, Globe, Lock, OpenNewWindow, Pause, Refresh, Search, Trash, Undo } from "iconoir-react";
+import { Album, Crown, Discord, Download, Globe, ListSelect, Lock, Pause, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
-import { cn, copyText } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { PLANS, cheapestPlan } from "@/lib/schemas/plans";
 import { useT } from "@/hooks/useT";
-import { useToast } from "@/hooks/useToast";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useConfirm } from "@/hooks/useConfirm";
-import { robloxAssetConfigureUrl } from "@/Url/Url";
+import { useSelectMode } from "@/hooks/useSelectMode";
+import SelectionDock from "@/components/shared/SelectionDock";
 import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
 import CardBox from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
-import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
 import Button, { ButtonLink, buttonClass } from "@/components/ui/Button";
 import { inputClass } from "@/components/ui/Field";
-import { stateTone } from "../../history/_utils/helpers";
 import { useLibrary } from "../_hooks/useLibrary";
 import { parseIds } from "../_service/library.service";
 import ExportDialog from "./ExportDialog";
+import LibraryRow from "./LibraryRow";
 
 type LibFilter = "all" | "Approved" | "Reviewing" | "Rejected" | "archived";
 const FILTERS: LibFilter[] = ["all", "Approved", "Reviewing", "Rejected", "archived"];
@@ -29,7 +28,6 @@ const FILTERS: LibFilter[] = ["all", "Approved", "Reviewing", "Rejected", "archi
 export default function LibraryScreen() {
   const { t, f } = useT();
   const L = t.library;
-  const toast = useToast();
   const hydrated = useHydrated();
   const { data: me, isLoading: meLoading } = useMeQuery();
   const lib = useLibrary();
@@ -44,6 +42,7 @@ export default function LibraryScreen() {
   const place = placeId ?? lib.savedPlace;
 
   const [filter, setFilter] = useState<LibFilter>("all");
+  const [exportOpen, setExportOpen] = useState(false);
   // Arsip disembunyikan kecuali tab "Arsip" dipilih
   const counts = useMemo(() => {
     const c: Record<LibFilter, number> = { all: 0, Approved: 0, Reviewing: 0, Rejected: 0, archived: 0 };
@@ -64,28 +63,12 @@ export default function LibraryScreen() {
       return !q || a.assetId.includes(q) || Boolean(a.name?.toLowerCase().includes(q));
     });
   }, [lib.assets, query, filter]);
-  const [exportOpen, setExportOpen] = useState(false);
   const selectedAssets = useMemo(() => lib.assets.filter((a) => lib.selected.has(a.assetId)), [lib.assets, lib.selected]);
 
-  // Bar aksi massal muncul → FAB "ke atas" naik di atasnya (lewat CSS var, FAB ada di Header)
-  const bar = useRef<HTMLFormElement>(null);
-  const hasSel = lib.selected.size > 0;
-  useEffect(() => {
-    const root = document.documentElement;
-    const el = bar.current;
-    if (!hasSel || !el) {
-      root.style.removeProperty("--fab-lift");
-      return;
-    }
-    const ro = new ResizeObserver(() => root.style.setProperty("--fab-lift", `${el.offsetHeight + 12}px`));
-    ro.observe(el);
-    return () => {
-      ro.disconnect();
-      root.style.removeProperty("--fab-lift");
-    };
-  }, [hasSel]);
-
-  const allOn = shown.length > 0 && shown.every((a) => lib.selected.has(a.assetId));
+  // Mode pilih tanpa checkbox (sama dengan Riwayat) — pilihan disimpan di useLibrary untuk izin/arsip massal
+  const shownIds = useMemo(() => shown.map((a) => a.assetId), [shown]);
+  const sel = useSelectMode(shownIds, [lib.selected, lib.setSelected], exportOpen);
+  const pickCount = shown.filter((a) => lib.selected.has(a.assetId)).length;
   const manualIds = parseIds(manual);
 
   // Infinite scroll ala YouTube: sentinel di dasar daftar, halaman berikut dimuat ~600px sebelum terlihat
@@ -174,13 +157,23 @@ export default function LibraryScreen() {
   const fullPlan = t.plan.names[cheapestPlan((p) => p.library === "full")];
 
   return (
-    <div className="flex flex-col gap-8 pb-24">
+    <div className={cn("flex flex-col gap-8 pb-24", sel.selecting && "pb-44")}>
       <PageHeader
         eyebrow={L.eyebrow}
         title={L.title}
         sub={L.sub}
         actions={
           <>
+            {lib.assets.length > 0 && (
+              <Button
+                variant={sel.selecting ? "primary" : "ghost"}
+                icon={sel.selecting ? <Xmark width={16} height={16} /> : <ListSelect width={16} height={16} />}
+                onClick={() => (sel.selecting ? sel.exit() : sel.start())}
+                aria-pressed={sel.selecting}
+              >
+                {sel.selecting ? L.selectDone : L.select}
+              </Button>
+            )}
             {/* Muat semua & ekspor khusus plan "full" (Studio); di bawahnya tampil terkunci → ke halaman Harga */}
             {lib.assets.length > 0 &&
               (fullLib ? (
@@ -291,95 +284,29 @@ export default function LibraryScreen() {
                 );
               })}
             </div>
-            <div className="flex h-12 items-center justify-between gap-3 border-b border-line/70 px-4 text-[13px] sm:px-5">
-              <button
-                type="button"
-                onClick={() =>
-                  lib.setSelected((s) => {
-                    const n = new Set(s);
-                    for (const a of shown) {
-                      if (allOn) n.delete(a.assetId);
-                      else n.add(a.assetId);
-                    }
-                    return n;
-                  })
-                }
-                className="flex cursor-pointer items-center gap-3 font-medium text-fg-2 hover:text-fg"
-              >
-                <Box on={allOn} />
-                {L.selectAll}
-              </button>
-              <span className="font-mono text-fg-3">{shown.length}</span>
-            </div>
+            {/* Petunjuk komunikatif: apa yang terjadi kalau baris diketuk */}
+            <p className="flex h-11 items-center justify-between gap-3 border-b border-[var(--hairline)] px-4 text-[13px] text-fg-3 sm:px-5">
+              <span className="truncate">
+                <span className="sm:hidden">{t.common.tapToSelect}</span>
+                <span className="hidden sm:inline">{sel.selecting ? L.selectHint : t.common.tapToSelect}</span>
+              </span>
+              <span className="shrink-0 font-mono">{shown.length}</span>
+            </p>
             <ul>
-              {shown.map((a) => {
-                const on = lib.selected.has(a.assetId);
-                const g = lib.grants[a.assetId];
-                const notOwner = a.creatorId != null && (a.creatorType !== lib.ownerType || a.creatorId !== lib.ownerId);
-                return (
-                  <li
-                    key={a.assetId}
-                    className={cn(
-                      "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-line/70 px-4 py-3 transition-colors last:border-b-0 sm:px-5",
-                      on && "bg-raised/50",
-                      a.archived && "opacity-60",
-                    )}
-                  >
-                    <button
-                      type="button"
-                      role="checkbox"
-                      aria-checked={on}
-                      aria-label={a.name ?? a.assetId}
-                      onClick={() => lib.toggle(a.assetId)}
-                      className="grid size-11 cursor-pointer place-items-center rounded-full hover:bg-hover"
-                    >
-                      <Box on={on} />
-                    </button>
-                    <div className="min-w-0">
-                      <p className="truncate text-[14.5px] font-semibold">{a.name ?? a.error ?? a.assetId}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                        <button
-                          type="button"
-                          title={L.copyId}
-                          onClick={async () => (await copyText(a.assetId)) && toast(t.toast.copied, "ok")}
-                          className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[12px] text-fg-3 hover:text-fg"
-                        >
-                          {a.assetId} <Copy width={12} height={12} />
-                        </button>
-                        {a.state && (
-                          <Badge tone={stateTone(a.state)} dot>
-                            {t.history.states[a.state]}
-                          </Badge>
-                        )}
-                        {a.archived && <Badge tone="err">{L.archived}</Badge>}
-                        {notOwner && <Badge tone="warn">{L.notOwner}</Badge>}
-                        {g && (
-                          <span title={g.status === "failed" ? g.message : undefined}>
-                            <Badge tone={g.status === "granted" ? "ok" : "err"}>{g.status === "granted" ? L.granted : L.failed}</Badge>
-                          </span>
-                        )}
-                      </div>
-                      {g?.status === "failed" && <p className="mt-1 text-[12px] leading-snug text-err">{g.message}</p>}
-                    </div>
-                    {a.archived ? (
-                      <Button size="sm" variant="ghost" loading={lib.archiving} icon={<Undo width={16} height={16} />} onClick={() => lib.archive([a.assetId], false)}>
-                        {L.restore}
-                      </Button>
-                    ) : (
-                      <a
-                        href={robloxAssetConfigureUrl(a.assetId)}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={L.openDashboard}
-                        title={L.openDashboard}
-                        className="grid size-10 place-items-center rounded-full text-fg-3 transition-colors hover:bg-hover hover:text-fg"
-                      >
-                        <OpenNewWindow width={16} height={16} />
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
+              {shown.map((a) => (
+                <LibraryRow
+                  key={a.assetId}
+                  asset={a}
+                  selecting={sel.selecting}
+                  selected={lib.selected.has(a.assetId)}
+                  notOwner={a.creatorId != null && (a.creatorType !== lib.ownerType || a.creatorId !== lib.ownerId)}
+                  grant={lib.grants[a.assetId]}
+                  restoring={lib.archiving}
+                  onPick={(shift) => (sel.selecting ? sel.toggle(a.assetId, shift) : sel.start(a.assetId))}
+                  onLongPress={() => sel.start(a.assetId)}
+                  onRestore={() => lib.archive([a.assetId], false)}
+                />
+              ))}
             </ul>
             {lib.nextToken && (
               // key = jumlah aset → sentinel dipasang ulang tiap halaman masuk, jadi tetap memicu kalau masih terlihat
@@ -398,90 +325,46 @@ export default function LibraryScreen() {
       {confirmDialog}
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} shown={shown} selected={selectedAssets} partial={Boolean(lib.nextToken)} />
 
-      {/* Bar aksi massal — muncul saat ada yang dipilih, di atas tab bar HP */}
-      <div
-        className={cn(
-          "fixed inset-x-0 z-40 px-4 transition-[transform,opacity] duration-300 ease-[var(--ease)] bottom-[calc(80px+env(safe-area-inset-bottom))] md:bottom-6",
-          lib.selected.size ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
-        )}
-        aria-hidden={!lib.selected.size}
+      {/* Dock aksi massal (mode pilih) — pengganti checkbox + bar lama */}
+      <SelectionDock
+        open={sel.selecting}
+        count={pickCount}
+        label={pickCount ? t.common.pickedWord : t.common.tapToSelect}
+        onExit={sel.exit}
+        quick={[
+          { key: "all", label: L.selectAllShown, n: shown.length, onClick: () => sel.pick(shownIds) },
+          ...(["Approved", "Reviewing", "Rejected"] as const).map((k) => {
+            const ids = shown.filter((a) => a.state === k).map((a) => a.assetId);
+            return { key: k, label: L.filters[k], n: ids.length, onClick: () => sel.pick(ids) };
+          }),
+        ]}
       >
+        <Button size="sm" variant="tonal" disabled={!pickCount} loading={lib.granting} icon={<Globe />} onClick={() => lib.grant("public")}>
+          {L.makePublic}
+        </Button>
+        <Button size="sm" variant="danger" disabled={!pickCount} loading={lib.archiving} icon={<Trash />} onClick={removeSelected}>
+          {L.archive}
+        </Button>
         <form
-          ref={bar}
-          className="mat mx-auto flex max-w-[760px] flex-wrap items-center gap-2 rounded-xl border border-line/70 bg-raised p-2 pl-4 shadow-[var(--elev-3)]"
+          className="flex min-w-0 basis-full gap-2 sm:basis-auto"
           onSubmit={(e) => {
             e.preventDefault();
-            if (/^\d{1,20}$/.test(place)) void lib.grant("place", place);
+            if (pickCount && /^d{1,20}$/.test(place)) void lib.grant("place", place);
           }}
         >
-          <span className="text-[13.5px] font-semibold">{f(L.selected, { n: lib.selected.size })}</span>
-          <button
-            type="button"
-            tabIndex={lib.selected.size ? 0 : -1}
-            onClick={() => lib.setSelected(new Set())}
-            className="cursor-pointer text-[12.5px] text-fg-3 underline decoration-line-2 underline-offset-4 hover:text-fg"
-          >
-            {L.clear}
-          </button>
-          <Button
-            type="button"
-            size="sm"
-            variant="tonal"
-            tabIndex={lib.selected.size ? 0 : -1}
-            loading={lib.granting}
-            icon={<Globe width={16} height={16} />}
-            onClick={() => lib.grant("public")}
-          >
-            {L.makePublic}
+          <input
+            aria-label={L.placeId}
+            placeholder={L.placeId}
+            inputMode="numeric"
+            value={place}
+            onChange={(e) => setPlaceId(e.target.value.replace(/D/g, ""))}
+            className={cn(inputClass, "h-9 min-w-0 flex-1 rounded-full font-mono text-[13px] sm:w-36")}
+          />
+          <Button type="submit" size="sm" variant="primary" loading={lib.granting} disabled={!pickCount || !/^d{1,20}$/.test(place)}>
+            {lib.granting ? L.granting : L.grantPlace}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="danger"
-            tabIndex={lib.selected.size ? 0 : -1}
-            loading={lib.archiving}
-            icon={<Trash width={16} height={16} />}
-            onClick={removeSelected}
-          >
-            {L.archive}
-          </Button>
-          <div className="ml-auto flex min-w-0 flex-1 gap-2 sm:flex-none">
-            <input
-              aria-label={L.placeId}
-              placeholder={L.placeId}
-              inputMode="numeric"
-              tabIndex={lib.selected.size ? 0 : -1}
-              value={place}
-              onChange={(e) => setPlaceId(e.target.value.replace(/\D/g, ""))}
-              className={cn(inputClass, "h-10 min-w-0 flex-1 font-mono text-[13px] sm:w-44")}
-            />
-            <Button
-              type="submit"
-              size="sm"
-              variant="primary"
-              tabIndex={lib.selected.size ? 0 : -1}
-              loading={lib.granting}
-              disabled={!/^\d{1,20}$/.test(place)}
-            >
-              {lib.granting ? L.granting : L.grantPlace}
-            </Button>
-          </div>
         </form>
-      </div>
+      </SelectionDock>
     </div>
-  );
-}
-
-function Box({ on }: { on: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "grid size-[18px] place-items-center rounded-[4px] border-2 transition-colors",
-        on ? "border-accent bg-accent text-on-accent" : "border-fg-3",
-      )}
-    >
-      {on && <Check width={14} height={14} strokeWidth={2.6} />}
-    </span>
   );
 }

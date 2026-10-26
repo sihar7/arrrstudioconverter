@@ -16,7 +16,7 @@ export default function Badge({ tone = "neutral", children, className, dot = tru
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-xs bg-current/10 px-2 text-[11px] font-semibold uppercase tracking-[0.08em]",
+        "inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full bg-current/[0.12] px-2.5 text-[12px] font-semibold",
         tones[tone],
         className,
       )}

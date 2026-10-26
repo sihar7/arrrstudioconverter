@@ -96,8 +96,8 @@ function PlanForm({ user, onClose, onSaved }: { user: AdminUser; onClose: () => 
                 aria-pressed={duration === d.value}
                 onClick={() => setDuration(d.value)}
                 className={
-                  "state-layer h-10 cursor-pointer rounded-xs border text-[12.5px] font-semibold transition-colors active:scale-[0.97] " +
-                  (duration === d.value ? "btn-plate border-transparent bg-accent text-on-accent" : "border-line text-fg-2 hover:border-line-2 hover:text-fg")
+                  "ios-press h-10 cursor-pointer rounded-full text-[13.5px] font-semibold " +
+                  (duration === d.value ? "bg-accent text-on-accent" : "bg-fg/[0.07] text-fg-2 hover:bg-fg/[0.12] hover:text-fg")
                 }
               >
                 {d.label}

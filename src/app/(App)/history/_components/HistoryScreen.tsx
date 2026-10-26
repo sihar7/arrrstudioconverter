@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { ClockRotateRight, Discord, Globe, ListSelect, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useHistoryQuery, useMeQuery } from "@/store/api/baseApi";
@@ -8,6 +8,8 @@ import { useAppSelector } from "@/store/hooks";
 import { shortName } from "@/lib/shortName";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
+import { useSelectMode } from "@/hooks/useSelectMode";
+import SelectionDock from "@/components/shared/SelectionDock";
 import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
 import CardBox from "@/components/shared/CardBox";
@@ -69,61 +71,18 @@ export default function HistoryScreen() {
   const [permFor, setPermFor] = useState<HistoryItem | null>(null);
   const [toDelete, setToDelete] = useState<HistoryItem[] | null>(null);
 
-  // Mode pilih (tanpa checkbox): klik kartu = pilih, Shift+klik = rentang, tekan lama di HP = masuk mode
-  const [selecting, setSelecting] = useState(false);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
-  const anchor = useRef<string | null>(null);
-
   const items = useMemo(() => data?.items ?? [], [data]);
   const shown = useMemo(() => filterHistory(items, filter, query), [items, filter, query]);
   const groups = useMemo(() => groupByDay(shown), [shown]);
   const publicCandidates = useMemo(() => items.filter(canGoPublic), [items]);
   const pendingCount = useMemo(() => items.filter(needsCheck).length, [items]);
   const hasRoblox = items.some((i) => i.roblox);
+  // Mode pilih (tanpa checkbox): klik kartu = pilih, Shift+klik = rentang, tekan lama di HP = masuk mode
+  const shownIds = useMemo(() => shown.map((i) => i.id), [shown]);
+  const sel = useSelectMode(shownIds, undefined, Boolean(toDelete));
+  const { selecting, picked } = sel;
   // Pilihan yang sudah tidak ada (terhapus / tersaring) otomatis gugur
   const selected = useMemo(() => shown.filter((i) => picked.has(i.id)), [shown, picked]);
-
-  const exitSelect = useCallback(() => {
-    setSelecting(false);
-    setPicked(new Set());
-    anchor.current = null;
-  }, []);
-
-  const toggle = (item: HistoryItem, shift: boolean) => {
-    setPicked((prev) => {
-      const next = new Set(prev);
-      if (shift && anchor.current) {
-        const a = shown.findIndex((i) => i.id === anchor.current);
-        const b = shown.findIndex((i) => i.id === item.id);
-        if (a !== -1 && b !== -1) {
-          for (const i of shown.slice(Math.min(a, b), Math.max(a, b) + 1)) next.add(i.id);
-          return next;
-        }
-      }
-      if (next.has(item.id)) next.delete(item.id);
-      else next.add(item.id);
-      return next;
-    });
-    anchor.current = item.id;
-  };
-
-  const quick = (q: QuickSelect) => setPicked(new Set(shown.filter(quickMatch[q]).map((i) => i.id)));
-
-  // Keyboard di mode pilih: Esc keluar, Ctrl/Cmd+A pilih semua yang tampil
-  useEffect(() => {
-    if (!selecting) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (toDelete) return;
-      const typing = (e.target as HTMLElement | null)?.closest("input, textarea");
-      if (e.key === "Escape") exitSelect();
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && !typing) {
-        e.preventDefault();
-        setPicked(new Set(shown.map((i) => i.id)));
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [selecting, shown, exitSelect, toDelete]);
 
   // Cek status senyap tiap 60 dtk selama ada yang direview / izin menunggu (mis. publik setelah Disetujui)
   const { checkAll } = actions;
@@ -140,11 +99,7 @@ export default function HistoryScreen() {
     const ok = await actions.removeMany(toDelete, archive);
     if (!ok) return;
     setToDelete(null);
-    setPicked((prev) => {
-      const next = new Set(prev);
-      for (const i of toDelete) next.delete(i.id);
-      return next;
-    });
+    sel.pick(selected.filter((i) => !toDelete.includes(i)).map((i) => i.id));
   };
 
   if (meLoading) return <PageLoader />;
@@ -193,7 +148,7 @@ export default function HistoryScreen() {
               <Button
                 variant={selecting ? "primary" : "ghost"}
                 icon={selecting ? <Xmark width={16} height={16} /> : <ListSelect width={16} height={16} />}
-                onClick={() => (selecting ? exitSelect() : setSelecting(true))}
+                onClick={() => (selecting ? sel.exit() : sel.start())}
                 aria-pressed={selecting}
               >
                 {selecting ? h.selectDone : h.select}
@@ -238,7 +193,7 @@ export default function HistoryScreen() {
           />
         </div>
 
-        {selecting && <p className="border-b border-line/60 bg-bg/30 px-5 py-2.5 text-[12.5px] text-fg-3">{h.selectHint}</p>}
+        {selecting && <p className="fade-swap border-b border-[var(--hairline)] px-5 py-2.5 text-[13px] text-fg-3">{h.selectHint}</p>}
 
         {isLoading ? (
           <ListSkeleton />
@@ -270,12 +225,8 @@ export default function HistoryScreen() {
                       item={item}
                       selecting={selecting}
                       selected={picked.has(item.id)}
-                      onToggle={(shift) => toggle(item, shift)}
-                      onLongPress={() => {
-                        setSelecting(true);
-                        setPicked(new Set([item.id]));
-                        anchor.current = item.id;
-                      }}
+                      onToggle={(shift) => sel.toggle(item.id, shift)}
+                      onLongPress={() => sel.start(item.id)}
                       onUpload={() => setUploadFor(item)}
                       onPermission={() => setPermFor(item)}
                       onDelete={() => setToDelete([item])}
@@ -288,46 +239,21 @@ export default function HistoryScreen() {
         )}
       </CardBox>
 
-      {/* Bar aksi mode pilih — melayang di atas tab bar HP */}
-      {selecting && (
-        <div
-          role="toolbar"
-          aria-label={f(h.selected, { n: selected.length })}
-          className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 xl:bottom-6"
-        >
-          <div className="mat flex w-full max-w-3xl animate-[dock-in_.4s_var(--ease)_both] flex-col gap-3 rounded-l border border-line/70 bg-[var(--glass)] p-3 shadow-[var(--elev-3)] backdrop-blur-xl sm:flex-row sm:items-center">
-            <p className="shrink-0 px-2 text-[14px] font-semibold tabular-nums" aria-live="polite">
-              {selected.length ? f(h.selected, { n: selected.length }) : h.selectNone}
-            </p>
-            <div className="thin-scroll flex flex-1 gap-1.5 overflow-x-auto">
-              {quickOptions.map((q) => {
-                const n = shown.filter(quickMatch[q]).length;
-                return (
-                  <button
-                    key={q}
-                    type="button"
-                    disabled={n === 0}
-                    onClick={() => quick(q)}
-                    className="state-layer inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-s border border-line px-3 text-[12.5px] font-semibold text-fg-2 transition-colors hover:border-line-2 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {h.quick[q]}
-                    <span className="font-mono text-[11px] text-fg-3">{n}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <Button variant="subtle" size="sm" onClick={exitSelect}>
-                {t.common.cancel}
-              </Button>
-              <Button variant="danger" size="sm" disabled={!selected.length} onClick={() => setToDelete(selected)} icon={<Trash aria-hidden="true" />}>
-                {h.deleteSelected}
-                {selected.length > 0 && <span className="font-mono">{selected.length}</span>}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Dock aksi mode pilih — melayang di atas tab bar HP */}
+      <SelectionDock
+        open={selecting}
+        count={selected.length}
+        label={selected.length ? t.common.pickedWord : t.common.tapToSelect}
+        onExit={sel.exit}
+        quick={quickOptions.map((q) => {
+          const ids = shown.filter(quickMatch[q]).map((i) => i.id);
+          return { key: q, label: h.quick[q], n: ids.length, onClick: () => sel.pick(ids) };
+        })}
+      >
+        <Button variant="danger" size="sm" disabled={!selected.length} onClick={() => setToDelete(selected)} icon={<Trash aria-hidden="true" />}>
+          {h.deleteSelected}
+        </Button>
+      </SelectionDock>
 
       <DeleteDialog items={toDelete} hasKey={Boolean(roblox.apiKey)} busy={actions.deleting} onClose={() => setToDelete(null)} onConfirm={confirmDelete} />
 

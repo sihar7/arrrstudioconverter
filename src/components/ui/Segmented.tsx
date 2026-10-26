@@ -42,13 +42,14 @@ export default function Segmented<T extends string | number>({ label, value, opt
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKey}
-      className={cn("relative grid rounded-s border border-line-2 p-[3px]", className)}
+      className={cn("relative grid rounded-[11px] bg-fg/[0.08] p-[2px]", className)}
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       <span
         aria-hidden="true"
-        className="btn-plate absolute inset-y-[3px] left-[3px] rounded-xs bg-accent transition-transform duration-500 ease-[var(--ease)]"
-        style={{ width: `calc((100% - 6px) / ${options.length})`, transform: `translateX(${idx * 100}%)` }}
+        // Thumb iOS: abu sistem (gelap) / putih (terang) ber-bayangan, meluncur dengan pegas
+        className="absolute inset-y-[2px] left-[2px] rounded-[9px] bg-[var(--seg-thumb)] shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04),0_0_0_0.5px_rgba(0,0,0,0.04)] transition-transform duration-[var(--spring-dur)] ease-[var(--spring-bounce)]"
+        style={{ width: `calc((100% - 4px) / ${options.length})`, transform: `translateX(${idx * 100}%)` }}
       />
       {options.map((o, i) => {
         const active = o.value === value;
@@ -65,9 +66,9 @@ export default function Segmented<T extends string | number>({ label, value, opt
             disabled={o.disabled}
             onClick={() => onChange(o.value)}
             className={cn(
-              "state-layer relative z-10 cursor-pointer truncate rounded-xs px-2 font-semibold uppercase tracking-[0.1em] transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-35",
-              size === "md" ? "h-10 text-[12px]" : "h-8 text-[11px]",
-              active ? "text-on-accent" : "text-fg-2 hover:text-fg",
+              "relative z-10 cursor-pointer truncate rounded-[9px] px-2 font-semibold transition-colors duration-200 active:opacity-60 disabled:cursor-not-allowed disabled:opacity-35",
+              size === "md" ? "h-9 text-[13.5px]" : "h-7 text-[12.5px]",
+              active ? "text-fg" : "text-fg-2 hover:text-fg",
             )}
           >
             {o.label}

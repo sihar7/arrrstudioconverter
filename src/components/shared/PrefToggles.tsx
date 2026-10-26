@@ -26,7 +26,12 @@ export function ThemeToggle({ className }: { className?: string }) {
       label={t.nav.theme}
       size="sm"
       className={className}
-      icon={theme === "dark" ? <SunLight width={20} height={20} /> : <HalfMoon width={20} height={20} />}
+      // key = tema → ikon baru "berputar masuk" (icon-swap) tiap ganti
+      icon={
+        <span key={theme} className="icon-swap grid place-items-center">
+          {theme === "dark" ? <SunLight width={20} height={20} /> : <HalfMoon width={20} height={20} />}
+        </span>
+      }
       onClick={() => {
         const next = theme === "dark" ? "light" : "dark";
         switchTheme(next);
@@ -52,7 +57,7 @@ export function LangToggle({ className }: { className?: string }) {
             aria-checked={on}
             onClick={() => dispatch(setLang(l))}
             className={cn(
-              "relative flex h-full w-9 cursor-pointer items-center justify-center text-[12.5px] font-semibold uppercase transition-colors",
+              "relative flex h-full w-9 cursor-pointer items-center justify-center text-[13px] font-semibold uppercase transition-colors",
               on ? "text-fg" : "text-fg-3 hover:text-fg",
             )}
           >
@@ -60,7 +65,7 @@ export function LangToggle({ className }: { className?: string }) {
             <span
               aria-hidden="true"
               className={cn(
-                "absolute bottom-1.5 h-0.5 w-4 rounded-full bg-fg transition-[transform,opacity] duration-300 ease-[var(--ease)]",
+                "absolute bottom-1.5 h-0.5 w-4 rounded-full bg-fg transition-[transform,opacity] duration-[var(--spring-dur)] ease-[var(--spring-bounce)]",
                 on ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0",
               )}
             />

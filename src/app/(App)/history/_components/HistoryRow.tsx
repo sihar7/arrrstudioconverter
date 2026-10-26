@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import Image from "next/image";
 import { Check, Copy, Download, Lock, NavArrowDown, OpenNewWindow, Trash, Upload } from "iconoir-react";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { summarize } from "@/lib/audioSummary";
 import { ROBLOX_FORMATS } from "@/lib/schemas/convert.schema";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
+import { useLongPress } from "@/hooks/useLongPress";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
@@ -15,8 +16,6 @@ import RobloxPlaybackChip from "@/components/shared/RobloxPlaybackChip";
 import { relTime, stateTone } from "../_utils/helpers";
 import { robloxAssetConfigureUrl } from "@/Url/Url";
 import type { HistoryItem } from "@/type/history";
-
-const LONG_PRESS_MS = 450;
 
 interface Props {
   item: HistoryItem;
@@ -40,7 +39,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
   const h = t.history;
   const toast = useToast();
   const [open, setOpen] = useState(false);
-  const press = useRef<{ timer: ReturnType<typeof setTimeout> | null; fired: boolean }>({ timer: null, fired: false });
+  const lp = useLongPress(onLongPress, selecting);
   const rb = item.roblox;
   const chips = summarize(item.options, t);
   const canUpload = item.fileAvailable && !rb && (ROBLOX_FORMATS as readonly string[]).includes(item.format);
@@ -50,24 +49,8 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
     if (await copyText(text)) toast(t.toast.copied, "ok");
   };
 
-  // Tekan lama (sentuh) → mode pilih; klik biasa tidak terpengaruh
-  const onPointerDown = (e: PointerEvent) => {
-    if (selecting || e.pointerType === "mouse") return;
-    press.current.fired = false;
-    press.current.timer = setTimeout(() => {
-      press.current.fired = true;
-      onLongPress();
-    }, LONG_PRESS_MS);
-  };
-  const cancelPress = () => {
-    if (press.current.timer) clearTimeout(press.current.timer);
-    press.current.timer = null;
-  };
   const onCardClick = (e: MouseEvent) => {
-    if (press.current.fired) {
-      press.current.fired = false;
-      return;
-    }
+    if (lp.consume()) return;
     if (selecting) onToggle(e.shiftKey);
     else setOpen((v) => !v);
   };
@@ -86,11 +69,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
         <button
           type="button"
           onClick={onCardClick}
-          onPointerDown={onPointerDown}
-          onPointerUp={cancelPress}
-          onPointerLeave={cancelPress}
-          onPointerCancel={cancelPress}
-          onContextMenu={(e) => press.current.fired && e.preventDefault()}
+          {...lp.handlers}
           aria-pressed={selecting ? selected : undefined}
           aria-expanded={selecting ? undefined : open}
           className="flex min-w-0 flex-1 cursor-pointer select-none items-center gap-3 text-left sm:gap-4"
@@ -105,7 +84,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
                 selected ? "opacity-100" : "opacity-0",
               )}
             >
-              <span className="flex size-8 items-center justify-center rounded-full bg-accent shadow-[var(--elev-2)]">
+              <span className={cn("flex size-8 items-center justify-center rounded-full bg-accent shadow-[var(--elev-2)]", selected && "pick-pop")}>
                 <Check width={18} height={18} strokeWidth={2.4} />
               </span>
             </span>

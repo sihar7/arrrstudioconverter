@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { Check, Copy, Download, NavArrowDown, NavArrowUp, Pause, Play, Refresh, Upload, WarningTriangle, Xmark } from "iconoir-react";
 import { isRunning, type ItemStatus, type QueueItem } from "@/store/slices/converterSlice";
@@ -250,13 +250,23 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
 
 const stageOf = (s: ItemStatus) => (s === "downloading" ? 1 : s === "processing" ? 2 : 0);
 
-/** Isi tiap segmen 0–1; null = belum ada angka (indeterminate) */
-function segmentFill(stage: number, idx: number, progress: number): number | null {
-  if (idx < stage) return 1;
-  if (idx > stage) return 0;
-  if (idx === 0) return null;
-  // Server: unduh 1–55%, proses 56–98%
-  return idx === 1 ? Math.min(1, progress / 55) : Math.min(1, Math.max(0, (progress - 56) / 42));
+/** Progres server → isi unduh & proses (0–1). Server: unduh 1–55%, proses 56–98% */
+function fills(stage: number, progress: number) {
+  const dl = stage >= 2 ? 1 : stage === 1 ? Math.min(1, progress / 55) : 0;
+  const proc = stage === 2 ? Math.min(1, Math.max(0, (progress - 56) / 42)) : 0;
+  return { dl, proc };
+}
+
+const BARS = 44;
+/** "Sidik jari" gelombang per lagu — tinggi bar deterministik dari id (tiap lagu polanya beda, stabil antar render) */
+function fingerprint(id: string): number[] {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return Array.from({ length: BARS }, (_, i) => {
+    h = Math.imul(h ^ (h >>> 13), 1274126177) + i;
+    const env = Math.sin((i / (BARS - 1)) * Math.PI) * 0.55 + 0.45; // tengah lebih tinggi
+    return Math.max(0.18, ((h >>> 0) % 1000) / 1000 * env);
+  });
 }
 
 function Elapsed() {
@@ -279,6 +289,8 @@ function RunningStatus({ item }: { item: QueueItem }) {
       ? f(d.processing, { format: item.options.format.toUpperCase(), bitrate: item.options.bitrate })
       : d[item.status as "pending" | "queued" | "downloading"];
   const pct = stage === 0 ? null : Math.round(item.progress);
+  const { dl, proc } = fills(stage, item.progress);
+  const bars = useMemo(() => fingerprint(item.videoId), [item.videoId]);
 
   return (
     <div
@@ -303,32 +315,33 @@ function RunningStatus({ item }: { item: QueueItem }) {
           <Elapsed />
         </span>
       </div>
-      <div className="grid grid-cols-[1fr_2fr_2fr] gap-1.5" aria-hidden="true">
-        {labels.map((label, i) => {
-          const fill = segmentFill(stage, i, item.progress);
-          return (
-            <div key={label} className="flex flex-col gap-1.5">
-              <div className={cn("h-1 overflow-hidden rounded-xs bg-tonal", fill == null && "indeterminate")}>
-                {fill != null && (
-                  <div
-                    className="h-full origin-left bg-accent transition-transform duration-500 ease-[var(--ease)]"
-                    style={{ transform: `scaleX(${fill})` }}
-                  />
-                )}
-              </div>
-              <span
-                className={cn(
-                  "flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] transition-colors",
-                  i < stage ? "text-fg-2" : i === stage ? "text-fg" : "text-fg-3",
-                )}
-              >
-                {i < stage && <Check width={11} height={11} strokeWidth={2.4} />}
-                {label}
-              </span>
-            </div>
-          );
+      {/* Gelombang proses: antre = bernapas · unduh = bar terisi samar · proses = bar menyala solid + playhead */}
+      <div className={cn("wave-track", stage === 0 && "is-waiting")} aria-hidden="true">
+        {bars.map((v, i) => {
+          const x = (i + 0.5) / BARS;
+          const lit = x <= proc ? "done" : x <= dl ? "dl" : "idle";
+          return <i key={i} data-lit={lit} style={{ "--h": v, "--d": `${i * 28}ms` } as CSSProperties} />;
         })}
+        {stage === 2 && <span className="wave-head" style={{ left: `${proc * 100}%` }} />}
       </div>
+      <ol className="flex items-center gap-1.5 text-[12px] font-medium" aria-hidden="true">
+        {labels.map((label, i) => (
+          <li
+            key={label}
+            className={cn(
+              "flex items-center gap-1 rounded-full px-2 py-0.5 transition-colors duration-300",
+              i < stage ? "text-fg-2" : i === stage ? "bg-fg/[0.08] text-fg" : "text-fg-3",
+            )}
+          >
+            {i < stage ? (
+              <Check width={12} height={12} strokeWidth={2.4} className="pick-pop" />
+            ) : i === stage ? (
+              <span className="size-1.5 animate-pulse rounded-full bg-[var(--ios-green)]" />
+            ) : null}
+            {label}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

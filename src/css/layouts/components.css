@@ -6,35 +6,35 @@
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 11.5px;
+  gap: 8px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.4;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
   color: var(--accent);
 }
 .eyebrow::before {
   content: "";
-  width: 20px;
-  height: 1px;
+  width: 6px;
+  height: 6px;
   flex-shrink: 0;
+  border-radius: 50%;
   background: currentColor;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
-/* Label kapital tanpa garis (navigasi, kolom tabel, meta) */
+/* Label kecil ala header seksi iOS (footnote kapital, tracking tipis) */
 .caps {
   font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-/* Judul lebar — axis wdth Google Sans Flex (karakter "grand tourer") */
+/* Judul ala iOS — SF Pro Display: rapat & tegas (tanpa web font) */
 .font-display {
-  font-variation-settings: "wdth" 122;
-  font-stretch: 122%;
+  font-family: var(--font-display);
+  letter-spacing: -0.022em;
 }
 
 /* Krom terpoles — garis cakrawala gelap di tengah huruf seperti pantulan logam asli */
@@ -97,27 +97,6 @@
 }
 .state-layer:active::before {
   opacity: 0.12;
-}
-
-/* Ripple (dipasang global oleh RippleProvider pada .state-layer) */
-.ripple {
-  position: absolute;
-  z-index: -1;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.16;
-  transform: scale(0);
-  pointer-events: none;
-  animation: ripple 0.55s var(--ease-decel) forwards;
-}
-.ripple.out {
-  opacity: 0;
-  transition: opacity 0.35s var(--ease);
-}
-@keyframes ripple {
-  to {
-    transform: scale(1);
-  }
 }
 
 /* Slider: alur terukir + kenop logam bubut (lihat MATERIAL) */
@@ -350,73 +329,31 @@
 }
 
 /* ============================================================
-   MATERIAL — FORGED COMPOSITE · Filosofi "Presisi yang ditempa"
-   ------------------------------------------------------------
-   Forged composite = ribuan serpihan serat dipres panas & tekanan
-   jadi satu bentuk: ringan, kuat, polanya tak pernah sama. Sama
-   seperti converter ini — banyak sumber diproses jadi satu aset.
-   Empat prinsip (juga ditampilkan di seksi Filosofi landing):
-     1. Grafit  — kanvas gelap (token --bg/--surface): tenang, karya jadi pusat
-     2. Perak   — aksen (--accent): hanya aksi terpenting yang berkilau
-     3. Serpihan tempa — material: latar, hero, CTA, footer, ubin ikon
-     4. Cahaya terarah — material hanya tampak di area yang disorot
-        (key light atas + sorot kursor); sisanya tenggelam ke grafit
-   Kartu/dialog = pelat satin di ATAS forged (dua material berlapis),
-   bertepi chamfer hasil mesin. Pemisah = alur terukir.
-   Tekstur: public/material/forged-*.webp (640px, seamless).
+   MATERIAL — gaya iOS: permukaan bersih berlapis (grouped), kaca tipis,
+   garis rambut 0.5px, sorot cahaya lembut dari atas. TANPA gambar tekstur
+   (nol request tambahan). Kelas lama (.mat, .forged, .forged-tile, .btn-plate,
+   .engrave) dipertahankan namanya supaya semua halaman ikut berubah.
    ============================================================ */
 :root {
-  --forged: url("/material/forged-dark.webp");
-  /* Peredam forged di latar halaman (material tetap terasa, tidak bersaing dengan konten) */
-  --forged-dim: color-mix(in srgb, var(--bg) 58%, transparent);
-  /* Film grain halus untuk seluruh layar */
-  --grain: url("/material/grain.png");
-  /* Satin bead-blasted: butir mikro sebagai lapisan background (alpha sudah rendah) */
-  --satin: url("/material/satin.png");
-  --sheen: radial-gradient(90% 60% at 50% -12%, rgba(201, 205, 210, 0.09), transparent 62%);
-  --spot: rgba(230, 232, 235, 0.16);
-  --plate-top: rgba(255, 255, 255, 0.028);
-  --mat-grain-opacity: 0.05;
-  --mat-edge: rgba(255, 255, 255, 0.07);
-  --mat-edge-low: rgba(0, 0, 0, 0.4);
-  --groove-d: rgba(0, 0, 0, 0.55);
-  --groove-l: rgba(255, 255, 255, 0.06);
-  /* Kenop (slider, konsol) = logam terpoles */
-  --knob: conic-gradient(from 30deg, #f2f3f5, #9fa4ab 25%, #e6e8eb 50%, #9fa4ab 75%, #f2f3f5);
-  --knob-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.5);
+  --sheen: radial-gradient(80% 55% at 50% -10%, rgba(235, 238, 245, 0.075), transparent 65%);
+  --spot: rgba(230, 232, 235, 0.1);
+  --mat-edge: rgba(255, 255, 255, 0.06);
+  --mat-edge-low: rgba(0, 0, 0, 0.25);
+  --hairline: rgba(255, 255, 255, 0.09);
+  /* Kenop slider = thumb putih iOS */
+  --knob: #ffffff;
+  --knob-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.12), 0 6px 13px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 html[data-theme="light"] {
-  --forged: url("/material/forged-light.webp");
-  --forged-dim: color-mix(in srgb, var(--bg) 50%, transparent);
-  --satin: url("/material/satin.png");
-  --sheen: radial-gradient(90% 60% at 50% -12%, rgba(255, 255, 255, 0.9), transparent 62%);
-  --spot: rgba(255, 255, 255, 0.55);
-  --plate-top: rgba(255, 255, 255, 0.7);
-  --mat-grain-opacity: 0.06;
-  --mat-edge: rgba(255, 255, 255, 0.95);
-  --mat-edge-low: rgba(0, 0, 0, 0.06);
-  --groove-d: rgba(0, 0, 0, 0.12);
-  --groove-l: rgba(255, 255, 255, 0.95);
-  --knob: conic-gradient(from 30deg, #ffffff, #b9bdc3 25%, #f2f3f5 50%, #b9bdc3 75%, #ffffff);
-  --knob-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), 0 2px 5px rgba(0, 0, 0, 0.2);
+  --sheen: radial-gradient(80% 55% at 50% -10%, rgba(255, 255, 255, 0.9), transparent 65%);
+  --spot: rgba(255, 255, 255, 0.5);
+  --mat-edge: rgba(255, 255, 255, 0.9);
+  --mat-edge-low: rgba(0, 0, 0, 0.04);
+  --hairline: rgba(60, 60, 67, 0.16);
 }
 
-/* Latar halaman = forged hanya di "kolam cahaya" atas — memudar ke grafit polos di bawah,
-   jadi material terbaca sebagai permukaan yang disorot lampu, bukan wallpaper (fixed, tanpa reflow) */
+/* Latar halaman: cahaya lembut dari atas (gradient murni, fixed, tanpa reflow) */
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(var(--forged-dim), var(--forged-dim)),
-    var(--forged) 0 0 / 400px 400px repeat;
-  -webkit-mask-image: radial-gradient(95% 70% at 50% -5%, #000 0%, rgba(0, 0, 0, 0.5) 42%, transparent 78%);
-  mask-image: radial-gradient(95% 70% at 50% -5%, #000 0%, rgba(0, 0, 0, 0.5) 42%, transparent 78%);
-}
-/* Key light statis dari atas. Sorot kursor = elemen .studio-spot (digeser via transform — tanpa recalc style) */
-body::after {
   content: "";
   position: fixed;
   inset: 0;
@@ -424,83 +361,44 @@ body::after {
   pointer-events: none;
   background: var(--sheen);
 }
-html[data-theme="light"] body::after {
-  opacity: 0.6;
-}
-.studio-spot {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: -1;
-  width: 76rem;
-  height: 56rem;
-  margin: -28rem 0 0 -38rem;
-  pointer-events: none;
-  background: radial-gradient(closest-side, var(--spot), transparent);
-  opacity: 0;
-  transition: opacity var(--base) var(--ease);
-  will-change: transform;
-}
-.studio-spot[data-on] {
-  opacity: 0.55;
-}
-/* Film grain halus — lapisan latar (z -1), tanpa blend mode: murah saat scroll */
-html::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: var(--grain);
-  opacity: calc(var(--mat-grain-opacity) * 8);
-}
 
-/* Pelat satin (kartu, dialog, menu): butir mikro + tepi chamfer — atas menangkap cahaya, bawah dalam bayang */
+/* Permukaan kartu/dialog/menu: highlight tipis di tepi atas + bayangan lembut */
 .mat {
-  background-image: linear-gradient(180deg, var(--plate-top), transparent 38%), var(--satin);
   box-shadow:
-    inset 0 1px 0 var(--mat-edge),
-    inset 0 -1px 0 var(--mat-edge-low),
-    var(--elev-1);
+    inset 0 0.5px 0 var(--mat-edge),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 8px 24px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* Forged penuh (hero, CTA, footer, banner profil) — taruh sebagai lapisan absolut di belakang konten */
+/* Bidang hero/CTA/footer: cahaya ambien netral (pengganti tekstur forged) */
 .forged {
-  background: var(--forged) 0 0 / 640px 640px repeat, var(--bg);
+  background:
+    radial-gradient(70% 60% at 75% 15%, color-mix(in srgb, var(--fg) 7%, transparent), transparent 70%),
+    radial-gradient(50% 50% at 10% 90%, color-mix(in srgb, var(--fg) 4%, transparent), transparent 70%),
+    var(--bg);
 }
-/* Sorot statis untuk seksi forged (hero, CTA) */
 .forged-spot {
   background: radial-gradient(42rem 30rem at 70% 30%, var(--spot), transparent 70%);
 }
-/* Ubin forged kecil bertepi chamfer (ikon empty state, medali logo) */
+/* Ubin ikon netral (empty state) — squircle iOS */
 .forged-tile {
-  background: var(--forged) 0 0 / 320px 320px repeat, var(--raised);
+  border-radius: 22%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fg) 7%, transparent), transparent), var(--raised);
   box-shadow:
-    inset 0 1px 0 var(--mat-edge),
-    inset 0 -1px 0 var(--mat-edge-low),
-    0 10px 24px rgba(0, 0, 0, 0.28);
+    inset 0 0.5px 0 var(--mat-edge),
+    0 8px 20px -8px rgba(0, 0, 0, 0.35);
 }
 
-
-/* Alur terukir — pengganti garis datar untuk pemisah seksi */
+/* Pemisah = garis rambut iOS */
 .engrave {
-  height: 2px;
+  height: 0.5px;
   border: 0;
-  background: linear-gradient(180deg, var(--groove-d) 0 1px, var(--groove-l) 1px 2px);
+  background: var(--hairline);
 }
 
-/* Tombol primer = pelat logam terpoles: kilau atas + chamfer */
+/* Tombol primer: datar ala iOS (nama kelas lama dipertahankan) */
 .btn-plate {
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0) 48%, rgba(0, 0, 0, 0.08));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
-}
-html[data-theme="light"] .btn-plate {
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 48%, rgba(0, 0, 0, 0.2));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.35);
 }
 
 /* Kilau menyapu saat hover — sekali lewat, seperti cahaya melintas di logam */
@@ -606,7 +504,7 @@ html[data-theme="light"] .btn-plate {
 
 /* Dock aksi pilihan: muncul dari bawah (deselerasi), keluar langsung */
 .dock-in {
-  animation: dock-in var(--base) var(--ease-decel) both;
+  animation: dock-in var(--spring-dur) var(--spring-bounce) both;
 }
 @keyframes dock-in {
   from {
@@ -621,7 +519,7 @@ html[data-theme="light"] .btn-plate {
 
 /* Nomor pilihan "pop" saat cover dipilih */
 .pick-pop {
-  animation: pick-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pick-pop 0.45s var(--spring-bounce) both;
 }
 @keyframes pick-pop {
   from {
@@ -634,13 +532,13 @@ html[data-theme="light"] .btn-plate {
 
 /* Menu HP: panel turun dari atas, item menyusul berurutan */
 .menu-sheet[open] {
-  animation: menu-in var(--base) var(--ease-decel) both;
+  animation: menu-in var(--spring-dur) var(--spring) both;
 }
 .menu-sheet[open]::backdrop {
   animation: fade-in var(--base) var(--ease) both;
 }
 .menu-sheet[open] .menu-item {
-  animation: menu-item-in var(--base) var(--ease-decel) both;
+  animation: menu-item-in var(--spring-dur) var(--spring) both;
 }
 @keyframes menu-in {
   from {
@@ -676,5 +574,281 @@ html[data-theme="light"] .btn-plate {
   from {
     opacity: 0;
     transform: translateX(-16px);
+  }
+}
+
+/* ============================================================
+   iOS — ubin ikon, tab bar kaca, gerak pegas (spring)
+   Semua gerak memakai --spring / --spring-bounce (tokens.css);
+   prefers-reduced-motion di globals.css tetap mematikannya.
+   ============================================================ */
+@layer components {
+  /* Ubin ikon menu (AppIcon): squircle warna sistem + kilap kaca tipis di tepi atas */
+  .app-icon {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: var(--size);
+    height: var(--size);
+    border-radius: calc(var(--size) * 0.27);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 52%),
+      var(--tone);
+    color: #fff;
+    box-shadow:
+      inset 0 0.5px 0 rgb(255 255 255 / 0.5),
+      inset 0 -0.5px 0 rgb(0 0 0 / 0.18),
+      0 1px 2px rgb(0 0 0 / 0.2);
+    transition: scale var(--spring-dur) var(--spring-bounce);
+  }
+  .app-icon > svg {
+    width: 60%;
+    height: 60%;
+  }
+  :is(a, button):hover > .app-icon,
+  :is(a, button):hover > * > .app-icon {
+    scale: 1.06;
+  }
+  :is(a, button):active > .app-icon,
+  :is(a, button):active > * > .app-icon {
+    scale: 0.92;
+    transition-duration: 0.12s;
+  }
+
+  /* Tekan ala iOS: mengecil cepat, lepas memantul pegas */
+  .ios-press {
+    transition:
+      background-color 0.2s var(--ease),
+      border-color 0.2s var(--ease),
+      color 0.2s var(--ease),
+      box-shadow 0.2s var(--ease),
+      opacity 0.2s var(--ease),
+      scale var(--spring-dur) var(--spring-bounce);
+  }
+  .ios-press:active:not(:disabled) {
+    scale: 0.96;
+    transition: scale 0.1s var(--ease);
+  }
+
+  /* Tab bar iOS 26: kapsul kaca melayang + gelembung aktif yang meluncur */
+  .tabbar-glass {
+    background: color-mix(in srgb, var(--surface) 74%, transparent);
+    border: 0.5px solid color-mix(in srgb, var(--fg) 14%, transparent);
+    box-shadow:
+      inset 0 0.5px 0 color-mix(in srgb, #fff 18%, transparent),
+      0 10px 30px rgb(0 0 0 / 0.28),
+      0 1px 3px rgb(0 0 0 / 0.2);
+    -webkit-backdrop-filter: blur(22px) saturate(1.8);
+    backdrop-filter: blur(22px) saturate(1.8);
+  }
+  .tab-line {
+    position: absolute;
+    bottom: 7px;
+    left: 4px;
+    width: calc((100% - 8px) / var(--n));
+    height: 2px;
+    padding-inline: 30px;
+    background: var(--fg);
+    background-clip: content-box;
+    translate: calc(100% * var(--i)) 0;
+    transition:
+      translate var(--spring-dur) var(--spring-bounce),
+      opacity 0.2s var(--ease);
+  }
+  /* SF Symbol "bounce" saat tab menjadi aktif */
+  .tab-link[aria-current="page"] svg {
+    animation: sf-bounce 0.55s var(--spring-bounce) both;
+  }
+  .tab-link:active svg {
+    scale: 0.86;
+  }
+  .tab-link svg {
+    transition: scale 0.35s var(--spring-bounce);
+  }
+
+  /* Dialog: HP = sheet dari bawah (dengan grabber), layar lebar = pop ala alert iOS */
+  .ios-dialog[open] {
+    animation: ios-pop var(--spring-dur) var(--spring) both;
+  }
+  .ios-dialog[open]::backdrop {
+    animation: fade-in 0.25s var(--ease) both;
+  }
+  @media (max-width: 639px) {
+    .ios-dialog[open] {
+      animation-name: sheet-up;
+    }
+  }
+
+  /* Menu / popover: muncul dari titik asal (context menu iOS) */
+  .ios-pop {
+    transform-origin: var(--origin, top);
+    transition:
+      opacity 0.18s var(--ease),
+      scale var(--spring-dur) var(--spring-bounce),
+      translate var(--spring-dur) var(--spring),
+      visibility 0s;
+  }
+  /* Tutup lebih cepat (≈30% durasi buka), lalu disembunyikan dari pembaca layar & Tab */
+  .ios-pop[data-open="false"] {
+    opacity: 0;
+    scale: 0.9;
+    translate: 0 -4px;
+    visibility: hidden;
+    pointer-events: none;
+    transition-duration: 0.15s;
+    transition-delay: 0s, 0s, 0s, 0.15s;
+  }
+}
+
+@keyframes sf-bounce {
+  0% {
+    scale: 1;
+  }
+  30% {
+    scale: 0.82;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes ios-pop {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+@keyframes sheet-up {
+  from {
+    translate: 0 100%;
+  }
+}
+
+/* Ikon tema berganti: berputar masuk dari -120° dengan pantulan pegas */
+.icon-swap {
+  animation: icon-swap 0.6s var(--spring-bounce) both;
+}
+@keyframes icon-swap {
+  from {
+    opacity: 0;
+    rotate: -120deg;
+    scale: 0.4;
+  }
+}
+
+/* Angka jumlah pilihan "bergulir" naik tiap berubah (odometer) */
+.count-roll {
+  animation: count-roll 0.42s var(--spring) both;
+}
+@keyframes count-roll {
+  from {
+    opacity: 0;
+    translate: 0 70%;
+    filter: blur(2px);
+  }
+}
+
+/* Ubin yang berbalik 3D jadi centang saat dipilih (Audio saya) */
+.flip-card {
+  perspective: 400px;
+}
+.flip-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s var(--spring-bounce);
+}
+.flip-card[data-on="true"] .flip-inner {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+/* ============================================================
+   Gelombang proses (antrean converter) — pengganti progress bar biasa.
+   44 bar (transform/opacity saja → murah). data-lit: idle | dl | done.
+   ============================================================ */
+.wave-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+}
+.wave-track i {
+  flex: 1;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--fg);
+  opacity: 0.14;
+  transform: scaleY(var(--h));
+  transition:
+    opacity 0.35s var(--ease),
+    transform 0.5s var(--spring-bounce),
+    background-color 0.35s var(--ease);
+}
+.wave-track i[data-lit="dl"] {
+  opacity: 0.42;
+}
+.wave-track i[data-lit="done"] {
+  opacity: 1;
+  background: var(--accent);
+}
+/* Antre: gelombang "bernapas" bergiliran kiri → kanan */
+.wave-track.is-waiting i {
+  animation: wave-breathe 1.6s var(--ease) var(--d) infinite;
+}
+@keyframes wave-breathe {
+  0%,
+  100% {
+    transform: scaleY(calc(var(--h) * 0.35));
+  }
+  50% {
+    transform: scaleY(var(--h));
+  }
+}
+/* Playhead saat proses: garis terang yang mengikuti progres */
+.wave-head {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--fg);
+  box-shadow: 0 0 10px 1px color-mix(in srgb, var(--fg) 45%, transparent);
+  transition: left 0.5s var(--spring);
+}
+
+/* Cincin gauge konsol landing: arc terisi dari nol dengan pegas saat pertama tampil */
+.ring-fill {
+  stroke-dashoffset: var(--ring-off);
+  animation: ring-fill 1.4s var(--spring) 0.3s both;
+}
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: var(--ring-full);
+  }
+}
+
+/* Ikon "layar utama" Filosofi: mengambang pelan bergiliran */
+.home-icon {
+  animation: home-float 4.8s ease-in-out var(--d, 0ms) infinite;
+}
+@keyframes home-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
   }
 }

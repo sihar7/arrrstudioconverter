@@ -1,18 +1,23 @@
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/** Logo resmi ARRR Studio (jangan diwarnai ulang / diubah proporsinya) */
+/**
+ * Logo resmi ARRR Studio (jangan diwarnai ulang / diubah proporsinya).
+ * <img> biasa (bukan next/image): file sudah webp kecil & unoptimized, dan next/image di server component
+ * memecah satu chunk JS tambahan di setiap halaman.
+ */
 export function LogoMark({ size = 28, className, priority }: { size?: 28 | 40 | 72 | 96; className?: string; priority?: boolean }) {
   const src = size <= 40 ? "/brand/arrr-logo-96.webp" : size <= 72 ? "/brand/arrr-logo-192.webp" : "/brand/arrr-logo-384.webp";
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={src}
       alt=""
       width={size}
       height={Math.round(size * 1.023)}
-      unoptimized
-      priority={priority}
+      decoding="async"
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
       className={cn("shrink-0 object-contain", className)}
     />
   );

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { QuotaPill } from "@/components/shared/UserMenu";
 import IconButton from "@/components/ui/IconButton";
+import AppIcon from "@/components/ui/AppIcon";
 import { NAV, type NavItem } from "./Header";
 
 /**
@@ -58,29 +59,25 @@ export default function MobileMenu({ activeHref, items = NAV }: { activeHref?: s
             <IconButton label={t.common.close} icon={<Xmark width={18} height={18} />} onClick={() => setOpen(false)} />
           </div>
         </div>
-        <ul className="grid grid-cols-1 gap-px bg-line/60 sm:grid-cols-2">
-          {items.map(({ href, key, icon: Icon }, i) => {
+        {/* Daftar grouped-inset ala iOS: garis rambut dimulai setelah ikon */}
+        <ul className="m-3 overflow-hidden rounded-[14px] bg-fg/[0.045]">
+          {items.map(({ href, key, icon: Icon, tone }, i) => {
             const active = href === activeHref;
             return (
-              <li key={href} className="menu-item bg-raised" style={{ animationDelay: `${60 + i * 40}ms` }}>
+              <li key={href} className="menu-item group/row relative" style={{ animationDelay: `${40 + i * 35}ms` }}>
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "state-layer group relative flex min-h-[64px] items-center gap-4 px-5 py-3.5 transition-colors",
+                    "group relative flex min-h-[60px] items-center gap-3.5 px-3.5 py-2.5 transition-colors duration-150 active:bg-fg/[0.08]",
                     active ? "text-fg" : "text-fg-2 hover:text-fg",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "grid size-10 shrink-0 place-items-center rounded-s transition-colors",
-                      active ? "btn-plate bg-accent text-on-accent" : "bg-tonal text-fg-2 group-hover:text-fg",
-                    )}
-                  >
-                    <Icon width={20} height={20} />
-                  </span>
+                  <AppIcon tone={tone} size={38}>
+                    <Icon filled />
+                  </AppIcon>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold">{t.nav[key as keyof typeof t.nav] as string}</span>
+                    <span className="block text-[16px] font-semibold tracking-[-0.01em]">{t.nav[key as keyof typeof t.nav] as string}</span>
                     <span className="mt-0.5 block truncate text-[12.5px] text-fg-3">
                       {t.nav.desc[key as keyof typeof t.nav.desc]}
                     </span>
@@ -90,8 +87,9 @@ export default function MobileMenu({ activeHref, items = NAV }: { activeHref?: s
                     height={16}
                     className="shrink-0 text-fg-3 transition-transform duration-200 group-hover:translate-x-0.5"
                   />
-                  {/* Aktif = garis bawah (konvensi navbar) */}
-                  {active && <span aria-hidden="true" className="absolute inset-x-5 bottom-0 h-0.5 bg-accent" />}
+                  <span aria-hidden="true" className="absolute bottom-0 left-[66px] right-0 h-[0.5px] bg-[var(--hairline)] group-last/row:hidden" />
+                  {/* Aktif = garis bawah (konvensi situs) */}
+                  {active && <span aria-hidden="true" className="absolute bottom-0 left-[66px] right-3.5 h-[2px] rounded-full bg-fg" />}
                 </Link>
               </li>
             );

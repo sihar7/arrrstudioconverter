@@ -39,6 +39,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      // Aset statis di public/ (logo, tekstur material) → cache 1 tahun (rule "Add Expires headers").
+      // Ganti isi file = ganti nama file (mis. forged-dark-2.webp) supaya cache lama tidak terpakai.
+      { source: "/:dir(brand|material)/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      // Favicon: URL-nya sudah ber-hash (?icon.xxx) dari Next → aman di-cache lama
+      { source: "/:icon(icon.png|apple-icon.png)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
       // Respons API tidak boleh di-cache proxy/CDN bersama & tidak diindeks
       { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
     ];
@@ -46,7 +51,20 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   // Ikon diimpor per-modul (bukan seluruh barrel) → bundle klien lebih kecil, compile lebih cepat
-  experimental: { optimizePackageImports: ["iconoir-react"] },
+  experimental: {
+    optimizePackageImports: ["iconoir-react"],
+    // Gabungkan chunk JS sekecil mungkin jumlahnya: kunjungan pertama (landing) jadi 2–3 file, bukan ±14.
+    // Biaya: chunk lebih besar & sedikit duplikasi antar-halaman — tetap ter-cache immutable 1 tahun.
+    turbopackChunking: {
+      firstPageLoadPriority: 1,
+      priorityRoutes: [/^\/$/],
+      priorityBoost: 4,
+      requestCost: 5_000_000,
+      minChunkSize: 5_000_000,
+      maxMergeChunkSize: 50_000_000,
+      maxChunkCountPerGroup: 1,
+    },
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
   },

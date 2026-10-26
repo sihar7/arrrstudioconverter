@@ -2,7 +2,8 @@ import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export const inputClass =
-  "h-12 w-full min-w-0 rounded border border-line-2 bg-transparent px-4 text-[15px] text-fg placeholder:text-fg-3 transition-[border-color,box-shadow] duration-150 bg-bg/40 hover:border-fg focus:border-accent focus:shadow-[inset_0_0_0_1px_var(--accent)] focus:outline-none aria-[invalid=true]:border-err disabled:opacity-40";
+  // Field iOS: isi abu sistem tanpa garis; fokus = tepi aksen + cincin lembut
+  "h-12 w-full min-w-0 rounded border border-transparent bg-fg/[0.06] px-4 text-[15px] text-fg placeholder:text-fg-3 transition-[background-color,border-color,box-shadow] duration-200 hover:bg-fg/[0.08] focus:border-accent/70 focus:bg-transparent focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent)] focus:outline-none aria-[invalid=true]:border-err disabled:opacity-40";
 
 interface FieldProps {
   label: ReactNode;
@@ -21,7 +22,7 @@ export default function Field({ label, hint, error, className, aside, children }
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center justify-between gap-3">
-        <label htmlFor={id} className="caps text-[11px] text-fg-2">
+        <label htmlFor={id} className="text-[13px] font-semibold text-fg-2">
           {label}
         </label>
         {aside}

@@ -9,6 +9,7 @@ import { ApiError } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
 import CardBox from "@/components/shared/CardBox";
 import Button from "@/components/ui/Button";
+import { SwitchTrack } from "@/components/ui/Switch";
 import PageLoader from "@/components/shared/PageLoader";
 import { cn } from "@/lib/utils";
 import { AST_MODES, ENGINES, LAYERS, MODES, MODE_LAYERS, WEB_LAYERS, type AstMode, type Engine, type Mode } from "../_constants/obf.constants";
@@ -268,10 +269,11 @@ function Tool() {
                   <button
                     type="button"
                     onClick={() => toggle(L.id, L.web)}
-                    aria-pressed={on}
+                    role="switch"
+                    aria-checked={on}
                     disabled={!L.web}
                     className={cn(
-                      "state-layer group flex w-full items-start gap-2.5 rounded-s border p-3 text-left transition-colors",
+                      "group flex w-full items-start gap-2.5 rounded-s border p-3 text-left transition-colors",
                       L.web
                         ? on
                           ? "border-accent/60 bg-accent/[0.08]"
@@ -279,16 +281,7 @@ function Tool() {
                         : "cursor-not-allowed border-line/40 bg-surface/50 opacity-60",
                     )}
                   >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "mt-0.5 grid size-5 shrink-0 place-items-center rounded-[6px] border transition-colors",
-                        on ? "border-accent bg-accent text-on-accent" : "border-line-2 text-transparent",
-                      )}
-                    >
-                      <Check width={13} height={13} strokeWidth={2.4} />
-                    </span>
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">
                         <span className="font-mono text-[11px] text-fg-3">{String(L.id).padStart(2, "0")}</span>
                         <span className="truncate text-[13px] font-semibold">{title}</span>
@@ -302,6 +295,8 @@ function Tool() {
                         {L.web ? o.webBadge : o.studioBadge}
                       </span>
                     </span>
+                    {/* Toggle iOS (bukan kotak centang) */}
+                    {L.web && <SwitchTrack on={on} size="sm" />}
                   </button>
                 </li>
               );

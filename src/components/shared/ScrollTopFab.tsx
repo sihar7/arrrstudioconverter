@@ -40,11 +40,31 @@ export default function ScrollTopFab({ lifted, deepAfter = 400 }: { lifted?: boo
     };
   }, [deepAfter]);
 
+  // Scroll ke atas buatan sendiri (bukan behavior:"smooth" bawaan yang kaku & beda tiap browser):
+  // durasi menyesuaikan jarak (420–900 ms), kurva ease-out quint → melambat lembut di puncak.
+  // Roda/sentuh/tombol dari pengguna langsung membatalkan supaya tidak "melawan" scroll.
+  const anim = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(anim.current), []);
   const toTop = () => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
-    // Pindahkan fokus ke konten utama untuk pengguna keyboard / screen reader
-    document.getElementById("main")?.focus({ preventScroll: true });
+    document.getElementById("main")?.focus({ preventScroll: true }); // fokus untuk keyboard / screen reader
+    const from = window.scrollY;
+    if (from <= 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return window.scrollTo(0, 0);
+    const dur = Math.min(900, 420 + from * 0.12);
+    const t0 = performance.now();
+    const stop = () => {
+      cancelAnimationFrame(anim.current);
+      for (const ev of ["wheel", "touchstart", "keydown"] as const) window.removeEventListener(ev, stop);
+    };
+    for (const ev of ["wheel", "touchstart", "keydown"] as const) window.addEventListener(ev, stop, { passive: true, once: true });
+    cancelAnimationFrame(anim.current);
+    const step = (now: number) => {
+      const p = Math.min(1, (now - t0) / dur);
+      window.scrollTo(0, from * (1 - (1 - Math.pow(1 - p, 5))));
+      if (p < 1) anim.current = requestAnimationFrame(step);
+      else stop();
+    };
+    anim.current = requestAnimationFrame(step);
   };
 
   return (
@@ -56,15 +76,15 @@ export default function ScrollTopFab({ lifted, deepAfter = 400 }: { lifted?: boo
       tabIndex={visible ? 0 : -1}
       aria-hidden={!visible}
       className={cn(
-        "state-layer mat fixed right-4 z-40 grid size-12 cursor-pointer place-items-center rounded-s bg-raised text-fg shadow-[var(--elev-3)] transition-[transform,opacity,bottom] duration-300 ease-[var(--ease-decel)] active:scale-[0.94] sm:right-6",
+        "tabbar-glass fixed right-4 z-40 grid size-12 cursor-pointer place-items-center rounded-full text-fg transition-[translate,scale,opacity,bottom] duration-[var(--spring-dur)] ease-[var(--spring-bounce)] active:scale-90 active:duration-100 sm:right-6",
         lifted
-          ? "bottom-[calc(88px+env(safe-area-inset-bottom)+var(--fab-lift,0px))] xl:bottom-[calc(24px+var(--fab-lift,0px))]"
+          ? "bottom-[calc(80px+env(safe-area-inset-bottom)+var(--fab-lift,0px))] xl:bottom-[calc(24px+var(--fab-lift,0px))]"
           : "bottom-[calc(24px+var(--fab-lift,0px))]",
         visible ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none translate-y-4 scale-75 opacity-0",
       )}
     >
       <svg viewBox="0 0 56 56" className="absolute inset-0 -rotate-90" aria-hidden="true">
-        <circle cx="28" cy="28" r={R} fill="none" stroke="var(--line)" strokeWidth="2" />
+        <circle cx="28" cy="28" r={R} fill="none" stroke="var(--hairline)" strokeWidth="2" />
         <circle
           ref={ring}
           cx="28"

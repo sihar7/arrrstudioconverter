@@ -1,9 +1,11 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Album, ClockRotateRight, Crown, Lock, MusicDoubleNote, Settings } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import { SfClock, SfCrown, SfGear, SfLock, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
+import type { IosTone } from "@/components/ui/AppIcon";
 import { useT } from "@/hooks/useT";
 import { useScrolled } from "@/hooks/useScrollState";
 import { useMeQuery } from "@/store/api/baseApi";
@@ -14,21 +16,22 @@ import ScrollTopFab from "@/components/shared/ScrollTopFab";
 import MobileMenu from "./MobileMenu";
 import NavMenu from "./NavMenu";
 
+// Ikon gaya SF Symbols (garis → fill saat aktif) + warna sistem iOS untuk ubin menu
 export const NAV = [
-  { href: "/converter", key: "converter", icon: MusicDoubleNote },
-  { href: "/library", key: "library", icon: Album },
-  { href: "/history", key: "history", icon: ClockRotateRight },
-  { href: "/pricing", key: "pricing", icon: Crown },
-  { href: "/settings", key: "settings", icon: Settings },
-] as const;
+  { href: "/converter", key: "converter", icon: SfWaveform, tone: "pink" },
+  { href: "/library", key: "library", icon: SfStack, tone: "purple" },
+  { href: "/history", key: "history", icon: SfClock, tone: "blue" },
+  { href: "/pricing", key: "pricing", icon: SfCrown, tone: "orange" },
+  { href: "/settings", key: "settings", icon: SfGear, tone: "gray" },
+] as const satisfies readonly NavItem[];
 
 // Tab bar bawah HP maksimal 4 tujuan (label tetap terbaca di 375px) — Harga ada di menu & dropdown akun
 const TAB_NAV = NAV.filter((n) => n.href !== "/pricing");
 
 // Menu khusus admin aplikasi (lihat isAppAdmin di BE) — hanya muncul di navbar untuk admin.
-export const ADMIN_NAV = [{ href: "/obfuscator", key: "obfuscator", icon: Lock }] as const;
+export const ADMIN_NAV = [{ href: "/obfuscator", key: "obfuscator", icon: SfLock, tone: "green" }] as const satisfies readonly NavItem[];
 
-export type NavItem = { href: string; key: string; icon: typeof MusicDoubleNote };
+export type NavItem = { href: string; key: string; icon: SfIcon; tone: IosTone };
 
 /**
  * Navbar tunggal untuk SEMUA halaman (landing & app) — tata letak editorial ala ferrari.com.
@@ -86,16 +89,16 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
                     href={href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "caps group relative flex items-center px-3.5 transition-colors duration-300",
-                      active ? "text-fg" : "text-fg-3 hover:text-fg",
+                      "group relative flex items-center px-3.5 text-[14px] font-medium transition-colors duration-200",
+                      active ? "text-fg" : "text-fg-2 hover:text-fg",
                     )}
                   >
                     {t.nav[key as keyof typeof t.nav] as string}
-                    {/* Garis bawah aktif menempel di tepi bawah navbar; hover memberi pratinjau */}
+                    {/* Aktif = garis bawah menempel di tepi bawah navbar (meluncur dengan pegas); hover = pratinjau */}
                     <span
                       aria-hidden="true"
                       className={cn(
-                        "absolute inset-x-3.5 bottom-0 h-px origin-left bg-fg transition-transform duration-500 ease-[var(--ease)]",
+                        "absolute inset-x-3.5 bottom-0 h-[2px] origin-left rounded-full bg-fg transition-[scale,background-color] duration-[var(--spring-dur)] ease-[var(--spring)]",
                         active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100 group-hover:bg-fg-3",
                       )}
                     />
@@ -137,35 +140,38 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
   );
 }
 
-/** Tab bar bawah (< xl) — ikon + label, indikator garis atas. Tetap 4 menu inti (menu admin cukup di navbar/menu HP). */
+/**
+ * Tab bar bawah (< xl) ala iOS 26: kapsul kaca melayang, gelembung aktif meluncur dengan pegas,
+ * ikon garis → fill saat aktif + "bounce". Tetap 4 menu inti (menu admin cukup di navbar/menu HP).
+ */
 function TabBar({ activeHref }: { activeHref?: string }) {
   const { t } = useT();
+  const index = TAB_NAV.findIndex((n) => n.href === activeHref);
   return (
     <nav
       aria-label="Mobile"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line/70 bg-[var(--glass)] pb-[env(safe-area-inset-bottom)] shadow-[inset_0_1px_0_var(--mat-edge)] backdrop-blur-md xl:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] xl:hidden"
     >
-      <ul className="mx-auto grid h-[68px] max-w-xl grid-cols-4">
+      <ul className="tabbar-glass pointer-events-auto relative mx-auto grid h-[60px] max-w-[440px] grid-cols-4 rounded-full p-1">
+        {/* Aktif = garis bawah yang meluncur antar tab dengan pegas (konvensi garis bawah situs) */}
+        <span
+          aria-hidden="true"
+          className="tab-line"
+          style={{ "--i": Math.max(index, 0), "--n": TAB_NAV.length, opacity: index < 0 ? 0 : 1 } as CSSProperties}
+        />
         {TAB_NAV.map(({ href, key, icon: Icon }) => {
           const active = href === activeHref;
           return (
-            <li key={href}>
+            <li key={href} className="relative">
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "state-layer group relative flex h-full flex-col items-center justify-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] transition-colors duration-300 active:scale-95",
-                  active ? "bg-fg/[0.06] text-fg" : "text-fg-3 hover:text-fg",
+                  "tab-link flex h-full flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] font-medium tracking-[-0.01em] transition-colors duration-200",
+                  active ? "text-fg" : "text-fg-3 hover:text-fg-2",
                 )}
               >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "absolute inset-x-4 top-0 h-0.5 bg-accent transition-transform duration-500 ease-[var(--ease)]",
-                    active ? "scale-x-100" : "scale-x-0",
-                  )}
-                />
-                <Icon width={22} height={22} strokeWidth={active ? 1.9 : 1.6} />
+                <Icon size={24} filled={active} />
                 {t.nav[key]}
               </Link>
             </li>

@@ -41,13 +41,15 @@ export default function Dialog({ open, onClose, title, sub, children, footer, wi
       }}
       aria-labelledby="dlg-title"
       className={cn(
-        "mat m-auto w-[calc(100%-32px)] max-h-[88dvh] overflow-hidden rounded-l border border-line/60 bg-raised p-0 text-fg shadow-[var(--elev-3)] backdrop:bg-[var(--scrim)] backdrop:backdrop-blur-[6px] open:flex open:flex-col open:animate-[dlg-in_.5s_var(--ease)]",
+        // HP (< sm): sheet iOS menempel di bawah + grabber; layar lebar: kartu tengah dengan pop pegas
+        "ios-dialog mat m-auto w-[calc(100%-32px)] max-h-[88dvh] overflow-hidden rounded-l border border-line/60 bg-raised p-0 text-fg shadow-[var(--elev-3)] backdrop:bg-[var(--scrim)] backdrop:backdrop-blur-[6px] open:flex open:flex-col max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:rounded-t-[18px] max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)]",
         width,
       )}
     >
       {open && (
         <>
-          <header className="flex items-start justify-between gap-4 border-b border-line/60 px-6 pb-5 pt-6 sm:px-7">
+          <span aria-hidden="true" className="mx-auto mt-2 h-[5px] w-9 shrink-0 rounded-full bg-fg/25 sm:hidden" />
+          <header className="flex items-start justify-between gap-4 border-b border-line/60 px-6 pb-5 pt-4 sm:px-7 sm:pt-6">
             <div className="min-w-0">
               <h2 id="dlg-title" className="font-display text-[22px] font-bold tracking-[-0.02em]">
                 {title}

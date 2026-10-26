@@ -33,8 +33,6 @@ export default function RobloxProfileCard() {
           <img src={p.bodyUrl} alt="" aria-hidden="true" className="absolute inset-0 size-full scale-[1.8] object-cover opacity-50 blur-2xl saturate-150" />
         )}
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(120deg,color-mix(in_srgb,var(--fg)_10%,transparent),transparent_55%)]" />
-        <div aria-hidden="true" className="absolute inset-0 opacity-70 mix-blend-overlay" style={{ background: "var(--forged) 0 0 / 640px 640px repeat" }} />
-        <div aria-hidden="true" className="absolute inset-0 opacity-[0.12] mix-blend-overlay" style={{ backgroundImage: "var(--grain)" }} />
         <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-bg to-transparent" />
         {/* Avatar 3D full-body — keluar dari banner di sisi kanan */}
         {p?.type === "user" && p.bodyUrl && (

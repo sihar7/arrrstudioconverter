@@ -113,7 +113,7 @@ export function AccountCard() {
             <div className="flex items-center gap-3">
               <Avatar src={u.avatarUrl} name={u.displayName} size={44} />
               <div className="min-w-0">
-                <p className="text-[12px] uppercase tracking-[0.14em] text-fg-3">{t.settings.loggedAs}</p>
+                <p className="caps text-[11.5px] text-fg-3">{t.settings.loggedAs}</p>
                 <p className="truncate text-[15px] font-semibold">
                   {u.displayName} <span className="font-normal text-fg-3">@{u.username}</span>
                 </p>

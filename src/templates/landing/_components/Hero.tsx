@@ -53,7 +53,7 @@ export default function Hero() {
 
         <div className="rise mt-8 flex items-end justify-between gap-6 [animation-delay:400ms]">
           <Link href="/converter" className="group inline-flex min-h-11 items-center gap-3 text-[13px] text-fg-2 hover:text-fg">
-            <span className="caps rounded-xs bg-accent px-2 py-1 text-[10px] text-on-accent">{l.badgeNew}</span>
+            <span className="rounded-full bg-[var(--ios-blue)] px-2.5 py-0.5 text-[12px] font-semibold text-white">{l.badgeNew}</span>
             <span className="link-line">{l.badge}</span>
             <ArrowRight width={14} height={14} className="transition-transform duration-300 group-hover:translate-x-1" />
           </Link>

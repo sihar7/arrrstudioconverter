@@ -8,6 +8,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import CardBox from "@/components/shared/CardBox";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
+import { SwitchTrack } from "@/components/ui/Switch";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import type { useAddSource } from "../_hooks/useAddSource";
@@ -71,9 +72,9 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
       >
         {/* Kepala: judul langkah + opsi auto-convert */}
         <div className="flex min-h-14 items-center justify-between gap-3 border-b border-line/70 px-5">
-          <label htmlFor="source-input" className="flex items-center gap-3 whitespace-nowrap font-display text-[15px] font-semibold text-fg">
-            <span aria-hidden="true" className="font-mono text-[11px] font-medium tracking-[0.1em] text-fg-3">
-              01
+          <label htmlFor="source-input" className="flex items-center gap-3 whitespace-nowrap font-display text-[17px] font-semibold text-fg">
+            <span aria-hidden="true" className="grid size-6 place-items-center rounded-full bg-fg/[0.08] text-[12px] font-semibold tabular-nums text-fg-2">
+              1
             </span>
             {c.composerTitle}
           </label>
@@ -84,25 +85,12 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
             title={c.autoConvertHint}
             onClick={() => dispatch(setAutoConvert(!autoConvert))}
             className={cn(
-              "state-layer -mr-2.5 inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap rounded-s px-2.5 text-[12.5px] font-medium transition-colors",
-              autoConvert ? "text-fg" : "text-fg-3 hover:text-fg-2",
+              "group -mr-1.5 inline-flex h-11 shrink-0 cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-full px-1.5 text-[13.5px] font-medium transition-colors",
+              autoConvert ? "text-fg" : "text-fg-2 hover:text-fg",
             )}
           >
-            <span
-              aria-hidden="true"
-              className={cn(
-                "relative h-4 w-7 rounded-xs border transition-colors duration-200",
-                autoConvert ? "border-accent bg-accent" : "border-line-2 bg-hover",
-              )}
-            >
-              <span
-                className={cn(
-                  "absolute top-[2px] size-2.5 rounded-[1px] transition-transform duration-300 ease-[var(--ease)]",
-                  autoConvert ? "translate-x-[13px] bg-on-accent" : "translate-x-[2px] bg-line-2",
-                )}
-              />
-            </span>
             {c.autoConvert}
+            <SwitchTrack on={autoConvert} size="sm" />
           </button>
         </div>
 

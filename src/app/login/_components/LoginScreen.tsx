@@ -106,7 +106,7 @@ export default function LoginScreen() {
               <a
                 href={`/api/auth/discord?next=${encodeURIComponent(next)}`}
                 aria-disabled={me ? !me.auth.discordEnabled : undefined}
-                className="btn-plate group flex h-14 items-center gap-3 rounded-s bg-accent px-5 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-on-accent transition-[background-color,transform] hover:bg-accent-strong active:scale-[0.98] aria-disabled:pointer-events-none aria-disabled:opacity-40"
+                className="btn-plate group flex h-14 items-center gap-3 rounded-full bg-accent px-6 text-[15px] font-semibold text-on-accent transition-[background-color,transform] hover:bg-accent-strong active:scale-[0.98] aria-disabled:pointer-events-none aria-disabled:opacity-40"
               >
                 <Discord width={20} height={20} />
                 <span className="flex-1">{l.discord}</span>

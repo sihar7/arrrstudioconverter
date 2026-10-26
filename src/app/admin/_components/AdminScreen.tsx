@@ -7,6 +7,7 @@ import { LogoMark } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/PrefToggles";
 import PageLoader from "@/components/shared/PageLoader";
 import IconButton from "@/components/ui/IconButton";
+import AppIcon, { type IosTone } from "@/components/ui/AppIcon";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import type { AdminMe } from "@/type/admin";
@@ -30,27 +31,29 @@ interface NavEntry {
   title: string;
   sub: string;
   icon: Icon;
+  /** warna ubin ikon ala Settings iOS */
+  tone: IosTone;
 }
 
 // Navigasi dikelompokkan per peran: ringkasan · bisnis · operasional · keamanan
 const GROUPS: { label: string; items: NavEntry[] }[] = [
-  { label: "Ringkasan", items: [{ value: "overview", label: "Dashboard", title: "Dashboard", sub: "Pendapatan, pelanggan & aktivitas", icon: HomeSimple }] },
+  { label: "Ringkasan", items: [{ value: "overview", label: "Dashboard", title: "Dashboard", sub: "Pendapatan, pelanggan & aktivitas", icon: HomeSimple, tone: "blue" }] },
   {
     label: "Bisnis",
     items: [
-      { value: "orders", label: "Order", title: "Order & pembayaran", sub: "Konfirmasi pembayaran QRIS", icon: Cart },
-      { value: "users", label: "User & plan", title: "User & plan", sub: "Akun Discord, plan & moderasi", icon: Group },
+      { value: "orders", label: "Order", title: "Order & pembayaran", sub: "Konfirmasi pembayaran QRIS", icon: Cart, tone: "green" },
+      { value: "users", label: "User & plan", title: "User & plan", sub: "Akun Discord, plan & moderasi", icon: Group, tone: "indigo" },
     ],
   },
   {
     label: "Operasional",
     items: [
-      { value: "jobs", label: "Job", title: "Job konversi", sub: "Antrean & status konversi", icon: Activity },
-      { value: "files", label: "File", title: "File hasil", sub: "File siap unduh di storage", icon: Folder },
-      { value: "system", label: "Sistem", title: "Kesehatan sistem", sub: "Database, storage, tools & janitor", icon: Server },
+      { value: "jobs", label: "Job", title: "Job konversi", sub: "Antrean & status konversi", icon: Activity, tone: "orange" },
+      { value: "files", label: "File", title: "File hasil", sub: "File siap unduh di storage", icon: Folder, tone: "teal" },
+      { value: "system", label: "Sistem", title: "Kesehatan sistem", sub: "Database, storage, tools & janitor", icon: Server, tone: "gray" },
     ],
   },
-  { label: "Keamanan", items: [{ value: "audit", label: "Log audit", title: "Log audit", sub: "Jejak semua aksi admin", icon: ShieldCheck }] },
+  { label: "Keamanan", items: [{ value: "audit", label: "Log audit", title: "Log audit", sub: "Jejak semua aksi admin", icon: ShieldCheck, tone: "red" }] },
 ];
 
 const ITEMS = GROUPS.flatMap((g) => g.items);
@@ -173,7 +176,7 @@ export default function AdminScreen() {
         <div key={g.label}>
           <p className="caps px-3 pb-2 text-[10px] text-fg-3">{g.label}</p>
           <ul className="flex flex-col gap-0.5">
-            {g.items.map(({ value, label, icon: Ico }) => {
+            {g.items.map(({ value, label, icon: Ico, tone }) => {
               const active = value === tab;
               const badge = value === "orders" && pending > 0 ? pending : 0;
               return (
@@ -183,8 +186,8 @@ export default function AdminScreen() {
                     aria-current={active ? "page" : undefined}
                     onClick={() => changeTab(value)}
                     className={cn(
-                      "state-layer group relative flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-s px-3 text-left text-[14px] transition-colors duration-200",
-                      active ? "bg-raised font-semibold text-fg" : "text-fg-2 hover:bg-hover/60 hover:text-fg",
+                      "group relative flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-[12px] px-2.5 text-left text-[15px] transition-colors duration-200",
+                      active ? "bg-fg/[0.08] font-semibold text-fg" : "text-fg-2 hover:bg-fg/[0.05] hover:text-fg",
                     )}
                   >
                     <span
@@ -194,7 +197,9 @@ export default function AdminScreen() {
                         active ? "scale-y-100" : "scale-y-0",
                       )}
                     />
-                    <Ico width={18} height={18} strokeWidth={active ? 1.9 : 1.6} aria-hidden="true" className="shrink-0" />
+                    <AppIcon tone={tone} size={28}>
+                      <Ico strokeWidth={2} />
+                    </AppIcon>
                     <span className="flex-1 truncate">{label}</span>
                     {badge > 0 && (
                       <span className="min-w-5 rounded-full bg-warn px-1.5 text-center font-mono text-[11px] font-semibold leading-5 text-bg">

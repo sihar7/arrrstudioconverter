@@ -40,7 +40,7 @@ export default function Footer({ withTabBar = false }: { withTabBar?: boolean })
               href={Url.arrDiscord}
               target="_blank"
               rel="noreferrer"
-              className="caps mt-8 inline-flex h-11 items-center gap-2.5 rounded-s border border-line-2 px-4 text-fg transition-colors hover:border-fg"
+              className="ios-press mt-8 inline-flex h-11 items-center gap-2.5 rounded-full bg-[#5865F2] px-5 text-[15px] font-semibold text-white hover:bg-[#4752c4]"
             >
               <Discord width={16} height={16} /> Discord
             </a>

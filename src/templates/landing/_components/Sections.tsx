@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ArrowRight, Check, Lock, NavArrowDown } from "iconoir-react";
+import { SfClock, SfCrown, SfGear, SfLock, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
+import AppIcon, { type IosTone } from "@/components/ui/AppIcon";
 import { useT } from "@/hooks/useT";
 import { useMeQuery } from "@/store/api/baseApi";
 import { ButtonLink } from "@/components/ui/Button";
@@ -87,7 +89,7 @@ export function Features() {
               aria-hidden="true"
               className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-accent transition-transform duration-700 ease-[var(--ease)] group-hover:scale-x-100"
             />
-            <span className="font-mono text-[12px] text-fg-3">{String(i + 1).padStart(2, "0")}</span>
+            <span className="grid size-7 place-items-center rounded-full bg-fg/[0.08] text-[13px] font-semibold tabular-nums text-fg-2">{i + 1}</span>
             <h3 className="mt-8 font-display text-[19px] font-semibold tracking-[-0.015em]">{f.title}</h3>
             <p className="mt-3 text-[14.5px] leading-relaxed text-fg-2">{f.desc}</p>
           </li>
@@ -97,15 +99,32 @@ export function Features() {
   );
 }
 
-/** Swatch tiap prinsip: grafit · perak · serpihan tempa · cahaya terarah */
-const SWATCH = [
-  "bg-[var(--p-n-12)] shadow-[inset_0_0_0_1px_var(--line)]",
-  "btn-plate bg-[var(--p-silver-80)]",
-  "forged-tile",
-  "bg-[radial-gradient(circle_at_30%_25%,var(--accent-strong),transparent_70%)] bg-[var(--p-n-12)] shadow-[inset_0_0_0_1px_var(--line)]",
+/** Ubin tiap prinsip: kejelasan · konten di depan · kedalaman · gerak pegas */
+const PRINCIPLES: { tone: IosTone; icon: SfIcon }[] = [
+  { tone: "blue", icon: SfClock },
+  { tone: "pink", icon: SfWaveform },
+  { tone: "purple", icon: SfStack },
+  { tone: "orange", icon: SfCrown },
+];
+function PrincipleIcon({ i }: { i: number }) {
+  const { tone, icon: Icon } = PRINCIPLES[i % PRINCIPLES.length];
+  return (
+    <AppIcon tone={tone} size={40} className="mt-0.5">
+      <Icon filled />
+    </AppIcon>
+  );
+}
+/** Potongan "layar utama" untuk panel visual Filosofi */
+const HOME: { tone: IosTone; icon: SfIcon; label: string }[] = [
+  { tone: "pink", icon: SfWaveform, label: "Converter" },
+  { tone: "purple", icon: SfStack, label: "Library" },
+  { tone: "blue", icon: SfClock, label: "History" },
+  { tone: "orange", icon: SfCrown, label: "Pro" },
+  { tone: "green", icon: SfLock, label: "Obfuscator" },
+  { tone: "gray", icon: SfGear, label: "Settings" },
 ];
 
-/** Filosofi desain — pelat forged besar disorot kursor + empat prinsip yang menjelaskan tiap keputusan visual */
+/** Filosofi desain — potongan layar utama iOS (ikon mengambang bergiliran) + empat prinsip */
 export function Philosophy() {
   const { t } = useT();
   const p = t.landing.philosophy;
@@ -113,13 +132,22 @@ export function Philosophy() {
     <section className="border-t border-line/60">
       <div className={cn(wrap, "grid items-center gap-14 py-24 sm:py-32 lg:grid-cols-2 lg:gap-24")}>
         <div aria-hidden="true" className="reveal relative aspect-[5/4] w-full overflow-hidden rounded-l border border-line/60 lg:aspect-[4/5]">
-          <div className="forged absolute inset-0 [background-size:560px_560px]" />
-          <div className="forged-spot absolute inset-0" />
-          <div className="absolute inset-0 bg-[radial-gradient(80%_70%_at_30%_25%,transparent,color-mix(in_srgb,var(--bg)_75%,transparent))]" />
-          <div className="absolute inset-0 shadow-[inset_0_1px_0_var(--mat-edge),inset_0_-1px_0_var(--mat-edge-low)]" />
+          <div className="forged absolute inset-0" />
+          <div className="absolute inset-0 grid place-items-center p-8">
+            <div className="grid grid-cols-3 gap-x-8 gap-y-7 sm:gap-x-12">
+              {HOME.map(({ tone, icon: Icon, label }, i) => (
+                <span key={label} className="home-icon flex flex-col items-center gap-2" style={{ ["--d" as string]: `${i * 70}ms` }}>
+                  <AppIcon tone={tone} size={64}>
+                    <Icon filled />
+                  </AppIcon>
+                  <span className="text-[12px] font-medium text-fg-2">{label}</span>
+                </span>
+              ))}
+            </div>
+          </div>
           <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
-            <span className="caps text-[10.5px] text-fg-2">Forged composite</span>
-            <span className="font-mono text-[11px] text-fg-3">Graphite / Silver</span>
+            <span className="text-[13px] font-semibold text-fg-2">SF · Spring · Glass</span>
+            <span className="font-mono text-[11px] text-fg-3">0 KB font</span>
           </div>
         </div>
         <div>
@@ -133,7 +161,7 @@ export function Philosophy() {
                 className="reveal grid grid-cols-[40px_1fr] items-start gap-x-5 gap-y-1 border-b border-line/60 py-5"
                 style={{ ["--d" as string]: `${180 + i * 80}ms` }}
               >
-                <span aria-hidden="true" className={cn("mt-0.5 size-10 rounded-s", SWATCH[i])} />
+                <PrincipleIcon i={i} />
                 <div>
                   <p className="flex items-baseline gap-3">
                     <span className="font-mono text-[11px] text-fg-3">{String(i + 1).padStart(2, "0")}</span>
@@ -188,6 +216,13 @@ export function Steps() {
 const NO = "—";
 const COLS = ["guest", "free", "pro", "studio"] as const;
 type Col = (typeof COLS)[number];
+/** Ubin ikon kepala kolom paket (warna sistem iOS) */
+const COL_ICON: Record<Col, { tone: IosTone; icon: SfIcon }> = {
+  guest: { tone: "gray", icon: SfClock },
+  free: { tone: "blue", icon: SfWaveform },
+  pro: { tone: "orange", icon: SfCrown },
+  studio: { tone: "purple", icon: SfStack },
+};
 
 /**
  * Paket & harga — Tamu · Free · Pro · Studio. Semua angka diturunkan dari PLANS (sama dengan batas server &
@@ -245,8 +280,9 @@ export function Compare() {
         <p className="eyebrow">{l.compareEyebrow}</p>
         <h2 className={cn(h2, "mt-5")}>{l.compareTitle}</h2>
       </div>
-      <div className="reveal mat thin-scroll mt-14 overflow-x-auto rounded-l border border-line/60 bg-surface [--d:100ms]">
-        <table className="w-full min-w-[720px] table-fixed text-left text-[14px]">
+      {/* Gaya "Bandingkan model" Apple: kepala ber-ubin ikon, kolom Pro tersorot, centang lingkaran hijau */}
+      <div className="reveal mat thin-scroll mt-14 overflow-x-auto rounded-[24px] border border-[var(--hairline)] bg-surface [--d:100ms]">
+        <table className="w-full min-w-[720px] table-fixed border-separate border-spacing-0 text-left text-[15px]">
           <colgroup>
             <col className="w-[26%]" />
             {COLS.map((col) => (
@@ -254,36 +290,70 @@ export function Compare() {
             ))}
           </colgroup>
           <thead>
-            <tr className="border-b border-line/60">
-              <th scope="col" className="px-5 py-5 sm:px-6" />
-              {COLS.map((col) => (
-                <th
-                  key={col}
-                  scope="col"
-                  className={cn("relative px-4 py-5 align-bottom sm:px-5", col === "pro" ? "bg-raised/50 text-fg" : col === "guest" ? "text-fg-3" : "text-fg")}
-                >
-                  {col === "pro" && <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-accent" />}
-                  <span className="caps block text-[10.5px]">{head(col)}</span>
-                  {col === "guest" && <span className="mt-1 block text-[11.5px] font-normal normal-case text-fg-3">{l.guestSub}</span>}
-                  {col === "pro" && <span className="mt-1 block text-[11.5px] font-normal normal-case text-fg-2">{t.pricing.popular}</span>}
-                </th>
-              ))}
+            <tr>
+              <th scope="col" className="border-b border-[var(--hairline)] px-5 py-6 sm:px-6" />
+              {COLS.map((col) => {
+                const { tone, icon: Icon } = COL_ICON[col];
+                return (
+                  <th
+                    key={col}
+                    scope="col"
+                    className={cn(
+                      "border-b border-[var(--hairline)] px-4 pb-5 pt-6 align-top font-normal sm:px-5",
+                      col === "pro" && "rounded-t-[18px] bg-fg/[0.05]",
+                    )}
+                  >
+                    <AppIcon tone={tone} size={34}>
+                      <Icon filled />
+                    </AppIcon>
+                    <span className={cn("mt-3 block text-[17px] font-semibold tracking-[-0.01em]", col === "guest" ? "text-fg-2" : "text-fg")}>{head(col)}</span>
+                    {col === "guest" && <span className="mt-0.5 block text-[12.5px] text-fg-3">{l.guestSub}</span>}
+                    {col === "pro" && (
+                      <span className="mt-1 inline-block rounded-full bg-[var(--ios-orange)]/15 px-2 py-0.5 text-[11.5px] font-semibold text-[var(--ios-orange)]">
+                        {t.pricing.popular}
+                      </span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.label} className="border-b border-line/60 transition-colors last:border-b-0 hover:bg-raised/60">
-                <th scope="row" className="px-5 py-3.5 font-medium sm:px-6">
+            {rows.map((r, ri) => (
+              <tr key={r.label} className="group/tr">
+                <th
+                  scope="row"
+                  className="border-b border-[var(--hairline)] px-5 py-3.5 font-medium text-fg-2 transition-colors group-last/tr:border-b-0 group-hover/tr:text-fg sm:px-6"
+                >
                   {r.label}
                 </th>
                 {COLS.map((col) => {
                   const v = r.get(col);
+                  const last = ri === rows.length - 1;
                   return (
-                    <td key={col} className={cn("px-4 py-3.5 sm:px-5", col === "pro" && "bg-raised/40", v === NO ? "text-fg-3" : col === "guest" ? "text-fg-2" : "font-medium text-fg")}>
-                      <span className="inline-flex items-center gap-1.5">
-                        {v === c.yes && <Check width={15} height={15} strokeWidth={2.2} className="text-ok" aria-hidden="true" />}
-                        {v === NO ? <span aria-label={t.pricing.notIncluded.replace(/:$/, "")}>{NO}</span> : v}
-                      </span>
+                    <td
+                      key={col}
+                      className={cn(
+                        "border-b border-[var(--hairline)] px-4 py-3.5 transition-colors group-last/tr:border-b-0 group-hover/tr:bg-fg/[0.025] sm:px-5",
+                        col === "pro" && "bg-fg/[0.05] group-hover/tr:bg-fg/[0.07]",
+                        col === "pro" && last && "rounded-b-[18px]",
+                        ri === 0 ? "text-[17px] font-semibold tracking-[-0.01em] text-fg" : v === NO ? "text-fg-3" : col === "guest" ? "text-fg-2" : "font-medium text-fg",
+                      )}
+                    >
+                      {v === c.yes ? (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="grid size-5 place-items-center rounded-full bg-[var(--ios-green)] text-white" aria-hidden="true">
+                            <Check width={13} height={13} strokeWidth={2.8} />
+                          </span>
+                          {v}
+                        </span>
+                      ) : v === NO ? (
+                        <span aria-label={t.pricing.notIncluded.replace(/:$/, "")} className="text-fg-3/70">
+                          {NO}
+                        </span>
+                      ) : (
+                        v
+                      )}
                     </td>
                   );
                 })}

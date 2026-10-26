@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ClockRotateRight, Crown, LogOut, NavArrowDown, Settings } from "iconoir-react";
+import { LogOut, NavArrowDown } from "iconoir-react";
+import { SfClock, SfCrown, SfGear } from "@/components/icons/SfIcons";
+import AppIcon from "@/components/ui/AppIcon";
 import { useLogoutMutation, useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
 import { ButtonLink } from "@/components/ui/Button";
@@ -36,7 +38,7 @@ export function QuotaPill() {
     <span
       title={f(long, { left: remaining ?? 0, max: limit })}
       className={cn(
-        "inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-s px-3 text-[11px] font-semibold uppercase tracking-[0.1em]",
+        "inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[12.5px] font-semibold",
         low ? "bg-warn/12 text-warn" : "bg-tonal text-on-tonal",
       )}
     >
@@ -77,7 +79,7 @@ export default function UserMenu() {
 
   const u = data.user;
   const plan = data.plan ?? { id: "free" as const, expiresAt: null };
-  const item = "state-layer flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-s px-3.5 py-2.5 text-[14px] text-fg-2 transition-colors hover:bg-hover hover:text-fg";
+  const item = "state-layer flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-s px-2.5 py-2 text-[14px] text-fg-2 transition-colors hover:bg-hover hover:text-fg";
   return (
     <div ref={ref} className="relative">
       <button
@@ -96,10 +98,9 @@ export default function UserMenu() {
       </button>
       <div
         role="menu"
-        className={cn(
-          "mat absolute right-0 top-[calc(100%+10px)] z-[60] w-64 rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)] transition-[opacity,transform] duration-200 ease-[var(--ease)]",
-          open ? "visible translate-y-0 opacity-100" : "invisible -translate-y-1 opacity-0",
-        )}
+        data-open={open}
+        style={{ "--origin": "top right" } as CSSProperties}
+        className="ios-pop mat absolute right-0 top-[calc(100%+10px)] z-[60] w-64 rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]"
       >
         <div className="flex items-center gap-3 px-3 py-2.5">
           <Avatar src={u.avatarUrl} name={u.displayName} size={36} />
@@ -123,15 +124,23 @@ export default function UserMenu() {
           {plan.id === "free" ? (
             <span className="caps shrink-0 rounded-xs bg-accent px-2 py-1 text-[10px] text-on-accent">{t.plan.upgrade}</span>
           ) : (
-            <Crown width={16} height={16} className="shrink-0 text-fg" aria-hidden="true" />
+            <AppIcon tone="orange" size={28}>
+              <SfCrown filled />
+            </AppIcon>
           )}
         </Link>
         <div className="my-1.5 h-px bg-line" />
         <Link role="menuitem" href="/history" className={item} onClick={() => setOpen(false)}>
-          <ClockRotateRight width={16} height={16} /> {t.nav.history}
+          <AppIcon tone="blue" size={28}>
+            <SfClock filled />
+          </AppIcon>
+          {t.nav.history}
         </Link>
         <Link role="menuitem" href="/settings" className={item} onClick={() => setOpen(false)}>
-          <Settings width={16} height={16} /> {t.nav.settings}
+          <AppIcon tone="gray" size={28}>
+            <SfGear filled />
+          </AppIcon>
+          {t.nav.settings}
         </Link>
         <div className="my-1.5 h-px bg-line" />
         <button
@@ -144,7 +153,10 @@ export default function UserMenu() {
             router.push("/");
           }}
         >
-          <LogOut width={16} height={16} /> {t.nav.logout}
+          <AppIcon tone="red" size={28}>
+            <LogOut strokeWidth={2} />
+          </AppIcon>
+          {t.nav.logout}
         </button>
       </div>
     </div>

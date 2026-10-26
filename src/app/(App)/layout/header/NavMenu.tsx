@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Lock, NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import AppIcon from "@/components/ui/AppIcon";
 import { useT } from "@/hooks/useT";
 import { useMeQuery } from "@/store/api/baseApi";
 import { PLANS, cheapestPlan } from "@/lib/schemas/plans";
@@ -72,8 +73,8 @@ export default function NavMenu({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "caps group relative flex items-center gap-1.5 px-3.5 transition-colors duration-300",
-          groupActive || open ? "text-fg" : "text-fg-3 hover:text-fg",
+          "group relative flex items-center gap-1.5 px-3.5 text-[14px] font-medium transition-colors duration-200",
+          groupActive || open ? "text-fg" : "text-fg-2 hover:text-fg",
         )}
       >
         {label}
@@ -87,7 +88,7 @@ export default function NavMenu({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute inset-x-3.5 bottom-0 h-px origin-left bg-fg transition-transform duration-500 ease-[var(--ease)]",
+            "absolute inset-x-3.5 bottom-0 h-[2px] origin-left rounded-full bg-fg transition-[scale,background-color] duration-[var(--spring-dur)] ease-[var(--spring)]",
             groupActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100 group-hover:bg-fg-3",
           )}
         />
@@ -96,12 +97,11 @@ export default function NavMenu({
       {/* Panel flyout */}
       <div
         role="menu"
-        className={cn(
-          "mat absolute left-0 top-[calc(100%+6px)] z-50 w-[320px] origin-top-left overflow-hidden rounded-l border border-line/70 bg-[var(--glass)] p-1.5 shadow-[var(--shadow)] backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform] duration-200 ease-[var(--ease)]",
-          open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0",
-        )}
+        data-open={open}
+        style={{ "--origin": "top left" } as CSSProperties}
+        className="ios-pop mat absolute left-0 top-[calc(100%+10px)] z-50 w-[320px] overflow-hidden rounded-l border border-line/70 bg-[var(--glass)] p-1.5 shadow-[var(--shadow)] backdrop-blur-xl backdrop-saturate-150"
       >
-        {items.map(({ href, key, icon: Icon }) => {
+        {items.map(({ href, key, icon: Icon, tone }) => {
           const active = href === activeHref;
           return (
             <Link
@@ -111,18 +111,13 @@ export default function NavMenu({
               aria-current={active ? "page" : undefined}
               onClick={() => setOpen(false)}
               className={cn(
-                "state-layer group/item flex items-center gap-3.5 rounded-s px-3 py-2.5 transition-colors",
-                active ? "bg-fg/[0.06] text-fg" : "text-fg-2 hover:text-fg",
+                "group/item flex items-center gap-3 rounded-[12px] px-2.5 py-2 transition-colors duration-150",
+                active ? "text-fg" : "text-fg-2 hover:bg-fg/[0.06] hover:text-fg",
               )}
             >
-              <span
-                className={cn(
-                  "grid size-10 shrink-0 place-items-center rounded-s transition-colors",
-                  active ? "btn-plate bg-accent text-on-accent" : "bg-tonal text-fg-2 group-hover/item:text-fg",
-                )}
-              >
-                <Icon width={19} height={19} />
-              </span>
+              <AppIcon tone={tone} size={36}>
+                <Icon filled />
+              </AppIcon>
               <span className="min-w-0">
                 <span className="flex items-center gap-2 text-[14px] font-semibold tracking-[-0.005em]">
                   {t.nav[key as keyof typeof t.nav] as string}

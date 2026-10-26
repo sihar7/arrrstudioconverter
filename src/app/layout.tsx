@@ -1,11 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Google_Sans_Code, Google_Sans_Flex } from "next/font/google";
 import Providers from "@/context/Providers";
 import "@/css/globals.css";
 
-// Google Sans Flex variable: axis wdth dipakai judul lebar (.font-display), opsz untuk teks kecil
-const sans = Google_Sans_Flex({ subsets: ["latin"], axes: ["wdth", "opsz"], variable: "--font-gsans", display: "swap" });
-const mono = Google_Sans_Code({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-gcode", display: "swap" });
+// Tanpa web font: pakai font sistem (SF Pro di iPhone/Mac, Segoe UI Variable di Windows, Roboto di Android)
+// → nol request font (sebelumnya ±600 KB) dan rasa native ala iOS. Stack ada di globals.css.
 
 const siteUrl =
   process.env.APP_URL ||
@@ -45,7 +43,7 @@ const themeScript = `try{var t=localStorage.getItem('arrc_theme');document.docum
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" data-theme="dark" suppressHydrationWarning className={`${sans.variable} ${mono.variable}`}>
+    <html lang="id" data-theme="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
