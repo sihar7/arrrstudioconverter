@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type MouseEvent } from "react";
+import { withBase } from "@/Url/Url";
 import Image from "next/image";
 import { Check, Copy, Download, Lock, NavArrowDown, OpenNewWindow, Trash, Upload } from "iconoir-react";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
@@ -117,7 +118,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
           <div className="flex shrink-0 items-center gap-0.5 transition-opacity duration-200 [@media(hover:hover)]:opacity-60 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
             {item.fileAvailable && (
               <a
-                href={`/api/files/${item.fileId}?dl=1`}
+                href={withBase(`/api/files/${item.fileId}?dl=1`)}
                 download
                 aria-label={t.common.download}
                 title={t.common.download}
@@ -213,7 +214,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
           {/* Aksi lengkap untuk layar kecil (di desktop sudah ada di baris) */}
           <div className="flex flex-wrap items-start gap-2 sm:col-span-2 lg:col-span-1 lg:flex-col lg:items-end">
             {item.fileAvailable && (
-              <a href={`/api/files/${item.fileId}?dl=1`} download className="inline-flex min-h-10 items-center gap-2 rounded-s border border-line px-3 text-[13px] font-semibold text-fg-2 transition-colors hover:border-line-2 hover:text-fg sm:hidden">
+              <a href={withBase(`/api/files/${item.fileId}?dl=1`)} download className="inline-flex min-h-10 items-center gap-2 rounded-s border border-line px-3 text-[13px] font-semibold text-fg-2 transition-colors hover:border-line-2 hover:text-fg sm:hidden">
                 <Download width={15} height={15} aria-hidden="true" />
                 {t.common.download}
               </a>

@@ -4,6 +4,7 @@
  * Gambar user tidak pernah dikirim ke server.
  */
 import type { InferenceSession } from "onnxruntime-web";
+import { withBase } from "@/Url/Url";
 
 export interface ModelDef {
   id: string;
@@ -41,7 +42,7 @@ const sessions = new Map<string, Promise<LoadedModel>>();
 /** Muat onnxruntime-web sekali (dynamic import → tidak membebani halaman lain) */
 export function loadOrt(): Promise<Ort> {
   ortPromise ??= import("onnxruntime-web/webgpu").then((ort) => {
-    ort.env.wasm.wasmPaths = "/ort/";
+    ort.env.wasm.wasmPaths = withBase("/ort/");
     // Tanpa cross-origin isolation SharedArrayBuffer tidak ada → 1 thread (hindari peringatan & percobaan gagal)
     ort.env.wasm.numThreads = typeof crossOriginIsolated !== "undefined" && crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 2) : 1;
     ort.env.logLevel = "error";

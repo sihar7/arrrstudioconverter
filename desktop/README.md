@@ -1,7 +1,7 @@
 # ARRR Studio Converter — Desktop
 
 App desktop (Electron) untuk **Windows** & **macOS**. Membuka web produksi
-(`https://arrrstudioconverter.vercel.app`) di jendela sendiri, plus fitur native:
+(`https://bypass.arrstudio.com`) di jendela sendiri, plus fitur native:
 
 - Download langsung ke folder (default: Downloads; ganti lewat **File → Ganti folder download…**)
 - Progres download di taskbar / dock, notifikasi saat selesai, toast di halaman

@@ -3,11 +3,13 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? "";
 const origin = arg("arrr-origin");
+const base = arg("arrr-base");
 
-if (origin && location.origin === origin) {
+// Hanya web ARRR (di bawah basePath), bukan situs lain di domain yang sama
+if (origin && location.origin === origin && (!base || location.pathname === base || location.pathname.startsWith(`${base}/`))) {
   // Navigasi dari menu aplikasi: diteruskan ke router web kalau sudah terdaftar, kalau belum muat halaman biasa
   let navHandler = null;
-  ipcRenderer.on("app:navigate", (_e, path) => (navHandler ? navHandler(path) : location.assign(path)));
+  ipcRenderer.on("app:navigate", (_e, path) => (navHandler ? navHandler(path) : location.assign(`${base}${path}`)));
 
   contextBridge.exposeInMainWorld("arrDesktop", {
     isDesktop: true,

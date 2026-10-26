@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { withBase } from "@/Url/Url";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,7 +25,7 @@ export async function apiFetch<T>(url: string, init: RequestInit & { json?: unkn
   const { json, headers, ...rest } = init;
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetch(url.startsWith("/") ? withBase(url) : url, {
       ...rest,
       headers: json !== undefined ? { "Content-Type": "application/json", ...headers } : headers,
       body: json !== undefined ? JSON.stringify(json) : rest.body,

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppleMac, ArrowUpRight, Download, Folder, InfoCircle, Windows } from "iconoir-react";
+import { withBase } from "@/Url/Url";
 import Url from "@/Url/Url";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
@@ -56,7 +57,7 @@ export default function DownloadScreen() {
         <CardBox className="rise relative isolate flex flex-col items-center justify-center overflow-hidden px-6 py-12 text-center">
           <div aria-hidden="true" className="forged absolute inset-0 -z-10 opacity-50 [mask-image:radial-gradient(70%_70%_at_50%_40%,#000,transparent)]" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/arrr-desktop-icon.webp" alt="" width={160} height={160} className="size-40 drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]" />
+          <img src={withBase("/brand/arrr-desktop-icon.webp")} alt="" width={160} height={160} className="size-40 drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]" />
           <p className="mt-6 font-display text-[20px] font-bold tracking-[-0.02em]">ARRR Studio Converter</p>
           <p className="mt-1 text-[13.5px] text-fg-3">Windows · macOS</p>
         </CardBox>

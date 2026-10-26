@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { useHydrated } from "@/hooks/useHydrated";
+import { withBase } from "@/Url/Url";
 import type { MeResponse } from "@/type/auth";
 import type { HistoryItem } from "@/type/history";
 import type { RobloxProfile } from "@/type/roblox";
@@ -7,7 +8,7 @@ import type { RobloxProfile } from "@/type/roblox";
 // RTK Query untuk data yang di-cache & di-invalidate (sesi/kuota, riwayat)
 export const baseApi = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api", credentials: "same-origin" }),
+  baseQuery: fetchBaseQuery({ baseUrl: withBase("/api"), credentials: "same-origin" }),
   tagTypes: ["Me", "History"],
   endpoints: (b) => ({
     me: b.query<MeResponse, void>({ query: () => "auth/me", providesTags: ["Me"] }),

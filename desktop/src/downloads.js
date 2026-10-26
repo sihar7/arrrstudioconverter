@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { app, BrowserWindow, dialog, ipcMain, Notification, shell } = require("electron");
-const { APP_ORIGIN } = require("./config");
+const { isAppUrl } = require("./config");
 const store = require("./store");
 
 const MAX_FINISHED = 200; // batas riwayat path di memori (sesi panjang tetap ringan)
@@ -111,7 +111,7 @@ async function chooseFolder(win) {
 // IPC hanya dilayani untuk halaman web ARRR sendiri (bukan halaman Discord / file lokal)
 const fromApp = (e) => {
   try {
-    return new URL(e.senderFrame.url).origin === APP_ORIGIN;
+    return isAppUrl(e.senderFrame.url);
   } catch {
     return false;
   }

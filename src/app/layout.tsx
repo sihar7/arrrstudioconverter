@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import Providers from "@/context/Providers";
+import Url from "@/Url/Url";
 import "@/css/globals.css";
 
 // Tanpa web font: pakai font sistem (SF Pro di iPhone/Mac, Segoe UI Variable di Windows, Roboto di Android)
 // → nol request font (sebelumnya ±600 KB) dan rasa native ala iOS. Stack ada di globals.css.
 
+// VERCEL_PROJECT_PRODUCTION_URL otomatis = custom domain produksi (bypass.arrstudio.com) begitu domain itu aktif
 const siteUrl =
   process.env.APP_URL ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
@@ -12,9 +14,10 @@ const title = "ARRR Studio Converter — YouTube ke Roblox Audio";
 const description =
   "Convert YouTube ke MP3/OGG/WAV/FLAC, atur kecepatan, nada & efek, lalu upload langsung ke Roblox lengkap dengan izin place.";
 
-// og:image diisi otomatis dari app/opengraph-image.tsx; metadataBase membuat URL-nya absolut (wajib untuk Discord/WA)
+// og:image diisi otomatis dari app/opengraph-image.tsx; metadataBase membuat URL-nya absolut (wajib untuk Discord/WA).
+// URL metadata (og:image, og:url) tidak diberi basePath oleh Next → basePath dipasang di metadataBase
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(`${new URL(siteUrl).origin}${Url.basePath}`),
   title: { default: title, template: "%s · ARRR Studio Converter" },
   description,
   applicationName: "ARRR Studio Converter",

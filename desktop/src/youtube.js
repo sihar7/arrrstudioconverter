@@ -3,7 +3,7 @@
 // (YouTube tidak bisa mengakses bridge ARRR). Video bisa dikirim ke antrean Converter lewat tombol di toolbar
 // web atau klik kanan pada video mana pun.
 const { BrowserWindow, clipboard, ipcMain, Menu, session, shell, WebContentsView } = require("electron");
-const { APP_ORIGIN, COLORS } = require("./config");
+const { COLORS, isAppUrl } = require("./config");
 const store = require("./store");
 
 const HOME = "https://www.youtube.com/";
@@ -168,7 +168,7 @@ function toDip(win, rect) {
 // IPC hanya dari halaman web ARRR sendiri
 const fromApp = (e) => {
   try {
-    return new URL(e.senderFrame.url).origin === APP_ORIGIN;
+    return isAppUrl(e.senderFrame.url);
   } catch {
     return false;
   }

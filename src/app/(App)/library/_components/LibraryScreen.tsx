@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { withBase } from "@/Url/Url";
 import { Album, Crown, Discord, Download, Globe, ListSelect, Lock, Pause, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { cn } from "@/lib/utils";
@@ -101,7 +102,7 @@ export default function LibraryScreen() {
             title={t.history.loginTitle}
             sub={t.history.loginSub}
             action={
-              <a href="/api/auth/discord?next=/library" className={buttonClass("primary")}>
+              <a href={withBase("/api/auth/discord?next=/library")} className={buttonClass("primary")}>
                 <Discord width={18} height={18} /> {t.login.discord}
               </a>
             }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { withBase } from "@/Url/Url";
 import { ArrowRight, Discord, WarningTriangle } from "iconoir-react";
 import { useDevLoginMutation, useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
@@ -45,7 +46,7 @@ export default function LoginActions({ next, errKey }: { next: string; errKey: L
           </Button>
         ) : (
           <a
-            href={`/api/auth/discord?next=${encodeURIComponent(next)}`}
+            href={withBase(`/api/auth/discord?next=${encodeURIComponent(next)}`)}
             aria-disabled={me ? !me.auth.discordEnabled : undefined}
             className="btn-plate group flex h-14 items-center gap-3 rounded-full bg-accent px-6 text-[15px] font-semibold text-on-accent transition-[background-color,transform] hover:bg-accent-strong active:scale-[0.98] aria-disabled:pointer-events-none aria-disabled:opacity-40"
           >

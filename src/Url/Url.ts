@@ -12,11 +12,18 @@ const Url = {
   desktopWindows: "https://github.com/sihar7/arrrstudioconverter/releases/latest/download/ARRR-Studio-Converter-Setup.exe",
   desktopMac: "https://github.com/sihar7/arrrstudioconverter/releases/latest/download/ARRR-Studio-Converter-mac.dmg",
 
+  // Web di root subdomain (bypass.arrstudio.com) → tanpa basePath. Bila suatu saat disajikan di sub-path, isi di sini (mis. "/bypass"):
+  // next.config memakainya sebagai basePath & withBase() memberi awalan pada fetch, <a> biasa, <img>, EventSource.
+  basePath: "",
+
   arrWebsite: "https://arrstudioweb.vercel.app/en",
   arrDiscord: "https://discord.gg/mtn3YmwjV",
 } as const;
 
 /** Halaman konfigurasi aset di Creator Dashboard (distribusi publik / Creator Store) */
 export const robloxAssetConfigureUrl = (assetId: string) => `${Url.robloxCreations}/store/${assetId}/configure`;
+
+/** Path internal ("/api/…", "/brand/…") → dengan awalan basePath */
+export const withBase = (path: string) => `${Url.basePath}${path}`;
 
 export default Url;

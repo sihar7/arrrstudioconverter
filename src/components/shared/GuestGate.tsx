@@ -1,6 +1,7 @@
 "use client";
 
 import { Discord } from "iconoir-react";
+import { withBase } from "@/Url/Url";
 import Dialog from "@/components/ui/Dialog";
 import Button, { buttonClass } from "@/components/ui/Button";
 import { useMeQuery } from "@/store/api/baseApi";
@@ -21,7 +22,7 @@ export default function GuestGate({ open, onClose, next = "/converter" }: { open
           <Button variant="subtle" onClick={onClose}>
             {t.gate.later}
           </Button>
-          <a href={`/api/auth/discord?next=${encodeURIComponent(next)}`} className={buttonClass("primary")}>
+          <a href={withBase(`/api/auth/discord?next=${encodeURIComponent(next)}`)} className={buttonClass("primary")}>
             <Discord width={18} height={18} /> {t.gate.login}
           </a>
         </>

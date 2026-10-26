@@ -1,13 +1,27 @@
 // Konfigurasi app desktop — satu tempat, jangan hardcode di modul lain
 const { app } = require("electron");
 
+// URL web (subdomain sendiri, di root). Boleh berisi path bila web disajikan di sub-path (APP_BASE ikut).
 // ARRR_APP_URL=http://localhost:3000 untuk mencoba web lokal (npm run dev)
-const APP_URL = (process.env.ARRR_APP_URL || "https://arrrstudioconverter.vercel.app").replace(/\/$/, "");
+const APP_URL = (process.env.ARRR_APP_URL || "https://bypass.arrstudio.com").replace(/\/$/, "");
 const APP_ORIGIN = new URL(APP_URL).origin;
+const APP_BASE = new URL(APP_URL).pathname.replace(/\/$/, "");
+
+/** URL halaman web ARRR sendiri (origin sama + di bawah basePath) — bukan situs lain di domain yang sama */
+function isAppUrl(url) {
+  try {
+    const u = new URL(url);
+    return u.origin === APP_ORIGIN && (u.pathname === APP_BASE || u.pathname.startsWith(`${APP_BASE}/`) || !APP_BASE);
+  } catch {
+    return false;
+  }
+}
 
 module.exports = {
   APP_URL,
   APP_ORIGIN,
+  APP_BASE,
+  isAppUrl,
   DOWNLOAD_PAGE: `${APP_URL}/download`,
   // Host yang boleh dibuka DI DALAM jendela app (login Discord OAuth); host lain → browser default
   IN_APP_HOSTS: new Set([new URL(APP_URL).host, "discord.com", "www.discord.com"]),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { withBase } from "@/Url/Url";
 import type { AdminEvent } from "@/type/billing";
 
 /** Nama CustomEvent di window — tab lain (mis. Order) cukup mendengarkan ini untuk memuat ulang */
@@ -73,7 +74,7 @@ export function useAdminEvents(onEvent: (e: AdminEvent) => void, enabled: boolea
     const connect = () => {
       if (!alive) return;
       setState("connecting");
-      es = new EventSource("/api/admin/events");
+      es = new EventSource(withBase("/api/admin/events"));
       es.onopen = () => setState("live");
       es.onerror = () => {
         if (!es) return;

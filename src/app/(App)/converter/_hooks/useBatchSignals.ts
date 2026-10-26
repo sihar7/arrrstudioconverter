@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { withBase } from "@/Url/Url";
 import { useAppSelector } from "@/store/hooks";
 import { isRunning } from "@/store/slices/converterSlice";
 import { useT } from "@/hooks/useT";
@@ -49,7 +50,7 @@ export function useBatchSignals() {
     if (!finished || !enabled || !supported() || document.visibilityState === "visible") return;
     const body = failed ? `${f(t.converter.notifyDone, { n: done })} · ${f(t.converter.notifyFailed, { n: failed })}` : f(t.converter.notifyDone, { n: done });
     try {
-      const n = new Notification("ARRR STUDIO Converter", { body, icon: "/icon.png", tag: "arrc-batch" });
+      const n = new Notification("ARRR STUDIO Converter", { body, icon: withBase("/icon.png"), tag: "arrc-batch" });
       n.onclick = () => {
         window.focus();
         n.close();

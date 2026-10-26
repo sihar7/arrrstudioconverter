@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/utils";
+import { withBase } from "@/Url/Url";
 import type { PlanId } from "@/lib/schemas/plans";
 import type { UserPlan } from "@/type/auth";
 import type { Order, OrderStatus } from "@/type/billing";
@@ -42,7 +43,7 @@ export const deleteOrder = (id: string) => apiFetch<{ ok: true }>(`/api/admin/or
 export const purgeOrders = () => apiFetch<{ deleted: number }>("/api/admin/orders", { method: "DELETE" });
 
 /** URL gambar bukti pembayaran (cookie admin ikut karena path /api/admin); v = pemecah cache saat bukti diganti */
-export const proofUrl = (id: string, v?: number | null) => `/api/admin/orders/${id}/proof${v ? `?v=${v}` : ""}`;
+export const proofUrl = (id: string, v?: number | null) => withBase(`/api/admin/orders/${id}/proof${v ? `?v=${v}` : ""}`);
 
 export const getJobs = () => apiFetch<{ items: AdminJob[] }>("/api/admin/jobs", { cache: "no-store" });
 

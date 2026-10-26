@@ -3,7 +3,7 @@
 // download langsung ke folder, progres taskbar/dock, notifikasi, menu klik kanan, update otomatis.
 const path = require("node:path");
 const { app, BrowserWindow, screen, session, shell } = require("electron");
-const { APP_ORIGIN, APP_URL, IN_APP_HOSTS, UA_TOKEN } = require("./config");
+const { APP_BASE, APP_ORIGIN, APP_URL, IN_APP_HOSTS, UA_TOKEN, isAppUrl } = require("./config");
 const store = require("./store");
 const downloads = require("./downloads");
 const updater = require("./updater");
@@ -78,7 +78,7 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: true,
       spellcheck: false,
-      additionalArguments: [`--arrr-origin=${APP_ORIGIN}`, `--arrr-version=${app.getVersion()}`],
+      additionalArguments: [`--arrr-origin=${APP_ORIGIN}`, `--arrr-base=${APP_BASE}`, `--arrr-version=${app.getVersion()}`],
     },
   });
   if (maximized) win.maximize();
@@ -105,7 +105,7 @@ function createWindow() {
     openExternal(url);
   });
   wc.setWindowOpenHandler(({ url }) => {
-    if (isInApp(url) && new URL(url).origin === APP_ORIGIN) wc.loadURL(url);
+    if (isAppUrl(url)) wc.loadURL(url);
     else openExternal(url);
     return { action: "deny" };
   });

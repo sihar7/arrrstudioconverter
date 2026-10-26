@@ -285,8 +285,8 @@
 /* Lazy loader logo ARRR — napas pelan + kilau menyapu dari kiri ke kanan */
 .arrr-loader {
   animation: arrr-breathe 1.8s ease-in-out infinite;
-  -webkit-mask-image: url("/brand/arrr-logo-192.webp");
-  mask-image: url("/brand/arrr-logo-192.webp");
+  -webkit-mask-image: url("../../../public/brand/arrr-logo-192.webp");
+  mask-image: url("../../../public/brand/arrr-logo-192.webp");
   -webkit-mask-size: contain;
   mask-size: contain;
   -webkit-mask-repeat: no-repeat;

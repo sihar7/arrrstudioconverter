@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { withBase } from "@/Url/Url";
 import { cn } from "@/lib/utils";
 
 /**
@@ -7,7 +8,7 @@ import { cn } from "@/lib/utils";
  * memecah satu chunk JS tambahan di setiap halaman.
  */
 export function LogoMark({ size = 28, className, priority }: { size?: 28 | 40 | 72 | 96; className?: string; priority?: boolean }) {
-  const src = size <= 40 ? "/brand/arrr-logo-96.webp" : size <= 72 ? "/brand/arrr-logo-192.webp" : "/brand/arrr-logo-384.webp";
+  const src = withBase(size <= 40 ? "/brand/arrr-logo-96.webp" : size <= 72 ? "/brand/arrr-logo-192.webp" : "/brand/arrr-logo-384.webp");
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

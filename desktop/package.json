@@ -5,7 +5,7 @@
   "private": true,
   "description": "Aplikasi desktop ARRR Studio Converter (Windows & macOS) — YouTube ke audio Roblox",
   "author": "ARRR Studio",
-  "homepage": "https://arrrstudioconverter.vercel.app",
+  "homepage": "https://bypass.arrstudio.com",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",

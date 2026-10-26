@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { withBase } from "@/Url/Url";
 import dynamic from "next/dynamic";
 import { ClockRotateRight, Discord, Globe, ListSelect, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useHistoryQuery, useMeQuery } from "@/store/api/baseApi";
@@ -114,7 +115,7 @@ export default function HistoryScreen() {
             title={h.loginTitle}
             sub={h.loginSub}
             action={
-              <a href="/api/auth/discord?next=/history" className={buttonClass("primary")}>
+              <a href={withBase("/api/auth/discord?next=/history")} className={buttonClass("primary")}>
                 <Discord width={18} height={18} /> {t.login.discord}
               </a>
             }
@@ -203,7 +204,7 @@ export default function HistoryScreen() {
             title={h.emptyTitle}
             sub={h.emptySub}
             action={
-              <a href="/converter" className={buttonClass("primary")}>
+              <a href={withBase("/converter")} className={buttonClass("primary")}>
                 {t.landing.ctaStart}
               </a>
             }

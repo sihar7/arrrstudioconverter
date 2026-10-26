@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/utils";
+import { withBase } from "@/Url/Url";
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
 import type { PublicJob } from "@/type/converter";
 import type { PermissionMode } from "@/type/history";
@@ -36,5 +37,5 @@ export function checkOperation(apiKey: string, operationId: string, historyId?: 
   return apiFetch<UploadResponse>("/api/roblox/operation", { method: "POST", json: { apiKey, operationId, historyId } });
 }
 
-export const fileUrl = (fileId: string, download = false) => `/api/files/${fileId}${download ? "?dl=1" : ""}`;
-export const zipUrl = (fileIds: string[]) => `/api/files/zip?ids=${fileIds.join(",")}`;
+export const fileUrl = (fileId: string, download = false) => withBase(`/api/files/${fileId}${download ? "?dl=1" : ""}`);
+export const zipUrl = (fileIds: string[]) => withBase(`/api/files/zip?ids=${fileIds.join(",")}`);

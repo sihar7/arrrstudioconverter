@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { withBase } from "@/Url/Url";
 import { AppleMac, ArrowRight, Check, Windows } from "iconoir-react";
 import Url from "@/Url/Url";
 import { cn } from "@/lib/utils";
@@ -59,7 +60,7 @@ export default function DesktopSection() {
         <div className="reveal relative isolate flex flex-col items-center justify-center overflow-hidden rounded-xl border border-[var(--hairline)] px-6 py-16 [--d:120ms]">
           <div aria-hidden="true" className="forged absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(70%_70%_at_50%_45%,#000,transparent)]" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/arrr-desktop-icon.webp" alt="" width={176} height={176} loading="lazy" className="size-44 drop-shadow-[0_20px_44px_rgba(0,0,0,0.5)]" />
+          <img src={withBase("/brand/arrr-desktop-icon.webp")} alt="" width={176} height={176} loading="lazy" className="size-44 drop-shadow-[0_20px_44px_rgba(0,0,0,0.5)]" />
           <p className="mt-6 font-display text-[19px] font-bold tracking-[-0.02em]">ARRR Studio Converter</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {platforms.map(({ id, name, req, Icon }) => (

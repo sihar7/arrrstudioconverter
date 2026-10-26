@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { withBase } from "@/Url/Url";
 import { Discord } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
@@ -48,7 +49,7 @@ export default function MemberGate({
           title={loginTitle}
           sub={loginSub}
           action={
-            <a href={`/api/auth/discord?next=${encodeURIComponent(next)}`} className={buttonClass("primary")}>
+            <a href={withBase(`/api/auth/discord?next=${encodeURIComponent(next)}`)} className={buttonClass("primary")}>
               <Discord width={18} height={18} /> {t.login.discord}
             </a>
           }
