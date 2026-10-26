@@ -4,7 +4,7 @@ const Url = {
   robloxCreations: "https://create.roblox.com/dashboard/creations",
 
   // Backend API (ARRSTUDIOCONVERTERBE di Railway) — /api/* web di-proxy ke sini (next.config.ts)
-  backendApi: "https://arrrstudioconverterbe-production.up.railway.app",
+  backendApi: "https://arrrstudioconverterbe.up.railway.app",
   backendApiDev: "http://localhost:4000",
 
   arrWebsite: "https://arrstudioweb.vercel.app/en",
