@@ -12,6 +12,7 @@ import IconButton from "@/components/ui/IconButton";
 import Progress from "@/components/ui/Progress";
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
+import RobloxPlaybackChip from "@/components/shared/RobloxPlaybackChip";
 import { fileUrl } from "../_service/converter.service";
 import { outputDuration } from "../_utils/helpers";
 import { summarize } from "@/lib/audioSummary";
@@ -142,11 +143,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
                 {t.converter.status.done}
               </Badge>
               <span className="text-[12px] text-fg-3">{f(t.converter.expires, { time: formatClock(item.result!.expiresAt, lang) })}</span>
-              {item.options && Math.abs(item.options.speed - 1) > 1e-6 && (
-                <span className="rounded-xs bg-raised px-2 py-0.5 font-mono text-[11.5px] text-fg-2">
-                  {f(t.converter.inRoblox, { speed: Number(item.options.speed.toFixed(2)) })}
-                </span>
-              )}
+              <RobloxPlaybackChip speed={item.options?.speed ?? 1} />
               {(item.result!.duration ?? 0) > ROBLOX_SOFT_LIMIT_SEC && (
                 <span className="text-[12px] text-warn">{t.converter.robloxLimit}</span>
               )}

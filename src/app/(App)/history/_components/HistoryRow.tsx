@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/useToast";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
+import RobloxPlaybackChip from "@/components/shared/RobloxPlaybackChip";
 import { stateTone } from "../_utils/helpers";
 import { robloxAssetConfigureUrl } from "@/Url/Url";
 import type { HistoryItem } from "@/type/history";
@@ -48,6 +49,7 @@ export default function HistoryRow({ item, onUpload, onPermission, onDelete }: P
         {chips.length > 0 && <p className="mt-1 font-mono text-[11.5px] text-fg-2">{chips.join("  ·  ")}</p>}
 
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <RobloxPlaybackChip speed={item.options?.speed ?? 1} />
           {rb ? (
             <>
               {rb.assetId ? (
