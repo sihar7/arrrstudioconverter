@@ -77,6 +77,10 @@ const converterSlice = createSlice({
       state.options = { ...state.options, ...action.payload };
       state.preset = "custom";
     },
+    /** Penyesuaian otomatis ke batas plan — bukan ubahan user, jadi label preset tetap */
+    fitToPlan(state, action: PayloadAction<AudioOptions>) {
+      state.options = action.payload;
+    },
     applyPreset(state, action: PayloadAction<PresetId>) {
       // Preset hanya menyentuh efek; format/bitrate/trim tetap
       const keep = {
@@ -225,6 +229,7 @@ const converterSlice = createSlice({
 
 export const {
   setOptions,
+  fitToPlan,
   applyPreset,
   resetOptions,
   setAutoUpload,

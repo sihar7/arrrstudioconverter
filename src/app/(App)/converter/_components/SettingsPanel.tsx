@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Check, CheckCircle, FloppyDisk, Refresh, Sparks, WarningTriangle, Xmark } from "iconoir-react";
+import { Check, CheckCircle, FloppyDisk, Lock, Refresh, Sparks, WarningTriangle, Xmark } from "iconoir-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   applyCustomPreset,
@@ -11,13 +11,16 @@ import {
   MAX_CUSTOM_PRESETS,
   resetOptions,
   savePreset,
+  fitToPlan,
   setAutoUpload,
   setOptions,
 } from "@/store/slices/converterSlice";
 import { updateRoblox } from "@/store/slices/robloxSlice";
 import { useMeQuery } from "@/store/api/baseApi";
-import { DEFAULT_OPTIONS, LIMITS, ROBLOX_FORMATS, type AudioOptions } from "@/lib/schemas/convert.schema";
+import { DEFAULT_OPTIONS, LIMITS, PRESETS, ROBLOX_FORMATS, type AudioOptions } from "@/lib/schemas/convert.schema";
+import { PLANS, cheapestPlan, clampOptions, effectsUsed, type EffectId, type PlanId } from "@/lib/schemas/plans";
 import { summarize } from "@/lib/audioSummary";
+import { robloxPlayback } from "@/lib/robloxPlayback";
 import { cn, formatBytes, formatDuration, parseTime } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
@@ -66,7 +69,20 @@ function TimeInput({ label, value, onCommit }: { label: string; value: number | 
   );
 }
 
-/** Ubin preset: nama + deskripsi singkat; aktif = garis bawah aksen + centang */
+/** Catatan fitur terkunci: gembok + "Tersedia di plan X" + tautan upgrade */
+function LockNote({ text, cta }: { text: string; cta: string }) {
+  return (
+    <p className="flex items-center gap-2 rounded-xs bg-raised px-3 py-2 text-[12.5px] text-fg-2">
+      <Lock width={14} height={14} aria-hidden="true" className="shrink-0 text-fg-3" />
+      <span className="min-w-0 flex-1">{text}</span>
+      <Link href="/pricing" className="caps shrink-0 text-[10px] text-fg underline decoration-line-2 underline-offset-4 hover:decoration-fg">
+        {cta}
+      </Link>
+    </p>
+  );
+}
+
+/** Ubin preset: nama + deskripsi singkat; aktif = garis bawah aksen + centang; locked = butuh plan lebih tinggi */
 function PresetTile({
   name,
   desc,
@@ -74,6 +90,7 @@ function PresetTile({
   onClick,
   onDelete,
   deleteLabel,
+  locked,
   className,
 }: {
   name: string;
@@ -82,6 +99,8 @@ function PresetTile({
   onClick: () => void;
   onDelete?: () => void;
   deleteLabel?: string;
+  /** label plan yang dibutuhkan (mis. "Pro"); diisi = tile terkunci */
+  locked?: string;
   className?: string;
 }) {
   return (
@@ -90,15 +109,23 @@ function PresetTile({
         type="button"
         aria-pressed={active}
         onClick={onClick}
+        disabled={Boolean(locked)}
         className={cn(
-          "state-layer relative flex h-[60px] w-full cursor-pointer flex-col items-start justify-center overflow-hidden rounded-s border px-3 text-left transition-[border-color,background-color,transform] duration-200 active:scale-[0.97]",
+          "state-layer relative flex h-[60px] w-full cursor-pointer flex-col items-start justify-center overflow-hidden rounded-s border px-3 text-left transition-[border-color,background-color,transform] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100",
           active ? "border-fg-3 bg-raised" : "border-line hover:border-line-2",
+          locked && "border-dashed hover:border-line",
           onDelete && "pr-9",
         )}
       >
-        <span className="flex w-full items-center gap-1.5 text-[13.5px] font-semibold text-fg">
+        <span className={cn("flex w-full items-center gap-1.5 text-[13.5px] font-semibold", locked ? "text-fg-3" : "text-fg")}>
           <span className="truncate">{name}</span>
           {active && <Check width={14} height={14} strokeWidth={2.2} aria-hidden="true" className="pick-pop shrink-0" />}
+          {locked && (
+            <span className="caps ml-auto inline-flex shrink-0 items-center gap-1 text-[9.5px] text-fg-2">
+              <Lock width={11} height={11} aria-hidden="true" />
+              {locked}
+            </span>
+          )}
         </span>
         <span className="mt-0.5 w-full truncate text-[11.5px] text-fg-3">{desc}</span>
         <span
@@ -136,7 +163,7 @@ export default function SettingsPanel() {
   const toast = useToast();
   const converter = useAppSelector((s) => s.converter);
   const roblox = useAppSelector((s) => s.roblox);
-  const { data: me } = useMeQuery();
+  const { data: me, isLoading: meLoading } = useMeQuery();
   // Selama hydration pakai nilai default (sama dengan HTML server); preferensi tersimpan & sesi dipakai setelahnya
   const hydrated = useHydrated();
   const o = hydrated ? converter.options : DEFAULT_OPTIONS;
@@ -152,11 +179,40 @@ export default function SettingsPanel() {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const set = (patch: Partial<AudioOptions>) => dispatch(setOptions(patch));
+
+  // Batas plan (guest = free). Selama hydration selalu free → sama dengan HTML server
+  const planId: PlanId = (hydrated && me?.plan?.id) || "free";
+  const limits = PLANS[planId];
+  const planName = (id: PlanId) => t.plan.names[id];
+  const hasFx = (e: EffectId) => limits.effects.includes(e);
+  const fxPlan = (e: EffectId) => planName(cheapestPlan((pl) => pl.effects.includes(e)));
+  const lockedText = (id: PlanId) => f(t.plan.locked, { plan: planName(id) });
+  /** Preset yang butuh efek di luar plan → label plan termurah yang membukanya */
+  const presetLock = (opts: Partial<AudioOptions>) => {
+    const need = effectsUsed(opts).filter((e) => !hasFx(e));
+    return need.length ? planName(cheapestPlan((pl) => need.every((e) => pl.effects.includes(e)))) : undefined;
+  };
+  const lockedFormats = FORMAT_OPTIONS.filter((fo) => !limits.formats.includes(fo.value));
+
+  // Preferensi tersimpan di luar plan (preset terkunci, setelah plan habis, dll) → turunkan ke batas plan.
+  // Jalan begitu request sesi selesai — termasuk saat gagal (dianggap free), supaya tidak ada celah.
+  const activePresetLocked = !preset.startsWith("u:") && preset in PRESETS && presetLock(PRESETS[preset as keyof typeof PRESETS]) != null;
+  useEffect(() => {
+    if (!hydrated || meLoading) return;
+    if (activePresetLocked) {
+      dispatch(applyPreset("normal"));
+      return;
+    }
+    const next = clampOptions(o, limits);
+    if (JSON.stringify(next) !== JSON.stringify(o)) dispatch(fitToPlan(next));
+  }, [hydrated, meLoading, activePresetLocked, o, limits, dispatch]);
+
   const lossless = o.format === "wav" || o.format === "flac";
   const canAuto = hydrated && Boolean(me?.user && roblox.apiKey && roblox.creatorId);
   const isDefault = JSON.stringify(o) === JSON.stringify(DEFAULT_OPTIONS);
   const robloxOk = (ROBLOX_FORMATS as readonly string[]).includes(o.format);
   const chips = summarize(o, t);
+  const pb = robloxPlayback(o);
   const presetLabel = preset.startsWith("u:")
     ? customPresets.find((cp) => `u:${cp.id}` === preset)?.name
     : preset === "custom"
@@ -205,6 +261,16 @@ export default function SettingsPanel() {
             {ch}
           </span>
         ))}
+        {/* PlaybackSpeed Roblox selalu terlihat; klik → tab Tempo (rincian & mode "balik ke asli") */}
+        <button
+          type="button"
+          onClick={() => setTab("tempo")}
+          title={c.robloxTitle}
+          className="state-layer inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-xs border border-line px-2 font-mono text-[11.5px] text-fg-2 transition-colors hover:border-line-2 hover:text-fg"
+        >
+          <span className="caps text-[9.5px] text-fg-3">Roblox</span>
+          {pb.speed === 1 ? c.inRobloxNormal : `${c.inRobloxNormal} · ${pb.speed}×`}
+        </button>
       </div>
 
       {/* Tab — aktif = garis bawah (konvensi navbar) */}
@@ -249,6 +315,7 @@ export default function SettingsPanel() {
                   name={c.presetNames[id]}
                   desc={c.presetDesc[id]}
                   active={preset === id}
+                  locked={presetLock(PRESETS[id])}
                   onClick={() => dispatch(applyPreset(id))}
                   className={PRESET_ORDER.length % 2 && n === PRESET_ORDER.length - 1 ? "col-span-2" : undefined}
                 />
@@ -299,16 +366,30 @@ export default function SettingsPanel() {
 
         {tab === "output" && (
           <>
-            <Segmented label={p.format} value={o.format} options={FORMAT_OPTIONS} onChange={(format) => set({ format })} />
+            <Segmented
+              label={p.format}
+              value={o.format}
+              options={FORMAT_OPTIONS.map((fo) => ({ ...fo, disabled: !limits.formats.includes(fo.value) }))}
+              onChange={(format) => set({ format })}
+            />
+            {lockedFormats.length > 0 && (
+              <LockNote
+                text={`${lockedFormats.map((fo) => fo.label).join(", ")} — ${lockedText(cheapestPlan((pl) => lockedFormats.every((fo) => pl.formats.includes(fo.value))))}`}
+                cta={t.plan.upgrade}
+              />
+            )}
             <div className="grid grid-cols-2 gap-3">
               <Field label={p.bitrate}>
                 {({ id }) => (
                   <Select id={id} value={o.bitrate} disabled={lossless} onChange={(e) => set({ bitrate: Number(e.target.value) as AudioOptions["bitrate"] })} className="h-11">
-                    {BITRATE_OPTIONS.map((b) => (
-                      <option key={b.value} value={b.value}>
-                        {b.label}
-                      </option>
-                    ))}
+                    {BITRATE_OPTIONS.map((b) => {
+                      const locked = b.value > limits.maxBitrate;
+                      return (
+                        <option key={b.value} value={b.value} disabled={locked}>
+                          {locked ? `${b.label} · ${planName(cheapestPlan((pl) => pl.maxBitrate >= b.value))}` : b.label}
+                        </option>
+                      );
+                    })}
                   </Select>
                 )}
               </Field>
@@ -408,12 +489,35 @@ export default function SettingsPanel() {
 
         {tab === "effects" && (
           <>
-            <Slider label={p.bass} {...LIMITS.bass} value={o.bass} defaultValue={0} format={dbLabel} onChange={(bass) => set({ bass })} />
-            <Slider label={p.treble} {...LIMITS.treble} value={o.treble} defaultValue={0} format={dbLabel} onChange={(treble) => set({ treble })} />
-            <Slider label={p.reverb} {...LIMITS.reverb} value={o.reverb} defaultValue={0} format={(v) => `${v}%`} onChange={(reverb) => set({ reverb })} />
+            {/* Efek dasar (semua plan) */}
             <Slider label={p.volume} {...LIMITS.volume} value={o.volume} defaultValue={0} format={dbLabel} onChange={(volume) => set({ volume })} />
-            <Switch label={p.spatial8d} checked={o.spatial8d} onChange={(spatial8d) => set({ spatial8d })} />
             <Switch label={p.normalize} hint={p.normalizeHint} checked={o.normalize} onChange={(normalize) => set({ normalize })} />
+
+            {/* Efek bertingkat: EQ & reverb (Pro), 8D (Studio) */}
+            <Group title={t.pricing.features.eq}>
+              {!hasFx("eq") && <LockNote text={lockedText(cheapestPlan((pl) => pl.effects.includes("eq")))} cta={t.plan.upgrade} />}
+              <Slider label={p.bass} {...LIMITS.bass} value={o.bass} defaultValue={0} format={dbLabel} disabled={!hasFx("eq")} onChange={(bass) => set({ bass })} />
+              <Slider label={p.treble} {...LIMITS.treble} value={o.treble} defaultValue={0} format={dbLabel} disabled={!hasFx("eq")} onChange={(treble) => set({ treble })} />
+            </Group>
+            <Slider
+              label={hasFx("reverb") ? p.reverb : `${p.reverb} · ${fxPlan("reverb")}`}
+              {...LIMITS.reverb}
+              value={o.reverb}
+              defaultValue={0}
+              format={(v) => `${v}%`}
+              disabled={!hasFx("reverb")}
+              onChange={(reverb) => set({ reverb })}
+            />
+            <Switch
+              label={hasFx("spatial8d") ? p.spatial8d : `${p.spatial8d} · ${fxPlan("spatial8d")}`}
+              checked={o.spatial8d}
+              disabled={!hasFx("spatial8d")}
+              onChange={(spatial8d) => set({ spatial8d })}
+            />
+            {/* Pro: EQ & reverb terbuka, tinggal 8D yang terkunci */}
+            {hasFx("eq") && !hasFx("spatial8d") && (
+              <LockNote text={lockedText(cheapestPlan((pl) => pl.effects.includes("spatial8d")))} cta={t.plan.upgrade} />
+            )}
           </>
         )}
 

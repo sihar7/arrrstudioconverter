@@ -98,13 +98,15 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
         await poll(item.key, job.id, ctrl);
       } catch (e) {
         if (ctrl.signal.aborted) return;
-        if (e instanceof ApiError && e.code === "GUEST_LIMIT") {
-          // Kembalikan semua yang menunggu ke "siap" lalu tampilkan gerbang login
+        if (e instanceof ApiError && (e.code === "GUEST_LIMIT" || e.code === "DAILY_LIMIT")) {
+          // Kembalikan semua yang menunggu ke "siap"; guest → gerbang login, user → toast batas harian
           for (const i of store.getState().converter.items) {
             if (i.status === "pending") dispatch(itemFailed({ key: i.key, error: "", reset: true }));
           }
+          dispatch(itemFailed({ key: item.key, error: "", reset: true }));
           dispatch(baseApi.util.invalidateTags(["Me"]));
-          optsRef.current.onGuestLimit();
+          if (e.code === "GUEST_LIMIT") optsRef.current.onGuestLimit();
+          else toast(e.message, "err");
         } else {
           const msg = e instanceof ApiError ? (e.code === "NETWORK" ? textRef.current.t.toast.network : e.message) : String(e);
           dispatch(itemFailed({ key: item.key, error: msg }));

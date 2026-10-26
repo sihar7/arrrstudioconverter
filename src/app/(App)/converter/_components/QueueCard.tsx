@@ -206,16 +206,19 @@ export default function QueueCard({
       {items.length === 0 ? (
         <div>
           <EmptyState icon={<MusicDoubleNote width={22} height={22} />} title={c.emptyTitle} sub={c.emptySub} />
-          <ol className="mx-auto -mt-6 grid max-w-2xl gap-px overflow-hidden border-t border-line/60 sm:grid-cols-3 sm:border-t-0 sm:px-5 sm:pb-6">
-            {c.emptyTips.map((tip, n) => (
-              <li key={tip} className="flex gap-3 border-b border-line/60 px-5 py-4 text-[13px] leading-relaxed text-fg-2 last:border-b-0 sm:border sm:border-line/60 sm:px-4">
-                <span aria-hidden="true" className="font-mono text-[11px] text-fg-3">
-                  {String(n + 1).padStart(2, "0")}
-                </span>
-                {tip}
-              </li>
-            ))}
-          </ol>
+          {/* Satu blok berbingkai + garis pemisah tunggal (tanpa garis dobel antar kartu) */}
+          <div className="-mt-6 px-5 pb-6">
+            <ol className="mx-auto grid max-w-2xl divide-y divide-line/60 overflow-hidden rounded-s border border-line/60 bg-bg/30 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {c.emptyTips.map((tip, n) => (
+                <li key={tip} className="flex gap-3 px-4 py-4 text-[13px] leading-relaxed text-fg-2">
+                  <span aria-hidden="true" className="pt-px font-mono text-[11px] text-fg-3">
+                    {String(n + 1).padStart(2, "0")}
+                  </span>
+                  <span className="min-w-0">{tip}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       ) : shown.length === 0 ? (
         <EmptyState

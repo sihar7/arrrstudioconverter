@@ -670,3 +670,11 @@ html[data-theme="light"] .btn-plate {
     transform: translateY(6px);
   }
 }
+
+/* Drawer navigasi admin (HP): geser masuk dari kiri */
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}

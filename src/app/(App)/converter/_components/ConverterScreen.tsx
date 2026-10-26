@@ -2,10 +2,14 @@
 
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { enqueue } from "@/store/slices/converterSlice";
+import { useMeQuery } from "@/store/api/baseApi";
 import { shortName } from "@/lib/shortName";
+import { PLANS } from "@/lib/schemas/plans";
 import { useT } from "@/hooks/useT";
+import { useToast } from "@/hooks/useToast";
 import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
 import SourceCard from "./SourceCard";
@@ -35,6 +39,9 @@ const ShortcutsDialog = dynamic(() => import("./ShortcutsDialog"), { ssr: false 
 export default function ConverterScreen() {
   const { t } = useT();
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const toast = useToast();
+  const { data: me } = useMeQuery();
   const [gate, setGate] = useState(false);
   const [help, setHelp] = useState(false);
   const [uploadKey, setUploadKey] = useState<string | null>(null);
@@ -61,6 +68,12 @@ export default function ConverterScreen() {
   const openBulk = () => {
     const keys = selection.length ? selection : uploadableKeys;
     if (!keys.length) return;
+    // Upload massal hanya plan tertentu (Pro+); satu item tetap boleh lewat dialog tunggal
+    if (keys.length > 1 && !PLANS[me?.plan?.id ?? "free"].bulkRoblox) {
+      toast(t.plan.bulkLocked, "info");
+      router.push("/pricing");
+      return;
+    }
     // Belum login / belum ada API key → dialog tunggal yang menjelaskan langkahnya
     const first = bulkItems.find((i) => i.key === keys[0])!;
     if (roblox.blockReason(first)) setUploadKey(first.key);

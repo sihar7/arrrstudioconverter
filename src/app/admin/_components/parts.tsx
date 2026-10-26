@@ -8,15 +8,61 @@ import { cn } from "@/lib/utils";
 
 // Potongan UI kecil yang dipakai semua tab admin
 
-export function StatTile({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
-  return (
-    <div className="mat flex min-h-[112px] flex-col justify-between rounded-l border border-line/60 bg-surface p-5">
-      <p className="caps text-[10.5px] text-fg-3">{label}</p>
+/**
+ * Kartu angka. size "lg" = KPI utama (baris atas dashboard); onClick → kartu jadi tombol (mis. buka tab Order).
+ * tone "warn" dipakai untuk angka yang butuh tindakan.
+ */
+export function StatTile({
+  label,
+  value,
+  sub,
+  icon,
+  size = "md",
+  tone,
+  onClick,
+}: {
+  label: string;
+  value: ReactNode;
+  sub?: ReactNode;
+  icon?: ReactNode;
+  size?: "md" | "lg";
+  tone?: "warn";
+  onClick?: () => void;
+}) {
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <p className="caps text-[10.5px] text-fg-3">{label}</p>
+        {icon && (
+          <span aria-hidden="true" className={cn("flex size-8 items-center justify-center rounded-s bg-raised", tone === "warn" ? "text-warn" : "text-fg-2")}>
+            {icon}
+          </span>
+        )}
+      </div>
       <div>
-        <p className="font-display text-[30px] font-bold leading-none tabular-nums tracking-[-0.03em]">{value}</p>
+        <p
+          className={cn(
+            "font-display font-bold leading-none tabular-nums tracking-[-0.03em]",
+            size === "lg" ? "text-[clamp(26px,2.6vw,34px)]" : "text-[26px]",
+            tone === "warn" && "text-warn",
+          )}
+        >
+          {value}
+        </p>
         {sub && <p className="mt-2 text-[13px] text-fg-2">{sub}</p>}
       </div>
-    </div>
+    </>
+  );
+  const cls = cn(
+    "mat flex flex-col justify-between gap-4 rounded-l border border-line/60 bg-surface p-5 text-left",
+    size === "lg" ? "min-h-[136px]" : "min-h-[112px]",
+  );
+  return onClick ? (
+    <button type="button" onClick={onClick} className={cn(cls, "state-layer cursor-pointer transition-[border-color,transform] duration-200 hover:border-line-2 active:scale-[0.98]")}>
+      {body}
+    </button>
+  ) : (
+    <div className={cls}>{body}</div>
   );
 }
 
@@ -82,3 +128,6 @@ export const ago = (ts: number | null) => {
 };
 
 export const nf = (n: number) => n.toLocaleString("id-ID");
+
+export const dateShort = (ts: number | null) =>
+  ts ? new Date(ts).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—";

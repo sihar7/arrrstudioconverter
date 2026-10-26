@@ -1,3 +1,5 @@
+import type { PlanId } from "@/lib/schemas/plans";
+
 export interface SessionUser {
   id: string;
   username: string;
@@ -10,18 +12,25 @@ export interface SessionUser {
   isAdmin?: boolean;
 }
 
+export interface UserPlan {
+  id: PlanId;
+  /** epoch ms masa aktif habis; null = permanen / free */
+  expiresAt: number | null;
+}
+
 export interface QuotaInfo {
-  /** null = tanpa batas jumlah total (user login, hanya rate per jam) */
+  /** null = tanpa batas (admin) */
   limit: number | null;
   used: number;
   remaining: number | null;
-  /** detik sampai kuota guest reset; null = tidak reset */
+  /** detik sampai kuota reset; null = tidak reset */
   resetIn: number | null;
 }
 
 export interface MeResponse {
   user: SessionUser | null;
   quota: QuotaInfo;
+  plan: UserPlan;
   auth: {
     discordEnabled: boolean;
     devLogin: boolean;

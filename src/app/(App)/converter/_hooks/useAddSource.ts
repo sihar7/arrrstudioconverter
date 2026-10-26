@@ -61,6 +61,7 @@ export function useAddSource() {
           } else {
             results[idx] = fromPlaylist(res.items);
             toast(f(t.converter.addedPlaylist, { n: res.items.length, title: res.title }), "ok");
+        if (res.truncated) toast(f(t.plan.playlistTruncated, { n: res.truncated }), "info");
           }
         } catch (e) {
           invalid++;
@@ -92,6 +93,7 @@ export function useAddSource() {
       if (res.type === "playlist") {
         dispatch(addItems(fromPlaylist(res.items)));
         toast(f(t.converter.addedPlaylist, { n: res.items.length, title: res.title }), "ok");
+        if (res.truncated) toast(f(t.plan.playlistTruncated, { n: res.truncated }), "info");
       }
       setSuggestion(null);
     } catch (e) {

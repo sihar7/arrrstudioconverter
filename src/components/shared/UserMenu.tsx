@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, NavArrowDown, Settings, ClockRotateRight } from "iconoir-react";
+import { ClockRotateRight, Crown, LogOut, NavArrowDown, Settings } from "iconoir-react";
 import { useLogoutMutation, useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
 import { ButtonLink } from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 export function Avatar({ src, name, size = 30 }: { src: string | null; name: string; size?: number }) {
   return src ? (
@@ -24,23 +24,24 @@ export function Avatar({ src, name, size = 30 }: { src: string | null; name: str
   );
 }
 
-/** Kuota guest (sisa x/3) */
+/** Sisa kuota: guest (x/3 gratis) atau user login (x/5 hari ini); admin tanpa batas → disembunyikan */
 export function QuotaPill() {
   const { data } = useMeQuery();
   const { t, f } = useT();
-  if (!data || data.user || data.quota.limit == null) return null;
+  if (!data || data.quota.limit == null) return null;
   const { remaining, limit } = data.quota;
   const low = (remaining ?? 0) <= 1;
+  const [short, long] = data.user ? [t.quota.daily, t.quota.dailyLong] : [t.quota.guest, t.quota.guestLong];
   return (
     <span
-      title={f(t.quota.guestLong, { left: remaining ?? 0, max: limit })}
+      title={f(long, { left: remaining ?? 0, max: limit })}
       className={cn(
         "inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-s px-3 text-[11px] font-semibold uppercase tracking-[0.1em]",
         low ? "bg-warn/12 text-warn" : "bg-tonal text-on-tonal",
       )}
     >
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
-      {f(t.quota.guest, { left: remaining ?? 0, max: limit })}
+      {f(short, { left: remaining ?? 0, max: limit })}
     </span>
   );
 }
@@ -51,7 +52,7 @@ export default function UserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { t } = useT();
+  const { t, f, lang } = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -75,6 +76,7 @@ export default function UserMenu() {
   }
 
   const u = data.user;
+  const plan = data.plan ?? { id: "free" as const, expiresAt: null };
   const item = "state-layer flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-s px-3.5 py-2.5 text-[14px] text-fg-2 transition-colors hover:bg-hover hover:text-fg";
   return (
     <div ref={ref} className="relative">
@@ -106,6 +108,24 @@ export default function UserMenu() {
             <p className="truncate text-[12px] text-fg-3">@{u.username}</p>
           </div>
         </div>
+        <Link
+          role="menuitem"
+          href="/pricing"
+          onClick={() => setOpen(false)}
+          className="state-layer mx-1.5 mb-1 flex min-h-11 items-center justify-between gap-3 rounded-s bg-surface px-3 py-2 transition-colors hover:bg-hover"
+        >
+          <span className="min-w-0">
+            <span className="caps block text-[10px] text-fg">{f(t.plan.badge, { plan: t.plan.names[plan.id] })}</span>
+            <span className="block truncate text-[12px] text-fg-3">
+              {plan.id === "free" ? t.plan.taglines.free : plan.expiresAt ? f(t.plan.until, { date: formatDate(plan.expiresAt, lang) }) : t.plan.permanent}
+            </span>
+          </span>
+          {plan.id === "free" ? (
+            <span className="caps shrink-0 rounded-xs bg-accent px-2 py-1 text-[10px] text-on-accent">{t.plan.upgrade}</span>
+          ) : (
+            <Crown width={16} height={16} className="shrink-0 text-fg" aria-hidden="true" />
+          )}
+        </Link>
         <div className="my-1.5 h-px bg-line" />
         <Link role="menuitem" href="/history" className={item} onClick={() => setOpen(false)}>
           <ClockRotateRight width={16} height={16} /> {t.nav.history}

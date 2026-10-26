@@ -143,7 +143,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
                 {t.converter.status.done}
               </Badge>
               <span className="text-[12px] text-fg-3">{f(t.converter.expires, { time: formatClock(item.result!.expiresAt, lang) })}</span>
-              <RobloxPlaybackChip speed={item.options?.speed ?? 1} />
+              <RobloxPlaybackChip options={item.options} />
               {(item.result!.duration ?? 0) > ROBLOX_SOFT_LIMIT_SEC && (
                 <span className="text-[12px] text-warn">{t.converter.robloxLimit}</span>
               )}

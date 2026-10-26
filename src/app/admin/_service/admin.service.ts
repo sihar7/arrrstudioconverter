@@ -1,4 +1,7 @@
 import { apiFetch } from "@/lib/utils";
+import type { PlanId } from "@/lib/schemas/plans";
+import type { UserPlan } from "@/type/auth";
+import type { Order, OrderStatus } from "@/type/billing";
 import type { AdminAuditEntry, AdminFile, AdminJob, AdminMe, AdminStats, AdminUser, JanitorReport, SystemReport } from "@/type/admin";
 
 // Semua panggilan admin → /api/admin/* (di-proxy ke BE). Cookie sesi admin httpOnly, path /api/admin.
@@ -18,6 +21,19 @@ export const getUsers = (q: string) =>
 /** purge = juga hapus riwayat convert & spoof */
 export const revokeUser = (id: string, purge: boolean) =>
   apiFetch<{ sessions: number; rows: number }>(`/api/admin/users/${id}${purge ? "?purge=1" : ""}`, { method: "DELETE" });
+
+/** Atur plan manual; expiresAt null = permanen, plan "free" = cabut plan */
+export const setUserPlan = (id: string, plan: PlanId, expiresAt: number | null) =>
+  apiFetch<{ plan: UserPlan }>(`/api/admin/users/${id}`, { method: "PATCH", json: { plan, expiresAt } });
+
+export type OrderFilter = OrderStatus | "open" | "all";
+
+export const getOrders = (status: OrderFilter) =>
+  apiFetch<{ items: Order[] }>(`/api/admin/orders?status=${status}`, { cache: "no-store" });
+
+/** approve = lunas + aktifkan plan · reject = tolak (note = alasan, dilihat user) */
+export const orderAction = (id: string, action: "approve" | "reject", note?: string) =>
+  apiFetch<{ order: Order }>(`/api/admin/orders/${id}`, { method: "POST", json: { action, note } });
 
 export const getJobs = () => apiFetch<{ items: AdminJob[] }>("/api/admin/jobs", { cache: "no-store" });
 

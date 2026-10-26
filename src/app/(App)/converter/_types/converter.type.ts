@@ -3,7 +3,7 @@ import type { QuotaInfo } from "@/type/auth";
 
 export type InfoResponse =
   | { type: "video"; video: VideoInfo; playlistId: string | null }
-  | { type: "playlist"; playlistId: string; title: string; items: PlaylistItem[] };
+  | { type: "playlist"; playlistId: string; title: string; items: PlaylistItem[]; /** batas plan bila playlist dipotong */ truncated?: number | null };
 
 export interface CreateJobResponse {
   job: PublicJob;

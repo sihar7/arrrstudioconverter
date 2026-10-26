@@ -52,7 +52,7 @@ export type AudioFormat = (typeof AUDIO_FORMATS)[number];
 
 export const DEFAULT_OPTIONS: AudioOptions = {
   format: "mp3",
-  bitrate: 256,
+  bitrate: 192,
   sampleRate: 44100,
   mono: false,
   compress: true,

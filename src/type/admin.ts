@@ -1,3 +1,4 @@
+import type { PlanId } from "@/lib/schemas/plans";
 import type { JobStatus } from "./converter";
 
 export interface AdminSession {
@@ -23,8 +24,16 @@ export interface AdminStats {
   jobs: Record<JobStatus, number>;
   formats: { format: string; count: number }[];
   /** 14 hari terakhir (UTC), lama → baru */
-  daily: { day: string; count: number }[];
-  server: { uptimeSec: number; rssBytes: number; node: string; concurrent: number; guestLimit: number; userHourly: number };
+  daily: { day: string; count: number; revenue: number }[];
+  billing: {
+    revenue30d: number;
+    paid30d: number;
+    awaiting: number;
+    confirming: number;
+    /** user dengan plan berbayar aktif */
+    subscribers: { pro: number; studio: number };
+  };
+  server: { uptimeSec: number; rssBytes: number; node: string; concurrent: number; guestLimit: number; userDaily: number };
 }
 
 export interface AdminUser {
@@ -36,6 +45,8 @@ export interface AdminUser {
   lastLoginAt: number | null;
   conversions: number;
   lastConvertAt: number | null;
+  plan: PlanId;
+  planExpiresAt: number | null;
 }
 
 export interface AdminJob {

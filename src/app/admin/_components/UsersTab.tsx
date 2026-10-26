@@ -2,17 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Group, LogOut, Search, Trash } from "iconoir-react";
+import { Crown, Group, LogOut, Search, Trash } from "iconoir-react";
 import EmptyState from "@/components/shared/EmptyState";
+import Badge from "@/components/ui/Badge";
+import Segmented from "@/components/ui/Segmented";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { useToast } from "@/hooks/useToast";
 import type { AdminUser } from "@/type/admin";
 import { getUsers, revokeUser } from "../_service/admin.service";
 import { errorText, useAdminConfirm, useAdminData, useAuthGuard } from "../_hooks/useAdmin";
-import { ErrorBox, ListBox, ListSkeleton, RefreshButton, Toolbar, ago, nf } from "./parts";
+import { ErrorBox, ListBox, ListSkeleton, RefreshButton, Toolbar, ago, dateShort, nf } from "./parts";
+import PlanDialog from "./PlanDialog";
 
-const COLS = "md:grid-cols-[minmax(0,1.6fr)_90px_110px_140px_auto]";
+const COLS = "md:grid-cols-[minmax(0,1.5fr)_150px_80px_90px_120px_auto]";
+
+type PlanFilter = "all" | "paid" | "free";
+const PLAN_LABEL = { free: "Free", pro: "Pro", studio: "Studio" } as const;
 
 export default function UsersTab() {
   const [input, setInput] = useState("");
@@ -22,6 +28,10 @@ export default function UsersTab() {
   const guard = useAuthGuard();
   const [confirm, dialog] = useAdminConfirm();
   const [busy, setBusy] = useState<string | null>(null);
+  const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
+  const [editing, setEditing] = useState<AdminUser | null>(null);
+
+  const shown = (data?.items ?? []).filter((u) => planFilter === "all" || (planFilter === "paid" ? u.plan !== "free" : u.plan === "free"));
 
   // Debounce pencarian
   useEffect(() => {
@@ -59,7 +69,25 @@ export default function UsersTab() {
 
   return (
     <div>
-      <Toolbar actions={<RefreshButton loading={loading} onClick={reload} />}>
+      <Toolbar
+        actions={
+          <>
+            <Segmented
+              size="sm"
+              label="Filter plan"
+              value={planFilter}
+              onChange={setPlanFilter}
+              className="w-[240px]"
+              options={[
+                { value: "all", label: "Semua" },
+                { value: "paid", label: "Berbayar" },
+                { value: "free", label: "Free" },
+              ]}
+            />
+            <RefreshButton loading={loading} onClick={reload} />
+          </>
+        }
+      >
         <div className="relative max-w-md">
           <Search width={18} height={18} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fg-3" />
           <Input
@@ -77,7 +105,7 @@ export default function UsersTab() {
         <ErrorBox message={error} onRetry={reload} />
       ) : !data ? (
         <ListSkeleton />
-      ) : data.items.length === 0 ? (
+      ) : shown.length === 0 ? (
         <EmptyState
           icon={<Group width={26} height={26} />}
           title={q ? "Tidak ada yang cocok" : "Belum ada user"}
@@ -86,12 +114,13 @@ export default function UsersTab() {
       ) : (
         <>
           <p className="mb-3 text-[13px] text-fg-3" aria-live="polite">
-            {nf(data.items.length)} user
+            {nf(shown.length)} user{planFilter !== "all" && ` dari ${nf(data.items.length)}`}
           </p>
           <ListBox
             head={
               <div className={`grid gap-4 ${COLS}`}>
                 <span>User</span>
+                <span>Plan</span>
                 <span>Sesi</span>
                 <span>Convert</span>
                 <span>Aktivitas</span>
@@ -99,7 +128,7 @@ export default function UsersTab() {
               </div>
             }
           >
-            {data.items.map((u) => {
+            {shown.map((u) => {
               const last = Math.max(u.lastLoginAt ?? 0, u.lastConvertAt ?? 0) || null;
               return (
                 <li key={u.id} className={`grid grid-cols-1 gap-3 px-5 py-4 md:items-center md:gap-4 ${COLS}`}>
@@ -119,6 +148,14 @@ export default function UsersTab() {
                       </p>
                     </div>
                   </div>
+                  <div className="flex flex-col items-start gap-1">
+                    <Badge tone={u.plan === "free" ? "neutral" : "accent"} dot={u.plan !== "free"}>
+                      {PLAN_LABEL[u.plan]}
+                    </Badge>
+                    {u.plan !== "free" && (
+                      <span className="text-[12px] text-fg-3">{u.planExpiresAt ? `s/d ${dateShort(u.planExpiresAt)}` : "permanen"}</span>
+                    )}
+                  </div>
                   <p className="text-[14px] tabular-nums text-fg-2">
                     <span className="caps mr-2 text-[10.5px] text-fg-3 md:hidden">Sesi</span>
                     {nf(u.sessions)}
@@ -132,6 +169,15 @@ export default function UsersTab() {
                     {ago(last)}
                   </p>
                   <div className="flex flex-wrap gap-2 md:justify-end">
+                    <Button
+                      size="sm"
+                      variant="tonal"
+                      onClick={() => setEditing(u)}
+                      icon={<Crown aria-hidden="true" />}
+                      aria-label={`Atur plan ${u.displayName ?? u.id}`}
+                    >
+                      Plan
+                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -160,6 +206,7 @@ export default function UsersTab() {
           </ListBox>
         </>
       )}
+      <PlanDialog user={editing} onClose={() => setEditing(null)} onSaved={reload} />
       {dialog}
     </div>
   );

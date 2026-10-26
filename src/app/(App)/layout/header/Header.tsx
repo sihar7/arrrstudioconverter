@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Album, ClockRotateRight, Lock, MusicDoubleNote, Settings } from "iconoir-react";
+import { Album, ClockRotateRight, Crown, Lock, MusicDoubleNote, Settings } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useScrolled } from "@/hooks/useScrollState";
@@ -18,8 +18,12 @@ export const NAV = [
   { href: "/converter", key: "converter", icon: MusicDoubleNote },
   { href: "/library", key: "library", icon: Album },
   { href: "/history", key: "history", icon: ClockRotateRight },
+  { href: "/pricing", key: "pricing", icon: Crown },
   { href: "/settings", key: "settings", icon: Settings },
 ] as const;
+
+// Tab bar bawah HP maksimal 4 tujuan (label tetap terbaca di 375px) — Harga ada di menu & dropdown akun
+const TAB_NAV = NAV.filter((n) => n.href !== "/pricing");
 
 // Menu khusus admin aplikasi (lihat isAppAdmin di BE) — hanya muncul di navbar untuk admin.
 export const ADMIN_NAV = [{ href: "/obfuscator", key: "obfuscator", icon: Lock }] as const;
@@ -142,7 +146,7 @@ function TabBar({ activeHref }: { activeHref?: string }) {
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line/70 bg-[var(--glass)] pb-[env(safe-area-inset-bottom)] shadow-[inset_0_1px_0_var(--mat-edge)] backdrop-blur-md xl:hidden"
     >
       <ul className="mx-auto grid h-[68px] max-w-xl grid-cols-4">
-        {NAV.map(({ href, key, icon: Icon }) => {
+        {TAB_NAV.map(({ href, key, icon: Icon }) => {
           const active = href === activeHref;
           return (
             <li key={href}>
