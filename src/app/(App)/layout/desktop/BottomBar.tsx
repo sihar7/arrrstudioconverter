@@ -48,8 +48,8 @@ export default function BottomBar() {
       id: "studio",
       label: t.nav.studio,
       icon: SfWaveform,
-      // YouTube di dalam app butuh app desktop v1.1+ (bridge youtube)
-      items: [CONVERTER, ...(getDesktop()?.youtube ? [YOUTUBE] : []), ...(member ? [SKYBOX] : [])],
+      // YouTube: app v1.1+ = YouTube asli; app lama = versi web (cari + embed)
+      items: [CONVERTER, YOUTUBE, ...(member ? [SKYBOX] : [])],
     },
     ...(member ? [{ id: "images", label: t.nav.images, icon: SfCutout, items: [REMOVE_BG, UPSCALE] }] : []),
     { id: "shelf", label: t.desktop.shelf, icon: SfStack, items: [LIBRARY, HISTORY] },

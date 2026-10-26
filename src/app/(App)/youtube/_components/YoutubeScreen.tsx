@@ -7,44 +7,22 @@ import { useAppSelector } from "@/store/hooks";
 import { useT } from "@/hooks/useT";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getDesktop, type DesktopYoutube } from "@/type/desktop";
-import { SfPlayRect } from "@/components/icons/SfIcons";
-import AppIcon from "@/components/ui/AppIcon";
-import Button, { buttonClass } from "@/components/ui/Button";
+import Button from "@/components/ui/Button";
 import Spinner from "@/components/ui/Spinner";
-import EmptyState from "@/components/shared/EmptyState";
 import { cn } from "@/lib/utils";
 import { useQuickAdd } from "../_hooks/useQuickAdd";
 import { useYoutubeView } from "../_hooks/useYoutubeView";
+import WebYoutube from "./WebYoutube";
 
 /**
- * YouTube asli di dalam app desktop: toolbar web (navigasi YouTube · judul · antrean · tambah) di atas
- * area tempat Electron menggambar view YouTube native. Di browser biasa / app lama → ajakan pakai app desktop.
+ * App desktop: YouTube asli (view native Electron) di bawah toolbar web (navigasi · judul · antrean · tambah).
+ * Web / app lama: pencarian + pemutar embed (WebYoutube) — fiturnya sama, hanya tampilannya berbeda.
  */
 export default function YoutubeScreen() {
   const hydrated = useHydrated();
   const yt = hydrated ? getDesktop()?.youtube : undefined;
   if (!hydrated) return null;
-  return yt ? <YoutubeBrowser yt={yt} /> : <OnlyDesktop />;
-}
-
-function OnlyDesktop() {
-  const { t } = useT();
-  return (
-    <EmptyState
-      icon={
-        <AppIcon tone="red" size={40}>
-          <SfPlayRect filled />
-        </AppIcon>
-      }
-      title={t.desktop.ytOnlyTitle}
-      sub={t.desktop.ytOnlySub}
-      action={
-        <Link href="/download" className={buttonClass("primary")}>
-          {t.nav.downloadApp}
-        </Link>
-      }
-    />
-  );
+  return yt ? <YoutubeBrowser yt={yt} /> : <WebYoutube />;
 }
 
 function YoutubeBrowser({ yt }: { yt: DesktopYoutube }) {

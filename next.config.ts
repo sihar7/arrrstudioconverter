@@ -17,7 +17,8 @@ const csp = [
   "font-src 'self' data:",
   // huggingface.co + *.hf.co: unduh model AI (sekali, lalu di-cache browser)
   `connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://huggingface.co https://*.hf.co${dev ? " ws: http://localhost:*" : ""}`,
-  "frame-src https://vercel.live",
+  // youtube-nocookie: pemutar embed di halaman YouTube (web)
+  "frame-src https://vercel.live https://www.youtube-nocookie.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
