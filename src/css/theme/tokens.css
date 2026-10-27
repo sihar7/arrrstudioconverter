@@ -107,32 +107,33 @@
   }
 }
 
-/* Tema terang — silver jadi grafit supaya kontras tetap ≥ 4.5:1 */
+/* Tema terang — mengikuti warna sistem iOS (HIG): latar grouped #F2F2F7, kartu putih tanpa garis tebal,
+   isian abu sistem, label hitam lembut, tombol utama hitam pekat. Teks sekunder dijaga kontras ≥ 4.5:1. */
 html[data-theme="light"] {
-  --bg: var(--p-n-96);
-  --surface: #ffffff;
-  --raised: var(--p-n-94);
-  --hover: var(--p-n-90);
-  --line: #d3d6da;
-  --line-2: var(--p-n-50);
-  --fg: var(--p-n-10);
-  --fg-2: #464a51;
-  --fg-3: #5f636b;
-  --accent: var(--p-silver-40);
+  --bg: #f2f2f7; /* systemGroupedBackground */
+  --surface: #ffffff; /* secondarySystemGroupedBackground (kartu) */
+  --raised: #eeeef0; /* systemFill di atas putih (input, chip, baris) */
+  --hover: #e5e5ea; /* systemGray5 */
+  --line: #d1d1d6; /* systemGray4 / separator */
+  --line-2: #aeaeb2; /* systemGray2 */
+  --fg: #1c1c1e; /* label */
+  --fg-2: #3a3a3c; /* label sekunder kuat */
+  --fg-3: #6c6c70; /* secondaryLabel (kontras 5:1 di putih) */
+  --accent: #1c1c1e; /* tombol utama hitam ala apple.com */
   --accent-strong: #000000;
-  --accent-dim: #d9dce0;
+  --accent-dim: #e5e5ea;
   --on-accent: #ffffff;
-  --on-accent-dim: var(--p-n-10);
-  --tonal: #dfe2e6;
-  --on-tonal: var(--p-n-10);
-  --ok: #1b7a3a;
-  --warn: #8a5100;
-  --err: #ba1a1a;
-  --scrim: rgba(8, 9, 10, 0.4);
-  --glass: rgba(242, 243, 245, 0.88);
-  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.12), 0 1px 3px 1px rgba(0, 0, 0, 0.06);
-  --elev-2: 0 1px 2px rgba(0, 0, 0, 0.12), 0 2px 6px 2px rgba(0, 0, 0, 0.06);
-  --elev-3: 0 4px 8px 3px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.12);
+  --on-accent-dim: #1c1c1e;
+  --tonal: #e9e9ee;
+  --on-tonal: #1c1c1e;
+  --ok: #248a3d; /* systemGreen versi kontras tinggi */
+  --warn: #c93400;
+  --err: #d70015;
+  --scrim: rgba(0, 0, 0, 0.32);
+  --glass: rgba(249, 249, 251, 0.8); /* bar kaca iOS */
+  --elev-1: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --elev-2: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --elev-3: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 12px 32px -8px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.05);
   --seg-thumb: #ffffff;
   /* Warna sistem iOS (terang) */
   --ios-red: #ff3b30;

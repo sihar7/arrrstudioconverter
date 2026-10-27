@@ -345,11 +345,33 @@
   --knob-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.12), 0 6px 13px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 html[data-theme="light"] {
-  --sheen: radial-gradient(80% 55% at 50% -10%, rgba(255, 255, 255, 0.9), transparent 65%);
-  --spot: rgba(255, 255, 255, 0.5);
-  --mat-edge: rgba(255, 255, 255, 0.9);
+  --sheen: radial-gradient(80% 50% at 50% -10%, rgba(255, 255, 255, 0.7), transparent 65%);
+  --spot: rgba(255, 255, 255, 0.55);
+  --mat-edge: rgba(255, 255, 255, 1);
   --mat-edge-low: rgba(0, 0, 0, 0.04);
-  --hairline: rgba(60, 60, 67, 0.16);
+  --hairline: rgba(60, 60, 67, 0.1); /* iOS: kartu dipisah lewat warna, bukan garis */
+}
+/* Terang ala iOS: kartu putih melayang tipis di atas #F2F2F7 (tanpa bayangan gelap tebal) */
+html[data-theme="light"] .mat {
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 6px 20px -10px rgba(0, 0, 0, 0.1);
+}
+html[data-theme="light"] .forged {
+  background: radial-gradient(70% 60% at 75% 10%, #ffffff, transparent 70%), var(--bg);
+}
+html[data-theme="light"] .forged-tile {
+  background: var(--surface);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 6px 16px -6px rgba(0, 0, 0, 0.12);
+}
+html[data-theme="light"] .btn-plate {
+  box-shadow: none;
+}
+/* Judul dua nada ala Apple: baris kedua abu sistem (krom berkilap tidak cocok di latar terang) */
+html[data-theme="light"] .metal-text {
+  background: none;
+  color: var(--fg-3);
 }
 
 /* Latar halaman: cahaya lembut dari atas (gradient murni, fixed, tanpa reflow) */
@@ -640,6 +662,13 @@ body::before {
       0 1px 3px rgb(0 0 0 / 0.2);
     -webkit-backdrop-filter: blur(22px) saturate(1.8);
     backdrop-filter: blur(22px) saturate(1.8);
+  }
+  html[data-theme="light"] .tabbar-glass {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 8px 28px rgba(0, 0, 0, 0.1),
+      0 1px 3px rgba(0, 0, 0, 0.06);
   }
   .tab-line {
     position: absolute;
