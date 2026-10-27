@@ -3,7 +3,7 @@
 import { useState, type MouseEvent } from "react";
 import { withBase } from "@/Url/Url";
 import Image from "next/image";
-import { Check, Copy, Download, Lock, NavArrowDown, OpenNewWindow, Trash, Upload } from "iconoir-react";
+import { Check, Copy, Download, Lock, MediaImage, NavArrowDown, OpenNewWindow, Trash, Upload } from "iconoir-react";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
 import { summarize } from "@/lib/audioSummary";
 import { ROBLOX_FORMATS } from "@/lib/schemas/convert.schema";
@@ -15,11 +15,15 @@ import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import RobloxPlaybackChip from "@/components/shared/RobloxPlaybackChip";
 import { relTime, stateTone } from "../_utils/helpers";
+import { coverAssetId } from "@/lib/coverDecal";
 import { robloxAssetConfigureUrl } from "@/Url/Url";
 import type { HistoryItem } from "@/type/history";
 
 interface Props {
   item: HistoryItem;
+  /** Cover album; null = potongan kotak thumbnail video */
+  coverUrl: string | null;
+  coverBusy: boolean;
   selecting: boolean;
   selected: boolean;
   /** shift = Shift+klik (pilih rentang) */
@@ -28,6 +32,7 @@ interface Props {
   onLongPress: () => void;
   onUpload: () => void;
   onPermission: () => void;
+  onUploadCover: () => void;
   onDelete: () => void;
 }
 
@@ -35,7 +40,7 @@ interface Props {
  * Satu riwayat. Mode biasa: klik kartu = buka/tutup detail, aksi cepat di kanan.
  * Mode pilih: klik kartu = pilih (sorot + centang di thumbnail), aksi disembunyikan.
  */
-export default function HistoryRow({ item, selecting, selected, onToggle, onLongPress, onUpload, onPermission, onDelete }: Props) {
+export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selected, onToggle, onLongPress, onUpload, onPermission, onUploadCover, onDelete }: Props) {
   const { t, f, lang } = useT();
   const h = t.history;
   const toast = useToast();
@@ -45,6 +50,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
   const chips = summarize(item.options, t);
   const canUpload = item.fileAvailable && !rb && (ROBLOX_FORMATS as readonly string[]).includes(item.format);
   const failed = rb?.permissions.filter((p) => p.status === "failed") ?? [];
+  const coverId = coverAssetId(item.cover);
 
   const copy = async (text: string) => {
     if (await copyText(text)) toast(t.toast.copied, "ok");
@@ -75,9 +81,9 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
           aria-expanded={selecting ? undefined : open}
           className="flex min-w-0 flex-1 cursor-pointer select-none items-center gap-3 text-left sm:gap-4"
         >
-          <span className={cn("relative aspect-video w-[96px] shrink-0 overflow-hidden rounded-s bg-raised transition-transform duration-200 sm:w-[120px]", selected && "scale-[0.94]")}>
-            <Image src={item.thumbnail} alt="" fill sizes="120px" unoptimized loading="lazy" className="object-cover" />
-            <span className="absolute bottom-1 right-1 rounded-xs bg-black/75 px-1 font-mono text-[10.5px] text-white">{formatDuration(item.duration)}</span>
+          {/* Cover kotak (album, atau thumbnail video dipotong tengah) */}
+          <span className={cn("relative size-14 shrink-0 overflow-hidden rounded-s bg-raised transition-transform duration-200 sm:size-16", selected && "scale-[0.94]")}>
+            <Image src={coverUrl ?? item.thumbnail} alt="" fill sizes="64px" unoptimized loading="lazy" className={cn("object-cover", !coverUrl && "scale-[1.35]")} />
             <span
               aria-hidden="true"
               className={cn(
@@ -85,7 +91,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
                 selected ? "opacity-100" : "opacity-0",
               )}
             >
-              <span className={cn("flex size-8 items-center justify-center rounded-full bg-accent shadow-[var(--elev-2)]", selected && "pick-pop")}>
+              <span className={cn("flex size-7 items-center justify-center rounded-full bg-accent shadow-[var(--elev-2)]", selected && "pick-pop")}>
                 <Check width={18} height={18} strokeWidth={2.4} />
               </span>
             </span>
@@ -96,7 +102,7 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
               {item.title}
             </span>
             <span className="mt-1 block truncate font-mono text-[11.5px] text-fg-3">
-              {relTime(item.createdAt, t)} · {item.format.toUpperCase()} · {formatBytes(item.size)}
+              {relTime(item.createdAt, t)} · {formatDuration(item.duration)} · {item.format.toUpperCase()} · {formatBytes(item.size)}
               {chips.length > 0 && ` · ${chips.slice(0, 2).join(" · ")}`}
             </span>
             <span className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -179,6 +185,25 @@ export default function HistoryRow({ item, selecting, selected, onToggle, onLong
                     {h.copyRbx}
                   </button>
                 </div>
+                {/* Cover (Decal) — ID gambar siap dipakai ImageLabel */}
+                {coverId ? (
+                  <button
+                    type="button"
+                    onClick={() => copy(coverId)}
+                    title={h.copyCover}
+                    className="inline-flex min-h-8 min-w-0 cursor-pointer items-center gap-2 rounded-xs bg-raised py-1 pl-1 pr-2 font-mono text-[12.5px] text-fg transition-colors hover:bg-hover"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={coverUrl ?? item.thumbnail} alt="" className="size-6 shrink-0 rounded-[5px] object-cover" />
+                    <span className="font-sans text-fg-3">{t.upload.coverLabel}</span>
+                    <span className="truncate">{coverId}</span>
+                    <Copy width={13} height={13} aria-hidden="true" className="shrink-0" />
+                  </button>
+                ) : (
+                  <Button size="sm" variant="ghost" loading={coverBusy} icon={<MediaImage width={14} height={14} />} onClick={onUploadCover}>
+                    {coverBusy ? t.upload.coverUploading : h.uploadCover}
+                  </Button>
+                )}
                 {rb.permissions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {rb.permissions.map((p) => (

@@ -8,27 +8,30 @@ import { useToast } from "@/hooks/useToast";
 import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import Segmented from "@/components/ui/Segmented";
-import type { LibraryAsset } from "@/type/roblox";
-import { EXPORT_FORMATS, buildExport, downloadText, type ExportFields, type ExportFormat } from "../_service/library.service";
+import { EXPORT_FORMATS, buildExport, downloadText, type ExportFields, type ExportFormat, type ExportRow } from "@/lib/assetExport";
 
 const PREVIEW_ROWS = 8;
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  shown: LibraryAsset[];
-  selected: LibraryAsset[];
-  /** Masih ada halaman inventory yang belum dimuat */
-  partial: boolean;
+  shown: ExportRow[];
+  selected: ExportRow[];
+  /** Masih ada halaman inventory yang belum dimuat (Audio saya) */
+  partial?: boolean;
+  /** Tambah pilihan isi "Nama + ID + Cover" (Riwayat), sekaligus jadi bawaan */
+  withCover?: boolean;
+  /** Awalan nama file unduhan */
+  fileBase?: string;
 }
 
-/** Ekspor asset ID — pilih data (daftar / terpilih), isi (nama + ID / ID saja), format (TXT/CSV/JSON/Lua) */
-export default function ExportDialog({ open, onClose, shown, selected, partial }: Props) {
+/** Ekspor asset ID — pilih data (daftar / terpilih), isi (nama + ID [+ cover] / ID saja), format (TXT/CSV/JSON/Lua) */
+export default function ExportDialog({ open, onClose, shown, selected, partial = false, withCover = false, fileBase = "roblox-audio" }: Props) {
   const { t, f } = useT();
   const L = t.library;
   const toast = useToast();
   const [scope, setScope] = useState<"shown" | "selected">("shown");
-  const [fields, setFields] = useState<ExportFields>("both");
+  const [fields, setFields] = useState<ExportFields>(withCover ? "full" : "both");
   const [format, setFormat] = useState<ExportFormat>("csv");
 
   // Tidak ada yang dipilih → otomatis pakai daftar saat ini
@@ -39,7 +42,7 @@ export default function ExportDialog({ open, onClose, shown, selected, partial }
   const preview = lines.slice(0, PREVIEW_ROWS).join("\n");
 
   const download = () => {
-    downloadText(text, format, `roblox-audio-${list.length}-${new Date().toISOString().slice(0, 10)}`);
+    downloadText(text, format, `${fileBase}-${list.length}-${new Date().toISOString().slice(0, 10)}`);
     onClose();
   };
   const copy = async () => {
@@ -81,6 +84,7 @@ export default function ExportDialog({ open, onClose, shown, selected, partial }
             value={fields}
             onChange={setFields}
             options={[
+              ...(withCover ? [{ value: "full" as const, label: L.fieldsFull }] : []),
               { value: "both", label: L.fieldsBoth },
               { value: "id", label: L.fieldsId },
             ]}

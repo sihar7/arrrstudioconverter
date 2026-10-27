@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { withBase } from "@/Url/Url";
 import dynamic from "next/dynamic";
-import { ClockRotateRight, Discord, Globe, ListSelect, Refresh, Search, Trash, Xmark } from "iconoir-react";
+import { ClockRotateRight, Discord, Download, Globe, ListSelect, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useHistoryQuery, useMeQuery } from "@/store/api/baseApi";
 import { useAppSelector } from "@/store/hooks";
 import { shortName } from "@/lib/shortName";
@@ -22,6 +22,9 @@ import { inputClass } from "@/components/ui/Field";
 import HistoryRow from "./HistoryRow";
 import DeleteDialog from "./DeleteDialog";
 import { useHistoryActions } from "../_hooks/useHistoryActions";
+import { coverUrlOf, useHistoryCovers } from "../_hooks/useHistoryCovers";
+import { coverAssetId } from "@/lib/coverDecal";
+import type { ExportRow } from "@/lib/assetExport";
 import { canGoPublic, dayLabel, filterHistory, groupByDay, needsCheck, quickMatch, type HistoryFilter, type QuickSelect } from "../_utils/helpers";
 import type { HistoryItem } from "@/type/history";
 
@@ -30,13 +33,18 @@ const RobloxUploadDialog = dynamic(() => import("@/components/roblox/RobloxUploa
   loading: () => <PageLoader variant="inline" />,
 });
 const PermissionDialog = dynamic(() => import("./PermissionDialog"), { ssr: false });
+const ExportDialog = dynamic(() => import("@/components/shared/ExportDialog"), { ssr: false });
+
+/** Baris ekspor: hanya yang sudah punya asset ID di Roblox */
+const exportRows = (list: HistoryItem[]): ExportRow[] =>
+  list.flatMap((i) => (i.roblox?.assetId ? [{ assetId: i.roblox.assetId, name: i.roblox.displayName || i.title, coverId: coverAssetId(i.cover) }] : []));
 
 function ListSkeleton() {
   return (
     <ul aria-hidden="true">
       {[0, 1, 2, 3].map((i) => (
         <li key={i} className="flex items-center gap-4 border-b border-line/60 px-5 py-4">
-          <Skeleton className="aspect-video w-[120px] shrink-0" />
+          <Skeleton className="size-14 shrink-0 sm:size-16" />
           <div className="flex flex-1 flex-col gap-2">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/2" />
@@ -71,6 +79,7 @@ export default function HistoryScreen() {
   const [uploadFor, setUploadFor] = useState<HistoryItem | null>(null);
   const [permFor, setPermFor] = useState<HistoryItem | null>(null);
   const [toDelete, setToDelete] = useState<HistoryItem[] | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const items = useMemo(() => data?.items ?? [], [data]);
   const shown = useMemo(() => filterHistory(items, filter, query), [items, filter, query]);
@@ -78,6 +87,8 @@ export default function HistoryScreen() {
   const publicCandidates = useMemo(() => items.filter(canGoPublic), [items]);
   const pendingCount = useMemo(() => items.filter(needsCheck).length, [items]);
   const hasRoblox = items.some((i) => i.roblox);
+  const hasAsset = items.some((i) => i.roblox?.assetId);
+  const covers = useHistoryCovers(items);
   // Mode pilih (tanpa checkbox): klik kartu = pilih, Shift+klik = rentang, tekan lama di HP = masuk mode
   const shownIds = useMemo(() => shown.map((i) => i.id), [shown]);
   const sel = useSelectMode(shownIds, undefined, Boolean(toDelete));
@@ -143,6 +154,11 @@ export default function HistoryScreen() {
             {publicCandidates.length > 0 && (
               <Button variant="tonal" loading={actions.publishing} icon={<Globe width={16} height={16} />} onClick={() => actions.publishMany(publicCandidates)}>
                 {h.publicBulk} <span className="font-mono text-fg-3">{publicCandidates.length}</span>
+              </Button>
+            )}
+            {hasAsset && (
+              <Button variant="tonal" icon={<Download width={16} height={16} />} onClick={() => setExportOpen(true)}>
+                {h.export}
               </Button>
             )}
             {items.length > 0 && (
@@ -224,12 +240,15 @@ export default function HistoryScreen() {
                     <HistoryRow
                       key={item.id}
                       item={item}
+                      coverUrl={coverUrlOf(item, covers)}
+                      coverBusy={actions.coverBusy.includes(item.id)}
                       selecting={selecting}
                       selected={picked.has(item.id)}
                       onToggle={(shift) => sel.toggle(item.id, shift)}
                       onLongPress={() => sel.start(item.id)}
                       onUpload={() => setUploadFor(item)}
                       onPermission={() => setPermFor(item)}
+                      onUploadCover={() => actions.uploadCover(item, coverUrlOf(item, covers))}
                       onDelete={() => setToDelete([item])}
                     />
                   ))}
@@ -261,6 +280,7 @@ export default function HistoryScreen() {
       {uploadFor && (
         <RobloxUploadDialog
           title={uploadFor.title}
+          cover={coverUrlOf(uploadFor, covers) ?? uploadFor.thumbnail}
           block={!roblox.apiKey || !roblox.creatorId ? "key" : null}
           initial={{
             displayName: shortName(uploadFor.title),
@@ -269,15 +289,24 @@ export default function HistoryScreen() {
             creatorId: roblox.creatorId,
             permission: roblox.defaultPermission,
             placeId: roblox.placeId,
-            // Riwayat tidak menyimpan cover → hanya audio
-            uploadCover: false,
+            uploadCover: roblox.uploadCover,
           }}
           onClose={() => setUploadFor(null)}
           onSubmit={async (form) => {
-            const ok = await actions.upload(uploadFor, form);
+            const ok = await actions.upload(uploadFor, form, coverUrlOf(uploadFor, covers));
             if (ok) void refetch();
             return ok;
           }}
+        />
+      )}
+      {exportOpen && (
+        <ExportDialog
+          open
+          onClose={() => setExportOpen(false)}
+          shown={exportRows(shown)}
+          selected={exportRows(selected)}
+          withCover
+          fileBase="riwayat-roblox"
         />
       )}
       {permFor && <PermissionDialog entry={permFor} onClose={() => setPermFor(null)} onApply={(mode, placeId) => actions.setPermission(permFor, mode, placeId)} />}

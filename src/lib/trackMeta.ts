@@ -63,7 +63,8 @@ async function lookup(artist: string | null, song: string, author: string, count
   const term = [artist, song].filter(Boolean).join(" ").slice(0, 120);
   const qs = new URLSearchParams({ term, entity: "song", limit: "8", country });
   const res = await fetch(`${ITUNES}?${qs}`);
-  if (!res.ok) return null;
+  // Gagal ≠ tidak ketemu (mis. kena batas request) → lempar, biar pemanggil bisa coba lagi nanti
+  if (!res.ok) throw new Error(`iTunes HTTP ${res.status}`);
   const { results = [] } = (await res.json()) as { results?: ItunesTrack[] };
   let best: { t: ItunesTrack; score: number } | null = null;
   for (const t of results) {
@@ -82,13 +83,25 @@ async function lookup(artist: string | null, song: string, author: string, count
   };
 }
 
+const countryOf = (lang: string) => (lang === "id" ? "ID" : "US");
+
+/** Cover album dari judul saja (Riwayat): null = tidak ketemu, undefined = katalog gagal dihubungi (coba lagi nanti) */
+export async function findCover(title: string, lang: string): Promise<string | null | undefined> {
+  const guess = guessTrack(title, "");
+  try {
+    return (await lookup(guess.artist, guess.song, "", countryOf(lang)))?.cover ?? null;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Metadata satu video (di-cache per videoId selama tab terbuka) */
 export function trackMeta(videoId: string, title: string, author: string, lang: string): Promise<TrackMeta> {
   const hit = cache.get(videoId);
   if (hit) return hit;
   const guess = guessTrack(title, author);
   const fallback: TrackMeta = { artist: guess.artist, album: null, cover: null };
-  const p = lookup(guess.artist, guess.song, author, lang === "id" ? "ID" : "US")
+  const p = lookup(guess.artist, guess.song, author, countryOf(lang))
     .then((m) => m ?? fallback)
     .catch(() => fallback);
   cache.set(videoId, p);

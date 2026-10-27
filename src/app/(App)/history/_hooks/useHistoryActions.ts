@@ -6,15 +6,17 @@ import { baseApi } from "@/store/api/baseApi";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
+import { saveHistoryCover, uploadCoverDecal } from "@/lib/coverDecal";
 import { applyPermission, applyPermissionMany, checkStatus, deleteMany, uploadEntry } from "../_service/history.service";
 import { canGoPublic, needsCheck } from "../_utils/helpers";
 import type { HistoryEntry, HistoryItem } from "@/type/history";
 import type { UploadForm } from "@/type/roblox";
 
-/** Aksi halaman riwayat: cek status Roblox, izin, upload ulang, hapus */
+/** Aksi halaman riwayat: cek status Roblox, izin, upload ulang (+ cover), hapus */
 export function useHistoryActions() {
   const dispatch = useAppDispatch();
-  const apiKey = useAppSelector((s) => s.roblox.apiKey);
+  const roblox = useAppSelector((s) => s.roblox);
+  const apiKey = roblox.apiKey;
   const toast = useToast();
   const { t, f } = useT();
   const [checking, setChecking] = useState(false);
@@ -94,19 +96,41 @@ export function useHistoryActions() {
     [apiKey, toast, t, refresh, errMsg],
   );
 
+  /** Cover (album / thumbnail) → Decal → simpan ID-nya ke riwayat. Berjalan di latar, satu per entri. */
+  const [coverBusy, setCoverBusy] = useState<string[]>([]);
+  const uploadCover = useCallback(
+    async (entry: HistoryEntry, coverUrl: string | null, form?: Pick<UploadForm, "creatorType" | "creatorId" | "displayName">) => {
+      const target = form ?? { creatorType: roblox.creatorType, creatorId: roblox.creatorId, displayName: entry.roblox?.displayName ?? entry.title };
+      if (!apiKey || !target.creatorId) return toast(t.history.coverNeedKey, "err");
+      setCoverBusy((b) => [...b, entry.id]);
+      try {
+        const res = await uploadCoverDecal({ apiKey, ...target, cover: coverUrl, videoId: entry.videoId });
+        await saveHistoryCover(entry.id, { url: coverUrl, ...res });
+        toast(f(t.history.coverDone, { id: res.imageId ?? res.decalId }), "ok");
+        refresh();
+      } catch (e) {
+        toast(f(t.upload.coverFailed, { error: errMsg(e) }), "err");
+      } finally {
+        setCoverBusy((b) => b.filter((id) => id !== entry.id));
+      }
+    },
+    [apiKey, roblox.creatorType, roblox.creatorId, toast, t, f, refresh, errMsg],
+  );
+
   const upload = useCallback(
-    async (entry: HistoryEntry, form: UploadForm) => {
+    async (entry: HistoryEntry, form: UploadForm, coverUrl: string | null = null) => {
       try {
         const r = await uploadEntry(apiKey, entry, form);
         toast(r.assetId ? f(t.toast.uploaded, { id: r.assetId }) : t.upload.processing, "ok");
         refresh();
+        if (form.uploadCover) void uploadCover(entry, coverUrl, form);
         return true;
       } catch (e) {
         toast(errMsg(e), "err");
         return false;
       }
     },
-    [apiKey, toast, t, f, refresh, errMsg],
+    [apiKey, toast, t, f, refresh, errMsg, uploadCover],
   );
 
   /** Hapus banyak riwayat (konfirmasi lewat DeleteDialog); archive = aset yang sudah diupload diarsipkan di Roblox */
@@ -135,5 +159,5 @@ export function useHistoryActions() {
     [apiKey, toast, t, f, refresh, errMsg],
   );
 
-  return { apiKey, checking, deleting, checkAll, publishing, publishMany, setPermission, upload, removeMany };
+  return { apiKey, checking, deleting, checkAll, publishing, publishMany, setPermission, upload, coverBusy, uploadCover, removeMany };
 }

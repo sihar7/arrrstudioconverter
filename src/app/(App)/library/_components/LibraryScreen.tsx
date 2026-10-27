@@ -20,7 +20,7 @@ import Button, { ButtonLink, buttonClass } from "@/components/ui/Button";
 import { inputClass } from "@/components/ui/Field";
 import { useLibrary } from "../_hooks/useLibrary";
 import { parseIds } from "../_service/library.service";
-import ExportDialog from "./ExportDialog";
+import ExportDialog from "@/components/shared/ExportDialog";
 import LibraryRow from "./LibraryRow";
 
 type LibFilter = "all" | "Approved" | "Reviewing" | "Rejected" | "archived";

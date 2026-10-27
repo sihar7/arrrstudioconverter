@@ -24,6 +24,16 @@ export interface RobloxRecord {
   checkedAt: number | null;
 }
 
+/**
+ * Cover lagu. url = cover album (iTunes), null = tidak ketemu → pakai thumbnail video.
+ * decalId/imageId = hasil upload sebagai Decal; imageId = ID gambar di baliknya (yang dipakai ImageLabel).
+ */
+export interface HistoryCover {
+  url: string | null;
+  decalId: string | null;
+  imageId: string | null;
+}
+
 export interface HistoryEntry {
   id: string;
   createdAt: number;
@@ -37,6 +47,7 @@ export interface HistoryEntry {
   fileId: string;
   fileExpiresAt: number;
   roblox: RobloxRecord | null;
+  cover?: HistoryCover | null;
 }
 
 export interface HistoryItem extends HistoryEntry {
