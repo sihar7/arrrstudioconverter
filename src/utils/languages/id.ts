@@ -193,6 +193,7 @@ const id = {
     sub: "Konversi YouTube ke MP3, OGG, WAV, atau FLAC dengan kualitas studio. Sesuaikan tempo, nada, dan efek, lalu publikasikan ke Roblox beserta izin place — dalam satu alur kerja, tanpa membuka Studio.",
     ctaStart: "Mulai sekarang",
     ctaLogin: "Masuk dengan Discord",
+    ctaYoutube: "Cari lagu di YouTube",
     scroll: "Gulir",
     numbers: [
       { value: "5", label: "Format output" },

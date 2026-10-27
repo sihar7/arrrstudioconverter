@@ -6,6 +6,8 @@ import { useT } from "@/hooks/useT";
 import { ButtonLink } from "@/components/ui/Button";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getDesktop } from "@/type/desktop";
+import { useMeQuery } from "@/store/api/baseApi";
+import { SfPlayRect } from "@/components/icons/SfIcons";
 
 /**
  * Hero sinematik: permukaan forged penuh disorot lampu studio (kanan atas + mengikuti kursor),
@@ -16,6 +18,8 @@ export default function Hero() {
   const l = t.landing;
   const hydrated = useHydrated();
   const inDesktop = hydrated && Boolean(getDesktop());
+  // Sudah login → tombol kedua bukan "Masuk", tapi jalan pintas ke YouTube
+  const { data: me } = useMeQuery();
   return (
     <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
       {/* Material + cahaya (dekoratif) */}
@@ -50,9 +54,15 @@ export default function Hero() {
           <ButtonLink href="/converter" variant="primary" size="lg" iconRight={<ArrowRight width={16} height={16} />}>
             {l.ctaStart}
           </ButtonLink>
-          <ButtonLink href="/login" variant="ghost" size="lg" icon={<Discord width={18} height={18} />}>
-            {l.ctaLogin}
-          </ButtonLink>
+          {me?.user ? (
+            <ButtonLink href="/youtube" variant="ghost" size="lg" icon={<SfPlayRect size={18} />}>
+              {l.ctaYoutube}
+            </ButtonLink>
+          ) : (
+            <ButtonLink href="/login" variant="ghost" size="lg" icon={<Discord width={18} height={18} />}>
+              {l.ctaLogin}
+            </ButtonLink>
+          )}
         </div>
 
         {/* Alur singkat — user langsung tahu 3 langkahnya sebelum mulai */}

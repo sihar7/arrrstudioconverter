@@ -375,6 +375,7 @@ export function Compare() {
 /** CTA penutup di atas forged yang disorot */
 export function CtaBand() {
   const { t } = useT();
+  const { data: me } = useMeQuery();
   return (
     <section className="relative isolate overflow-hidden border-t border-line/60">
       <div aria-hidden="true" className="absolute inset-0 -z-10">
@@ -393,8 +394,8 @@ export function CtaBand() {
           <ButtonLink href="/converter" variant="primary" size="lg" iconRight={<ArrowRight width={16} height={16} />}>
             {t.landing.ctaStart}
           </ButtonLink>
-          <ButtonLink href="/login" variant="ghost" size="lg">
-            {t.landing.ctaLogin}
+          <ButtonLink href={me?.user ? "/youtube" : "/login"} variant="ghost" size="lg">
+            {me?.user ? t.landing.ctaYoutube : t.landing.ctaLogin}
           </ButtonLink>
         </div>
       </div>

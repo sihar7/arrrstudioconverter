@@ -194,6 +194,7 @@ const en: Dictionary = {
     sub: "Convert YouTube to MP3, OGG, WAV, or FLAC at studio quality. Fine-tune tempo, pitch, and effects, then publish to Roblox with place permissions — one workflow, no Studio required.",
     ctaStart: "Get started",
     ctaLogin: "Sign in with Discord",
+    ctaYoutube: "Search songs on YouTube",
     scroll: "Scroll",
     numbers: [
       { value: "5", label: "Output formats" },
