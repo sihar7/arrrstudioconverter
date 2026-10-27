@@ -936,3 +936,101 @@ body::before {
     translate: 0 -5px;
   }
 }
+
+/* ============================================================
+   KULIT APP DESKTOP — studio audio (sidebar · LCD · palette · deck toast)
+   ============================================================ */
+
+/* Sidebar: satu tingkat di atas kanvas (source list macOS) — dibedakan lewat tone, garis kanan tipis */
+.side-glass {
+  background: color-mix(in oklab, var(--surface) 72%, var(--bg));
+}
+html[data-theme="light"] .side-glass {
+  background: #e9e9ee;
+}
+
+/* "LCD" transport (acuan layar Logic Pro): panel cekung, angka monospace, garis progres di dasar */
+.lcd {
+  background: color-mix(in oklab, var(--bg) 70%, black);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.45),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.05),
+    0 0.5px 0 rgb(255 255 255 / 0.04);
+}
+.lcd:hover {
+  background: color-mix(in oklab, var(--bg) 80%, black);
+}
+html[data-theme="light"] .lcd {
+  background: #f4f4f6;
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.08),
+    inset 0 0 0 0.5px rgb(0 0 0 / 0.08);
+}
+html[data-theme="light"] .lcd:hover {
+  background: #efeff2;
+}
+
+/* Command palette: turun sedikit + membesar dari 0.97 (Spotlight) */
+.palette-in {
+  animation: palette-in 0.32s var(--spring) both;
+}
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+/* Deck toast: kartu bertumpuk (yang terbaru di depan), terbuka penuh saat hover/fokus */
+.toast-card {
+  transition:
+    transform 0.42s var(--spring),
+    opacity 0.3s var(--ease);
+}
+.toast-enter {
+  animation: toast-enter 0.5s var(--spring) both;
+}
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+    scale: 0.94;
+  }
+}
+
+/* Layout studio (Converter di app desktop): inspector = panel penuh menempel di tepi kanan jendela,
+   area kerja satu kolom di kirinya. Jendela sempit → kembali ke tumpukan biasa. */
+@media (min-width: 1080px) {
+  html[data-shell="desktop"] .studio {
+    padding-right: calc(var(--insp-w) - 8px);
+  }
+  html[data-shell="desktop"] .studio-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  html[data-shell="desktop"] .inspector {
+    position: fixed;
+    top: var(--bar-h);
+    right: 0;
+    bottom: var(--dock-h);
+    z-index: 30;
+    width: var(--insp-w);
+    overflow: hidden;
+    border-left: 1px solid var(--hairline);
+    background: color-mix(in oklab, var(--surface) 72%, var(--bg));
+  }
+  html[data-theme="light"][data-shell="desktop"] .inspector {
+    background: #f6f6f8;
+  }
+  /* Panel pengaturan mengisi tinggi inspector; kepala & tab tetap, isi tab yang scroll */
+  html[data-shell="desktop"] .inspector > .mat {
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}

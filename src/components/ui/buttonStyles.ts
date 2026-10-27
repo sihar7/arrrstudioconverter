@@ -5,9 +5,10 @@ export type Variant = "primary" | "tonal" | "ghost" | "subtle" | "danger" | "inv
 export type Size = "sm" | "md" | "lg";
 
 // Gaya iOS: kapsul, teks kalimat biasa (bukan kapital), isi tonal alih-alih garis tepi.
+// App desktop (desk:): kontrol app pro — persegi membulat 8px, lebih rapat, teks 13px.
 // primary = isi aksen · tonal = isi abu sistem · ghost = abu tipis · subtle = teks · danger = merah tonal · inverse
 const base =
-  "state-layer ios-press relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent font-semibold tracking-[-0.01em] disabled:pointer-events-none disabled:opacity-40 cursor-pointer [&_svg]:transition-transform [&_svg:last-child]:duration-300 hover:[&_svg:last-child:not(:first-child)]:translate-x-0.5";
+  "state-layer ios-press relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent font-semibold tracking-[-0.01em] disabled:pointer-events-none disabled:opacity-40 cursor-pointer [&_svg]:transition-transform [&_svg:last-child]:duration-300 hover:[&_svg:last-child:not(:first-child)]:translate-x-0.5 desk:rounded-[8px] desk:tracking-[-0.005em]";
 
 const variants: Record<Variant, string> = {
   primary: "bg-accent text-on-accent hover:bg-accent-strong",
@@ -19,9 +20,9 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-9 px-4 text-[13.5px] [&_svg]:size-4",
-  md: "h-11 px-5 text-[15px] [&_svg]:size-[18px]",
-  lg: "h-[52px] px-7 text-[16px] [&_svg]:size-5",
+  sm: "h-9 px-4 text-[13.5px] [&_svg]:size-4 desk:h-8 desk:gap-1.5 desk:px-3 desk:text-[12.5px] desk:[&_svg]:size-[15px]",
+  md: "h-11 px-5 text-[15px] [&_svg]:size-[18px] desk:h-9 desk:px-4 desk:text-[13px] desk:[&_svg]:size-4",
+  lg: "h-[52px] px-7 text-[16px] [&_svg]:size-5 desk:h-11 desk:px-6 desk:text-[14px] desk:[&_svg]:size-[18px]",
 };
 
 export function buttonClass(variant: Variant = "ghost", size: Size = "md", className?: string) {

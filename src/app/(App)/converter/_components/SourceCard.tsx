@@ -71,7 +71,7 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
         }}
       >
         {/* Kepala: judul langkah + opsi auto-convert */}
-        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-line/70 px-5">
+        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-line/70 px-5 desk:hidden">
           <label htmlFor="source-input" className="flex items-center gap-3 whitespace-nowrap font-display text-[17px] font-semibold text-fg">
             <span aria-hidden="true" className="grid size-6 place-items-center rounded-full bg-fg/[0.08] text-[12px] font-semibold tabular-nums text-fg-2">
               1
@@ -94,7 +94,7 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
           </button>
         </div>
 
-        <div className="p-4 sm:p-5">
+        <div className="p-4 sm:p-5 desk:p-2.5">
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -108,17 +108,18 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
               if (text) append(text);
             }}
             className={cn(
-              "group relative rounded border bg-bg/60 transition-[border-color,box-shadow,background-color] duration-200",
+              "group relative rounded border bg-bg/60 transition-[border-color,box-shadow,background-color] duration-200 desk:rounded-[10px] desk:border-transparent desk:bg-transparent desk:focus-within:shadow-none",
               "focus-within:border-fg-3 focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_16%,transparent)]",
               src.error ? "border-err" : drag ? "border-accent bg-accent/[0.06]" : "border-line hover:border-line-2",
             )}
           >
-            <div className="flex items-start gap-3 px-4 pt-3.5">
+            <div className="flex items-start gap-3 px-4 pt-3.5 desk:px-3 desk:pt-2.5">
               <LinkIcon width={18} height={18} aria-hidden="true" className="mt-[3px] shrink-0 text-fg-3 transition-colors group-focus-within:text-fg" />
               <textarea
                 ref={ref}
                 id="source-input"
                 aria-describedby="source-status"
+                aria-label={c.composerTitle}
                 aria-invalid={Boolean(src.error)}
                 rows={2}
                 value={src.value}
@@ -135,7 +136,7 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
                 placeholder={drag ? c.dropHere : c.sourcePlaceholder}
                 spellCheck={false}
                 autoComplete="off"
-                className="thin-scroll max-h-40 min-h-12 w-full flex-1 resize-none bg-transparent text-[15px] leading-6 text-fg [field-sizing:content] placeholder:text-fg-3"
+                className="thin-scroll max-h-40 min-h-12 w-full flex-1 resize-none bg-transparent text-[15px] leading-6 text-fg [field-sizing:content] placeholder:text-fg-3 desk:min-h-6 desk:text-[14px]"
                 // Cincin fokus ada di wadah (focus-within) — outline global ditimpa agar tidak dobel
                 style={{ outline: "none" }}
               />
@@ -145,7 +146,7 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
             </div>
 
             {/* Deteksi langsung: tiap link jadi chip */}
-            <div id="source-status" aria-live="polite" className="px-4 pb-1 pt-2">
+            <div id="source-status" aria-live="polite" className="px-4 pb-1 pt-2 desk:px-3 desk:pt-1.5">
               {src.error ? (
                 <p className="pb-2 text-[13px] text-err" role="alert">
                   {src.error}
@@ -160,12 +161,27 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
                   )}
                 </ul>
               ) : (
-                <p className="pb-2 text-[13px] leading-relaxed text-fg-3">{c.sourceHelp}</p>
+                <p className="pb-2 text-[13px] leading-relaxed text-fg-3 desk:pb-1 desk:text-[12px]">{c.sourceHelp}</p>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line/60 px-3 py-3 sm:pl-4">
-              <p className="hidden items-center gap-1.5 text-[12px] text-fg-3 md:flex">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line/60 px-3 py-3 sm:pl-4 desk:border-[var(--hairline)] desk:px-2 desk:py-2">
+              {/* App desktop: opsi langsung convert di baris aksi (kepala kartu disembunyikan) */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoConvert}
+                title={c.autoConvertHint}
+                onClick={() => dispatch(setAutoConvert(!autoConvert))}
+                className={cn(
+                  "group hidden h-8 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[8px] px-2 text-[12.5px] font-medium transition-colors hover:bg-fg/[0.05] desk:inline-flex",
+                  autoConvert ? "text-fg" : "text-fg-2 hover:text-fg",
+                )}
+              >
+                <SwitchTrack on={autoConvert} size="sm" />
+                {c.autoConvert}
+              </button>
+              <p className="hidden items-center gap-1.5 text-[12px] text-fg-3 md:flex desk:!hidden">
                 <Kbd>Enter</Kbd> {c.add.toLowerCase()} <span className="mx-1 text-line-2">·</span>
                 <Kbd>Ctrl</Kbd>
                 <Kbd>V</Kbd> {c.pasteAnywhere.replace(/^Ctrl\+V\s*/, "")}

@@ -48,7 +48,8 @@ export function QuotaPill() {
   );
 }
 
-export default function UserMenu() {
+/** placement "up" + full = baris akun di dasar sidebar app desktop (menu membuka ke atas) */
+export default function UserMenu({ placement = "down", full = false }: { placement?: "down" | "up"; full?: boolean } = {}) {
   const { data, isLoading } = useMeQuery();
   const [logout] = useLogoutMutation();
   const [open, setOpen] = useState(false);
@@ -68,10 +69,10 @@ export default function UserMenu() {
     };
   }, [open]);
 
-  if (isLoading) return <Skeleton className="h-10 w-20 rounded-full" />;
+  if (isLoading) return <Skeleton className={cn("h-10 rounded-full", full ? "w-full" : "w-20")} />;
   if (!data?.user) {
     return (
-      <ButtonLink href="/login" variant="ghost" size="sm">
+      <ButtonLink href="/login" variant="ghost" size="sm" className={cn(full && "w-full")}>
         {t.nav.login}
       </ButtonLink>
     );
@@ -89,18 +90,32 @@ export default function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "state-layer flex h-10 cursor-pointer items-center gap-2 rounded-s pl-1 pr-2.5 transition-colors",
+          full && "h-11 w-full gap-2.5 rounded-[10px] pl-1.5 text-left",
+          !full && placement === "up" && "mx-auto pr-1",
           open && "bg-raised",
         )}
       >
         <Avatar src={u.avatarUrl} name={u.displayName} size={32} />
-        <span className="hidden max-w-[120px] truncate text-[13px] font-semibold xl:block">{u.displayName}</span>
-        <NavArrowDown width={14} height={14} className={cn("text-fg-3 transition-transform", open && "rotate-180")} />
+        {full ? (
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="block truncate text-[13px] font-semibold">{u.displayName}</span>
+            <span className="block truncate text-[11.5px] text-fg-3">{t.plan.names[(data.plan ?? { id: "free" as const }).id]}</span>
+          </span>
+        ) : placement === "down" ? (
+          <span className="hidden max-w-[120px] truncate text-[13px] font-semibold xl:block">{u.displayName}</span>
+        ) : null}
+        {(full || placement === "down") && (
+          <NavArrowDown width={14} height={14} className={cn("shrink-0 text-fg-3 transition-transform", (placement === "up") !== open && "rotate-180")} />
+        )}
       </button>
       <div
         role="menu"
         data-open={open}
-        style={{ "--origin": "top right" } as CSSProperties}
-        className="ios-pop mat absolute right-0 top-[calc(100%+10px)] z-[60] w-64 rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]"
+        style={{ "--origin": placement === "up" ? "bottom left" : "top right" } as CSSProperties}
+        className={cn(
+          "ios-pop mat absolute z-[60] w-64 rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]",
+          placement === "up" ? "bottom-[calc(100%+8px)] left-0" : "right-0 top-[calc(100%+10px)]",
+        )}
       >
         <div className="flex items-center gap-3 px-3 py-2.5">
           <Avatar src={u.avatarUrl} name={u.displayName} size={36} />

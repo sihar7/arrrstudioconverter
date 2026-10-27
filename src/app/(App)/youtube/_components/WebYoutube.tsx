@@ -13,6 +13,7 @@ import { useQuickAdd } from "../_hooks/useQuickAdd";
 import { useYoutubeSearch } from "../_hooks/useYoutubeSearch";
 import type { SearchVideo } from "../_types/youtube.type";
 import { extractLinks } from "../../converter/_utils/helpers";
+import { YT_SEARCH_EVENT } from "../../layout/desktop/nav";
 
 /**
  * YouTube versi web: YouTube melarang situsnya ditanam (iframe youtube.com diblokir), jadi web memakai
@@ -41,12 +42,29 @@ export default function WebYoutube() {
     observer.current.observe(el);
   }, []);
 
-  // Hasil awal: pilihan cepat pertama
+  // Hasil awal: ?q= (dari command palette app desktop) atau pilihan cepat pertama
   useEffect(() => {
-    void search(t.youtube.chips[0]);
+    const q = new URLSearchParams(window.location.search).get("q")?.trim();
+    // URL baru bisa dibaca setelah hydrate (halaman statis) → sekali saat mount, bukan state turunan
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (q) setInput(q);
+    void search(q || t.youtube.chips[0]);
     // hanya sekali saat halaman dibuka
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Palette dipakai saat halaman ini sudah terbuka → cari tanpa navigasi ulang
+  useEffect(() => {
+    const onSearch = (e: Event) => {
+      const q = String((e as CustomEvent<string>).detail ?? "").trim();
+      if (!q) return;
+      setInput(q);
+      void search(q);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener(YT_SEARCH_EVENT, onSearch);
+    return () => window.removeEventListener(YT_SEARCH_EVENT, onSearch);
+  }, [search]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -60,10 +78,10 @@ export default function WebYoutube() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 desk:gap-5">
       <PageHeader eyebrow={y.eyebrow} title={y.title} sub={y.sub} />
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 desk:gap-3">
         <form onSubmit={submit} className="flex gap-2">
           <label className="relative flex-1">
             <span className="sr-only">{y.search}</span>
@@ -73,10 +91,10 @@ export default function WebYoutube() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={y.placeholder}
-              className="h-12 w-full rounded-full border border-line/70 bg-surface pl-11 pr-4 text-[15px] outline-none transition-colors placeholder:text-fg-3 focus:border-line-2"
+              className="h-12 w-full rounded-full border border-line/70 bg-surface pl-11 pr-4 text-[15px] outline-none transition-colors placeholder:text-fg-3 focus:border-line-2 desk:h-10 desk:rounded-[10px] desk:border-[var(--hairline)] desk:bg-fg/[0.05] desk:pl-10 desk:text-[13.5px] desk:focus:border-accent/60 desk:focus:bg-transparent"
             />
           </label>
-          <Button type="submit" variant="primary" loading={busy} className="h-12 px-6">
+          <Button type="submit" variant="primary" loading={busy} className="h-12 px-6 desk:h-10 desk:px-5">
             {y.search}
           </Button>
         </form>
@@ -93,7 +111,7 @@ export default function WebYoutube() {
                 }}
                 aria-pressed={on}
                 className={cn(
-                  "ios-press h-9 cursor-pointer rounded-full px-4 text-[13.5px] font-medium transition-colors",
+                  "ios-press h-9 cursor-pointer rounded-full px-4 text-[13.5px] font-medium transition-colors desk:h-7 desk:rounded-[7px] desk:px-3 desk:text-[12.5px]",
                   on ? "bg-fg text-bg" : "bg-fg/[0.07] text-fg-2 hover:bg-fg/[0.12] hover:text-fg",
                 )}
               >
@@ -148,9 +166,9 @@ export default function WebYoutube() {
       )}
 
       <section aria-busy={loading} className="flex flex-col gap-5">
-        {query && !loading && <h2 className="text-[15px] font-semibold text-fg-2">{f(items.length ? y.results : y.empty, { q: query })}</h2>}
+        {query && !loading && <h2 className="text-[15px] font-semibold text-fg-2 desk:text-[13px]">{f(items.length ? y.results : y.empty, { q: query })}</h2>}
         {error && <p className="text-[14px] text-err">{error}</p>}
-        <ul className="grid gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <ul className="grid gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 desk:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] desk:gap-x-4 desk:gap-y-5">
           {loading
             ? <CardSkeletons count={8} />
             : items.map((v, i) => (
@@ -207,7 +225,7 @@ function ResultCard({ video, index, active, onPlay, onAdd }: { video: SearchVide
         onClick={onPlay}
         aria-label={`${y.play}: ${video.title}`}
         className={cn(
-          "group relative aspect-video w-full cursor-pointer overflow-hidden rounded bg-raised transition-transform duration-150 active:scale-[0.98]",
+          "group relative aspect-video w-full cursor-pointer overflow-hidden rounded bg-raised transition-transform duration-150 active:scale-[0.98] desk:rounded-[10px]",
           active && "ring-2 ring-fg ring-offset-2 ring-offset-bg",
         )}
       >
@@ -226,10 +244,10 @@ function ResultCard({ video, index, active, onPlay, onAdd }: { video: SearchVide
       </button>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-[14px] font-semibold leading-snug [overflow-wrap:anywhere]" title={video.title}>
+          <p className="line-clamp-2 text-[14px] font-semibold leading-snug [overflow-wrap:anywhere] desk:text-[13px]" title={video.title}>
             {video.title}
           </p>
-          <p className="mt-1 truncate text-[12.5px] text-fg-3">{[video.author, video.views, video.published].filter(Boolean).join(" · ")}</p>
+          <p className="mt-1 truncate text-[12.5px] text-fg-3 desk:text-[11.5px]">{[video.author, video.views, video.published].filter(Boolean).join(" · ")}</p>
         </div>
         <IconButton size="sm" label={y.add} icon={<Plus width={18} height={18} strokeWidth={2.2} />} onClick={onAdd} className="-mt-1 bg-fg/[0.07] hover:bg-fg/[0.12]" />
       </div>

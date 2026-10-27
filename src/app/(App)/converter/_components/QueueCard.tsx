@@ -24,7 +24,7 @@ const matches = (i: QueueItem, f: Filter) =>
 
 interface Props {
   playing: string | null;
-  onTogglePlay: (fileId: string) => void;
+  onTogglePlay: (item: QueueItem) => void;
   onUpload: (item: QueueItem) => void;
   blockReason: (item: QueueItem) => UploadBlock;
   /** Item siap upload massal (urut antrean) */
@@ -279,7 +279,7 @@ export default function QueueCard({
                   onConvert={() => dispatch(enqueue([item.key]))}
                   onRemove={() => dispatch(removeItem(item.key))}
                   onMove={(dir) => dispatch(moveItem({ key: item.key, dir }))}
-                  onTogglePlay={() => item.result && onTogglePlay(item.result.fileId)}
+                  onTogglePlay={() => onTogglePlay(item)}
                   onUpload={() => onUpload(item)}
                 />
               );

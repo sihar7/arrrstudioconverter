@@ -17,6 +17,8 @@
 /* App desktop (data-shell="desktop" di <html>, dipasang skrip head sebelum paint): kulit aplikasi —
    title bar + bottom bar sendiri, tanpa navbar/tab bar/footer web. Didefinisikan SETELAH tabless supaya menang. */
 @custom-variant desk (&:where([data-shell="desktop"], [data-shell="desktop"] *));
+/* Sidebar app desktop mode rail (ikon saja): <html data-side="rail"> — jendela sempit atau diciutkan user */
+@custom-variant rail (&:where([data-side="rail"] *));
 /* macOS dengan title bar sendiri: tombol lampu lalu lintas ada di pojok kiri atas title bar */
 @custom-variant mac (&:where([data-titlebar="darwin"] *));
 
@@ -111,16 +113,30 @@ html.theme-switching *::after {
   }
 }
 
-/* ── Kulit app desktop (Electron) ─────────────────────────────────────────────────────────────
-   --bar-h  = tinggi title bar sendiri (tombol jendela Windows digambar Electron di atasnya, sama tinggi)
-   --dock-h = tinggi bottom bar navigasi (menempel di tepi bawah jendela)
+/* ── Kulit app desktop (Electron) — gaya studio audio ─────────────────────────────────────────
+   --side-w = lebar sidebar kiri (rail = ikon saja)
+   --bar-h  = tinggi toolbar di atas area kerja (tombol jendela Windows digambar Electron di atasnya, sama tinggi)
+   --dock-h = tinggi transport bar (mini-player · LCD antrean) di dasar area kerja
    --caption-w = ruang tombol jendela Windows di kanan (Window Controls Overlay; 0 di macOS/tanpa overlay) */
 html[data-shell="desktop"] {
-  --bar-h: 48px;
+  --side-w: 244px;
+  --insp-w: 348px;
+  --bar-h: 52px;
   --nav-h: var(--bar-h);
-  --dock-h: 60px;
+  --dock-h: 64px;
   --caption-w: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
   user-select: none;
+}
+/* App desktop: tipografi & kepadatan app pro (body 13.5px), kartu datar tanpa bayangan */
+html[data-shell="desktop"] body {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+html[data-shell="desktop"] .mat {
+  box-shadow: inset 0 0.5px 0 var(--mat-edge, transparent);
+}
+html[data-shell="desktop"][data-side="rail"] {
+  --side-w: 68px;
 }
 /* Teks konten tetap bisa diseleksi; yang tidak bisa hanya kerangka aplikasi (rasa native) */
 html[data-shell="desktop"] :is(main, [role="dialog"], [role="menu"], input, textarea) {

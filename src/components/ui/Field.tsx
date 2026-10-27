@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export const inputClass =
   // Field iOS: isi abu sistem tanpa garis; fokus = tepi aksen + cincin lembut
-  "h-12 w-full min-w-0 rounded border border-transparent bg-fg/[0.06] px-4 text-[15px] text-fg placeholder:text-fg-3 transition-[background-color,border-color,box-shadow] duration-200 hover:bg-fg/[0.08] focus:border-accent/70 focus:bg-transparent focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent)] focus:outline-none aria-[invalid=true]:border-err disabled:opacity-40";
+  "h-12 w-full min-w-0 rounded border border-transparent bg-fg/[0.06] px-4 text-[15px] text-fg placeholder:text-fg-3 transition-[background-color,border-color,box-shadow] duration-200 hover:bg-fg/[0.08] focus:border-accent/70 focus:bg-transparent focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent)] focus:outline-none aria-[invalid=true]:border-err disabled:opacity-40 desk:h-9 desk:rounded-[8px] desk:px-3 desk:text-[13.5px] desk:focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_18%,transparent)]";
 
 interface FieldProps {
   label: ReactNode;
@@ -20,9 +20,9 @@ export default function Field({ label, hint, error, className, aside, children }
   const hintId = hint ? `${id}-hint` : undefined;
   const errId = error ? `${id}-err` : undefined;
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
+    <div className={cn("flex flex-col gap-2 desk:gap-1.5", className)}>
       <div className="flex items-center justify-between gap-3">
-        <label htmlFor={id} className="text-[13px] font-semibold text-fg-2">
+        <label htmlFor={id} className="text-[13px] font-semibold text-fg-2 desk:text-[12px]">
           {label}
         </label>
         {aside}
@@ -33,7 +33,7 @@ export default function Field({ label, hint, error, className, aside, children }
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-[13px] leading-relaxed text-fg-3">
+        <p id={hintId} className="text-[13px] leading-relaxed text-fg-3 desk:text-[12px]">
           {hint}
         </p>
       ) : null}
@@ -46,7 +46,7 @@ export function Input({ className, ...rest }: ComponentProps<"input">) {
 }
 
 export function Textarea({ className, ...rest }: ComponentProps<"textarea">) {
-  return <textarea className={cn(inputClass, "h-auto min-h-24 resize-y py-3 leading-relaxed", className)} {...rest} />;
+  return <textarea className={cn(inputClass, "h-auto min-h-24 resize-y py-3 leading-relaxed desk:h-auto desk:min-h-20 desk:py-2", className)} {...rest} />;
 }
 
 export function Select({ className, children, ...rest }: ComponentProps<"select">) {

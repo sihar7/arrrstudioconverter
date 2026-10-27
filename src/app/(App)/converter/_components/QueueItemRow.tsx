@@ -55,7 +55,9 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
     <li
       className={cn(
         "group/row grid grid-cols-[96px_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-line/70 px-4 py-4 transition-colors duration-200 last:border-b-0 hover:bg-fg/[0.02] sm:grid-cols-[120px_minmax(0,1fr)_auto] sm:px-5",
-        selected && "bg-fg/[0.035]",
+        // App desktop: baris track list — cover kotak 44px, satu baris judul, aksi rata kanan
+        "desk:grid-cols-[44px_minmax(0,1fr)_auto] desk:items-center desk:gap-x-3 desk:gap-y-1 desk:border-[var(--hairline)] desk:px-4 desk:py-2.5 desk:hover:bg-fg/[0.035]",
+        selected && "bg-fg/[0.035] desk:bg-fg/[0.06]",
       )}
     >
       {/* Thumbnail (lazy) — pada item siap upload, cover = tombol pilih bernomor ala photo picker */}
@@ -65,7 +67,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
           aria-pressed={selected}
           aria-label={f(t.converter.pick, { title: item.title })}
           onClick={onSelect}
-          className="group/thumb relative aspect-video w-full cursor-pointer self-start overflow-hidden rounded-s bg-raised transition-transform duration-150 active:scale-[0.96]"
+          className="group/thumb relative aspect-video w-full cursor-pointer self-start overflow-hidden rounded-s bg-raised transition-transform duration-150 active:scale-[0.96] desk:aspect-square desk:self-center desk:rounded-[8px]"
         >
           <Image
             src={item.thumbnail}
@@ -75,7 +77,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
             unoptimized
             loading="lazy"
             className={cn(
-              "object-cover transition-[transform,filter] duration-300 ease-[var(--ease)]",
+              "object-cover transition-[transform,filter] duration-300 ease-[var(--ease)] desk:scale-[1.35]",
               selected ? "scale-[1.08] brightness-[0.42]" : "group-hover/thumb:brightness-[0.8]",
             )}
           />
@@ -83,14 +85,14 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
             <span
               key={selectIndex}
               aria-hidden="true"
-              className="pick-pop absolute inset-0 m-auto grid size-8 place-items-center rounded-full bg-accent font-mono text-[13px] font-semibold tabular-nums text-on-accent"
+              className="pick-pop absolute inset-0 m-auto grid size-8 place-items-center rounded-full bg-accent font-mono text-[13px] font-semibold tabular-nums text-on-accent desk:size-6 desk:text-[11.5px]"
             >
               {selectIndex}
             </span>
           ) : (
             <span
               aria-hidden="true"
-              className="absolute left-1.5 top-1.5 size-5 rounded-full border-[1.5px] border-white/90 bg-black/30 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/thumb:opacity-100 [@media(hover:hover)]:group-focus-visible/thumb:opacity-100"
+              className="absolute left-1.5 top-1.5 size-5 rounded-full border-[1.5px] border-white/90 bg-black/30 desk:inset-0 desk:m-auto desk:size-4 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/thumb:opacity-100 [@media(hover:hover)]:group-focus-visible/thumb:opacity-100"
             />
           )}
           {/* Penanda aktif = garis bawah (konvensi navbar) */}
@@ -101,21 +103,22 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
               selected ? "scale-x-100" : "scale-x-0",
             )}
           />
-          <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white">{formatDuration(outDur)}</span>
+          <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white desk:hidden">{formatDuration(outDur)}</span>
         </button>
       ) : (
-        <div className="relative aspect-video w-full self-start overflow-hidden rounded-s bg-raised">
-          <Image src={item.thumbnail} alt="" fill sizes="120px" unoptimized loading="lazy" className="object-cover" />
-          <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white">{formatDuration(outDur)}</span>
+        <div className="relative aspect-video w-full self-start overflow-hidden rounded-s bg-raised desk:aspect-square desk:self-center desk:rounded-[8px]">
+          <Image src={item.thumbnail} alt="" fill sizes="120px" unoptimized loading="lazy" className="object-cover desk:scale-[1.35]" />
+          <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white desk:hidden">{formatDuration(outDur)}</span>
         </div>
       )}
 
       {/* Info + status */}
       <div className="min-w-0">
-        <p className="line-clamp-2 text-[14.5px] font-semibold leading-snug [overflow-wrap:anywhere]" title={item.title}>
+        <p className="line-clamp-2 text-[14.5px] font-semibold leading-snug [overflow-wrap:anywhere] desk:line-clamp-1 desk:text-[13.5px]" title={item.title}>
           {item.title}
         </p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-fg-3">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-fg-3 desk:mt-0.5 desk:text-[12px]">
+          <span className="hidden font-mono tabular-nums desk:inline">{formatDuration(outDur)}</span>
           {(item.artist ?? item.author) && (
             <span className="truncate" title={[item.artist ?? item.author, item.album].filter(Boolean).join(" · ")}>
               {[item.artist ?? item.author, item.album].filter(Boolean).join(" · ")}
@@ -134,7 +137,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
           {chips.length > 0 && <span className="font-mono text-[11.5px] text-fg-2">{chips.join("  ·  ")}</span>}
         </div>
 
-        <div className="mt-2.5">
+        <div className="mt-2.5 desk:mt-1 desk:empty:hidden">
           {running && <RunningStatus item={item} />}
           {item.status === "error" && (
             <p className="flex items-start gap-1.5 text-[13px] text-err" role="alert">
@@ -210,7 +213,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
       </div>
 
       {/* Aksi */}
-      <div className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 sm:col-span-1 sm:flex-nowrap sm:self-center">
+      <div className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 sm:col-span-1 sm:flex-nowrap sm:self-center desk:col-span-1 desk:row-start-1 desk:col-start-3 desk:flex-nowrap desk:gap-1">
         {/* Urutan proses — hanya untuk yang belum dikirim; di desktop muncul saat hover baris */}
         {item.status === "idle" && (canMoveUp || canMoveDown) && (
           <span className="mr-auto flex sm:mr-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:transition-opacity [@media(hover:hover)]:group-focus-within/row:opacity-100 [@media(hover:hover)]:group-hover/row:opacity-100">
@@ -241,7 +244,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
               download
               aria-label={t.common.download}
               title={t.common.download}
-              className="inline-flex size-10 items-center justify-center rounded-s text-fg-2 transition-colors hover:bg-hover hover:text-fg"
+              className="inline-flex size-10 items-center justify-center rounded-s text-fg-2 transition-colors hover:bg-hover hover:text-fg desk:size-8 desk:rounded-[8px]"
             >
               <Download width={18} height={18} />
             </a>

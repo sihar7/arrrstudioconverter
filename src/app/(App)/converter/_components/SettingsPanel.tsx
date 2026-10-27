@@ -113,8 +113,10 @@ function PresetTile({
         disabled={Boolean(locked)}
         className={cn(
           "state-layer relative flex h-[60px] w-full cursor-pointer flex-col items-start justify-center overflow-hidden rounded-s border px-3 text-left transition-[border-color,background-color,transform] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100",
-          active ? "border-fg-3 bg-raised" : "border-line hover:border-line-2",
-          locked && "border-dashed hover:border-line",
+          // App desktop: ubin tonal tanpa garis; aktif = isi lebih terang + cincin tipis
+          "desk:h-[52px] desk:rounded-[10px] desk:border-transparent",
+          active ? "border-fg-3 bg-raised desk:bg-fg/[0.13] desk:ring-1 desk:ring-inset desk:ring-fg/25" : "border-line hover:border-line-2 desk:bg-fg/[0.05] desk:hover:bg-fg/[0.08]",
+          locked && "border-dashed hover:border-line desk:border-line desk:bg-transparent",
           onDelete && "pr-9",
         )}
       >
@@ -132,7 +134,7 @@ function PresetTile({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent transition-transform duration-300 ease-[var(--ease)]",
+            "absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent transition-transform duration-300 ease-[var(--ease)] desk:hidden",
             active ? "scale-x-100" : "scale-x-0",
           )}
         />
@@ -257,7 +259,7 @@ export default function SettingsPanel() {
       />
 
       {/* Ringkasan setelan aktif — selalu terlihat apa pun tab-nya */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-line/70 px-5 py-3" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-line/70 px-5 py-3 desk:border-[var(--hairline)] desk:px-4 desk:py-2.5" aria-live="polite">
         <span className="inline-flex h-7 items-center rounded-xs bg-accent px-2 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-on-accent">
           {presetLabel ?? c.modified}
         </span>
@@ -282,8 +284,13 @@ export default function SettingsPanel() {
         </button>
       </div>
 
-      {/* Tab — aktif = garis bawah (konvensi navbar) */}
-      <div role="tablist" aria-label={c.guide[1].title} onKeyDown={onTabKey} className="grid grid-cols-5 border-b border-line/70 px-2">
+      {/* Tab — aktif = garis bawah (konvensi navbar). App desktop: segmented ala inspector Logic Pro */}
+      <div
+        role="tablist"
+        aria-label={c.guide[1].title}
+        onKeyDown={onTabKey}
+        className="grid grid-cols-5 border-b border-line/70 px-2 desk:mx-4 desk:mt-3 desk:gap-0.5 desk:rounded-[8px] desk:border-0 desk:bg-fg/[0.07] desk:p-[2px]"
+      >
         {TABS.map((id, i) => (
           <button
             key={id}
@@ -298,15 +305,15 @@ export default function SettingsPanel() {
             tabIndex={tab === id ? 0 : -1}
             onClick={() => setTab(id)}
             className={cn(
-              "state-layer relative h-12 cursor-pointer truncate px-1 text-[12.5px] font-semibold transition-colors duration-200",
-              tab === id ? "text-fg" : "text-fg-3 hover:text-fg-2",
+              "state-layer relative h-12 cursor-pointer truncate px-1 text-[12.5px] font-semibold transition-colors duration-200 desk:h-7 desk:rounded-[6px] desk:text-[12px]",
+              tab === id ? "text-fg desk:bg-[var(--seg-thumb)] desk:shadow-[0_1px_2px_rgb(0_0_0/0.2)]" : "text-fg-3 hover:text-fg-2",
             )}
           >
             {c.tabs[id]}
             <span
               aria-hidden="true"
               className={cn(
-                "absolute inset-x-2 bottom-0 h-0.5 origin-center bg-accent transition-transform duration-300 ease-[var(--ease)]",
+                "absolute inset-x-2 bottom-0 h-0.5 origin-center bg-accent transition-transform duration-300 ease-[var(--ease)] desk:hidden",
                 tab === id ? "scale-x-100" : "scale-x-0",
               )}
             />
@@ -314,7 +321,7 @@ export default function SettingsPanel() {
         ))}
       </div>
 
-      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} key={tab} className="thin-scroll fade-swap flex min-h-[300px] flex-1 flex-col gap-6 overflow-y-auto p-5">
+      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} key={tab} className="thin-scroll fade-swap flex min-h-[300px] flex-1 flex-col gap-6 overflow-y-auto p-5 desk:min-h-0 desk:gap-5 desk:p-4">
         {tab === "preset" && (
           <>
             <div className="grid grid-cols-2 gap-2" role="group" aria-label={p.presets}>

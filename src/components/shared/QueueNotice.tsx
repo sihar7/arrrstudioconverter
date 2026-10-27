@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Check, NavArrowRight, Xmark } from "iconoir-react";
@@ -15,7 +15,7 @@ const SHOW_MS = 5500;
  * Popup kanan bawah setelah lagu dikirim ke antrean: cover + judul + artis, klik → halaman Converter.
  * Tambahan beruntun memperbarui popup yang sama (+N lagu lain) dan mengulang timer; hover/fokus menjeda timer.
  */
-export default function QueueNotice() {
+export default function QueueNotice({ paused }: { paused: boolean }) {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const { t, f } = useT();
@@ -24,7 +24,6 @@ export default function QueueNotice() {
   const lastKey = notice?.keys.at(-1);
   const item = useAppSelector((s) => s.converter.items.find((i) => i.key === lastKey));
   const queued = useAppSelector((s) => s.converter.items.filter((i) => i.status !== "done").length);
-  const [paused, setPaused] = useState(false);
   const left = useRef(SHOW_MS);
   const close = useCallback(() => dispatch(dismissQueueNotice()), [dispatch]);
 
@@ -55,11 +54,7 @@ export default function QueueNotice() {
   return (
     <div
       key={notice.stamp}
-      className="group/qn rise pointer-events-auto relative w-full overflow-hidden rounded border border-line-2 bg-raised shadow-[var(--shadow)]"
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      className="group/qn relative w-full overflow-hidden rounded-[14px] border border-line/60 bg-raised/95 shadow-[0_12px_40px_-12px_rgb(0_0_0/0.5),inset_0_0.5px_0_rgb(255_255_255/0.06)] backdrop-blur-xl light:bg-white/95 light:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.22),0_0_0_0.5px_rgb(0_0_0/0.06)]"
     >
       <Link
         href="/converter"

@@ -104,17 +104,31 @@ export default function ConverterScreen() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader eyebrow={t.converter.eyebrow} title={t.converter.title} sub={t.converter.sub} actions={<StepGuide />} />
+    // .studio = layout app desktop: area kerja + inspector menempel di tepi kanan jendela (css › KULIT APP DESKTOP)
+    <div className="studio flex flex-col gap-6 desk:gap-4">
+      <PageHeader
+        eyebrow={t.converter.eyebrow}
+        title={t.converter.title}
+        sub={t.converter.sub}
+        actions={
+          <div className="desk:hidden">
+            <StepGuide />
+          </div>
+        }
+      />
 
-      <StatsBar />
+      {/* App desktop: ringkasan sudah ada di LCD transport bar & badge sidebar */}
+      <div className="desk:hidden">
+        <StatsBar />
+      </div>
 
-      {/* Mobile: sumber → pengaturan → antrean. Desktop: pengaturan di kolom kanan (sticky). */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] lg:grid-rows-[auto_1fr]">
+      {/* Mobile: sumber → pengaturan → antrean. Web lebar: pengaturan di kolom kanan (sticky). App desktop: inspector. */}
+      <div className="studio-grid grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] lg:grid-rows-[auto_1fr]">
         <div id={STEP_TARGETS[0]} className="min-w-0 scroll-mt-28 lg:col-start-1">
           <SourceCard ref={inputRef} src={src} />
         </div>
-        <div id={STEP_TARGETS[1]} className="min-w-0 scroll-mt-28 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        {/* App desktop: inspector — panel penuh di tepi kanan, scroll sendiri di antara toolbar & transport bar */}
+        <div id={STEP_TARGETS[1]} className="inspector thin-scroll min-w-0 scroll-mt-28 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1">
           <SettingsPanel />
         </div>
         <div id={STEP_TARGETS[2]} className="min-w-0 scroll-mt-28 lg:col-start-1">

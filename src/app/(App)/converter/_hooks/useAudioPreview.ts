@@ -1,41 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { fileUrl } from "../_service/converter.service";
+import { useCallback, useEffect } from "react";
+import { previewPlayer, usePreview } from "@/lib/previewPlayer";
+import { getDesktop } from "@/type/desktop";
+import type { QueueItem } from "@/store/slices/converterSlice";
 
-/** Satu elemen audio bersama untuk preview hasil (hanya satu yang diputar) */
+/**
+ * Preview hasil lewat pemutar bersama (lib/previewPlayer). Web: berhenti saat keluar dari Converter.
+ * App desktop: tetap diputar & dikendalikan dari mini-player di transport bar.
+ */
 export function useAudioPreview() {
-  const audio = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState<string | null>(null);
+  const { track, playing } = usePreview();
 
-  useEffect(() => {
-    return () => {
-      audio.current?.pause();
-      if (audio.current) audio.current.src = "";
-      audio.current = null;
-    };
+  useEffect(() => () => void (!getDesktop() && previewPlayer.stop()), []);
+
+  const toggle = useCallback((item: QueueItem) => {
+    if (!item.result) return;
+    previewPlayer.toggle({ fileId: item.result.fileId, title: item.title, artist: item.artist ?? item.author, cover: item.cover ?? item.thumbnail, duration: item.result.duration });
   }, []);
 
-  const toggle = useCallback(
-    (fileId: string) => {
-      if (!audio.current) {
-        audio.current = new Audio();
-        audio.current.preload = "none";
-        audio.current.addEventListener("ended", () => setPlaying(null));
-        audio.current.addEventListener("error", () => setPlaying(null));
-      }
-      const a = audio.current;
-      if (playing === fileId) {
-        a.pause();
-        setPlaying(null);
-        return;
-      }
-      a.src = fileUrl(fileId);
-      void a.play().catch(() => setPlaying(null));
-      setPlaying(fileId);
-    },
-    [playing],
-  );
-
-  return { playing, toggle };
+  return { playing: playing ? (track?.fileId ?? null) : null, toggle };
 }

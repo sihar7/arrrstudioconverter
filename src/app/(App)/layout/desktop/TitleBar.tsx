@@ -3,13 +3,12 @@
 import { useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NavArrowLeft, NavArrowRight } from "iconoir-react";
-import UserMenu from "@/components/shared/UserMenu";
-import { LogoMark } from "@/components/shared/Logo";
 import { LangToggle, ThemeToggle } from "@/components/shared/PrefToggles";
+import { useScrolled } from "@/hooks/useScrollState";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/lib/utils";
 
-// Judul halaman di title bar (kunci t.nav)
+// Judul halaman di toolbar (kunci t.nav)
 const TITLES: Record<string, string> = {
   "/converter": "converter",
   "/library": "library",
@@ -37,33 +36,36 @@ const subscribe = (cb: () => void) => {
 };
 
 /**
- * Title bar sendiri (jendela tanpa bingkai bawaan): seluruh bar = area seret jendela.
- * Kiri: logo (Windows; di macOS tempat tombol lampu lalu lintas) · kembali/maju + judul halaman ·
- * kanan: bahasa, tema, akun · paling kanan dikosongkan untuk tombol jendela Windows (--caption-w).
+ * Toolbar di atas area kerja (kanan sidebar) — seluruh bar = area seret jendela.
+ * Kiri: kembali/maju · judul halaman yang baru muncul setelah judul besar di konten terlewati (large title
+ * macOS) · kanan: bahasa & tema · ruang tombol jendela Windows (--caption-w). Latar kaca + garis hanya saat discroll.
  */
 export default function TitleBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useT();
+  const scrolled = useScrolled(4);
+  const pastTitle = useScrolled(84);
   const canBack = useSyncExternalStore(subscribe, () => historyNav()?.canGoBack ?? true, () => false);
   const canForward = useSyncExternalStore(subscribe, () => historyNav()?.canGoForward ?? true, () => false);
   const titleKey = Object.entries(TITLES).find(([href]) => pathname.startsWith(href))?.[1];
 
   const navBtn =
-    "grid size-8 cursor-pointer place-items-center rounded-xs text-fg-2 transition-colors hover:bg-fg/[0.07] hover:text-fg active:scale-95 disabled:pointer-events-none disabled:opacity-35";
+    "grid size-8 cursor-pointer place-items-center rounded-[8px] text-fg-2 transition-colors hover:bg-fg/[0.07] hover:text-fg active:scale-95 disabled:pointer-events-none disabled:opacity-30";
 
   return (
-    <header className="app-drag fixed inset-x-0 top-0 z-50 flex h-[var(--bar-h)] items-center gap-3 border-b border-line/60 bg-bg pl-4 pr-[calc(var(--caption-w)+8px)] mac:pl-[84px]">
+    <header
+      className={cn(
+        "app-drag fixed right-0 top-0 z-40 flex h-[var(--bar-h)] items-center gap-3 border-b pl-4 pr-[calc(var(--caption-w)+10px)] transition-[background-color,border-color,left] duration-[var(--spring-dur)] ease-[var(--spring)] left-[var(--side-w)]",
+        scrolled ? "border-[var(--hairline)] bg-[var(--glass)] backdrop-blur-xl backdrop-saturate-150" : "border-transparent bg-bg",
+      )}
+    >
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-[70] focus:rounded-s focus:bg-fg focus:px-4 focus:py-2 focus:text-bg"
       >
         {t.common.skip}
       </a>
-      <span className="flex items-center gap-2.5 pr-2 mac:hidden">
-        <LogoMark size={28} priority />
-        <span className="whitespace-nowrap text-[11px] font-bold tracking-[0.22em] max-[759px]:hidden">ARRR STUDIO</span>
-      </span>
       <div className="flex items-center gap-0.5">
         <button type="button" className={navBtn} onClick={() => router.back()} disabled={!canBack} aria-label={t.desktop.back} title={t.desktop.back}>
           <NavArrowLeft width={18} height={18} strokeWidth={2} />
@@ -72,14 +74,18 @@ export default function TitleBar() {
           <NavArrowRight width={18} height={18} strokeWidth={2} />
         </button>
       </div>
-      <p className={cn("min-w-0 flex-1 truncate text-[14px] font-semibold tracking-[-0.01em]", !titleKey && "invisible")}>
-        {titleKey ? (t.nav[titleKey as keyof typeof t.nav] as string) : " "}
+      <p
+        aria-hidden={!pastTitle}
+        className={cn(
+          "min-w-0 flex-1 truncate text-[14px] font-semibold tracking-[-0.01em] transition-[opacity,translate] duration-300 ease-[var(--ease)]",
+          pastTitle && titleKey ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
+        )}
+      >
+        {titleKey ? (t.nav[titleKey as keyof typeof t.nav] as string) : " "}
       </p>
       <div className="flex items-center gap-1">
         <LangToggle />
         <ThemeToggle />
-        <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
-        <UserMenu />
       </div>
     </header>
   );

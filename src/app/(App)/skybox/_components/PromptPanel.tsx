@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowRight, Check, Copy, WarningTriangle } from "iconoir-react";
+import { useRef, useState } from "react";
+import { ArrowRight, Check, Copy, Sparks, WarningTriangle } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
@@ -9,7 +9,8 @@ import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import Button from "@/components/ui/Button";
 import Field, { inputClass } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
-import { PLACEHOLDER, PROMPT_PRESETS, PROMPT_SOFT_LIMIT, buildPrompt, buildScene, type PromptFields, type PromptStyle } from "../_lib/prompts";
+import { PLACEHOLDER, PRESET_CATS, PROMPT_PRESETS, PROMPT_SOFT_LIMIT, buildPrompt, buildScene, type PresetCat, type PromptFields, type PromptStyle } from "../_lib/prompts";
+import { aiCompose, failureOf, localCompose } from "../_lib/aiPrompt";
 
 const STYLES: PromptStyle[] = ["realistic", "anime", "stylized", "painterly"];
 
@@ -48,6 +49,33 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
   const [presetId, setPresetId] = useState(PROMPT_PRESETS[1].id);
   const [fields, setFields] = useState<PromptFields>(PROMPT_PRESETS[1]);
   const [style, setStyle] = useState<PromptStyle>("realistic");
+  const [cat, setCat] = useState<PresetCat | "all">("all");
+  const [idea, setIdea] = useState("");
+  const [busy, setBusy] = useState(false);
+  const aiCtrl = useRef<AbortController | null>(null);
+  const toast = useToast();
+  const shown = PROMPT_PRESETS.filter((p) => cat === "all" || p.cat === cat || p.id === "blank");
+
+  const compose = async (text = idea) => {
+    const q = text.trim();
+    if (!q || busy) return;
+    setIdea(q);
+    setBusy(true);
+    aiCtrl.current?.abort();
+    const ctrl = new AbortController();
+    aiCtrl.current = ctrl;
+    try {
+      setFields(await aiCompose(q, style, ctrl.signal));
+      toast(s.aiDone, "ok");
+    } catch (e) {
+      if (ctrl.signal.aborted && aiCtrl.current !== ctrl) return;
+      setFields(localCompose(q));
+      toast(failureOf(e) === "off" ? s.aiOff : s.aiFallback, "info");
+    } finally {
+      if (aiCtrl.current === ctrl) setBusy(false);
+    }
+    setPresetId("");
+  };
 
   const pick = (id: string) => {
     const p = PROMPT_PRESETS.find((x) => x.id === id)!;
@@ -73,11 +101,71 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <CardBox>
         <CardHeader title={s.promptFields} />
-        <div className="flex flex-col gap-5 p-5">
+        <div className="flex flex-col gap-5 p-5 desk:gap-4 desk:p-4">
+          {/* Ide → AI: kolom satu baris + saran cepat */}
+          <form
+            className="flex flex-col gap-2.5 rounded-[12px] bg-fg/[0.05] p-3 ring-1 ring-inset ring-[var(--hairline)]"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void compose();
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Sparks width={16} height={16} aria-hidden="true" className="shrink-0 text-fg-2" />
+              <p className="text-[13.5px] font-semibold">{s.aiTitle}</p>
+            </div>
+            <p className="text-[12.5px] leading-snug text-fg-3">{s.aiSub}</p>
+            <div className="flex gap-2">
+              <input
+                className={cn(inputClass, "flex-1")}
+                value={idea}
+                maxLength={300}
+                placeholder={s.aiPh}
+                aria-label={s.aiTitle}
+                onChange={(e) => setIdea(e.target.value)}
+              />
+              <Button type="submit" variant="primary" loading={busy} disabled={!idea.trim()} icon={<Sparks width={16} height={16} />} className="shrink-0">
+                {busy ? s.aiBusy : s.aiGo}
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {s.aiIdeas.map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void compose(x)}
+                  className="ios-press h-7 cursor-pointer rounded-full bg-fg/[0.06] px-3 text-[12px] font-medium text-fg-2 transition-colors hover:bg-fg/[0.1] hover:text-fg disabled:opacity-40 desk:rounded-[7px]"
+                >
+                  {x}
+                </button>
+              ))}
+            </div>
+          </form>
+
           <div className="flex flex-col gap-2">
-            <p className="text-[13px] font-semibold text-fg-2">{s.promptPresets}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[13px] font-semibold text-fg-2">{s.promptPresets}</p>
+              <div className="thin-scroll -mx-1 flex gap-1 overflow-x-auto px-1" role="tablist" aria-label={s.promptPresets}>
+                {(["all", ...PRESET_CATS] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    role="tab"
+                    aria-selected={cat === k}
+                    onClick={() => setCat(k)}
+                    className={cn(
+                      "h-7 shrink-0 cursor-pointer rounded-full px-2.5 text-[12px] font-semibold transition-colors desk:rounded-[7px]",
+                      cat === k ? "bg-fg text-bg" : "text-fg-3 hover:bg-fg/[0.07] hover:text-fg",
+                    )}
+                  >
+                    {s.promptCats[k]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label={s.promptPresets}>
-              {PROMPT_PRESETS.map((p) => {
+              {shown.map((p) => {
                 const active = p.id === presetId;
                 return (
                   <button
@@ -87,16 +175,18 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
                     aria-checked={active}
                     onClick={() => pick(p.id)}
                     className={cn(
-                      "ios-press group flex min-h-11 cursor-pointer items-center gap-2.5 rounded-s p-1.5 pr-3 text-left text-[13.5px] font-semibold transition-colors duration-150",
+                      "ios-press group flex min-h-11 cursor-pointer items-center gap-2.5 rounded-s p-1.5 pr-3 text-left text-[13.5px] font-semibold transition-colors duration-150 desk:min-h-10 desk:gap-2 desk:rounded-[10px] desk:pr-2 desk:text-[12.5px]",
                       active ? "bg-fg/[0.12] text-fg ring-1 ring-fg/40" : "bg-fg/[0.05] text-fg-2 hover:bg-fg/[0.09] hover:text-fg",
                     )}
                   >
                     <span
                       aria-hidden="true"
-                      className="h-8 w-12 shrink-0 rounded-[6px] ring-1 ring-inset ring-white/10"
+                      className="h-8 w-12 shrink-0 rounded-[6px] ring-1 ring-inset ring-white/10 desk:h-7 desk:w-7"
                       style={{ background: `linear-gradient(180deg, ${p.swatch[0]} 0%, ${p.swatch[1]} 55%, ${p.swatch[2]} 100%)` }}
                     />
-                    <span className="truncate">{p.id === "blank" ? s.promptBlank : p.label}</span>
+                    <span className="truncate" title={p.label}>
+                      {p.id === "blank" ? s.promptBlank : p.label}
+                    </span>
                   </button>
                 );
               })}

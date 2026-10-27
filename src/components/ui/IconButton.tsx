@@ -23,7 +23,8 @@ export default function IconButton({ label, icon, loading, bordered, size = "md"
       disabled={disabled || loading}
       className={cn(
         "state-layer inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-2 ios-press hover:text-fg disabled:pointer-events-none disabled:opacity-40",
-        size === "md" ? "size-11" : "size-10",
+        "desk:rounded-[8px]",
+        size === "md" ? "size-11 desk:size-9" : "size-10 desk:size-8",
         bordered && "border border-line-2",
         active && "bg-tonal text-on-tonal",
         className,

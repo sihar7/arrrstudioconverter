@@ -5,6 +5,8 @@ export interface Toast {
   id: string;
   kind: ToastKind;
   message: string;
+  /** epoch ms — urutan deck bersama popup antrean */
+  at: number;
 }
 
 /** Popup "masuk antrean" (kanan bawah, klik → Converter). Tambahan beruntun digabung ke satu popup. */
@@ -26,7 +28,7 @@ const toastSlice = createSlice({
         state.items = [...state.items.slice(-3), action.payload];
       },
       prepare(message: string, kind: ToastKind = "info") {
-        return { payload: { id: nanoid(), kind, message } };
+        return { payload: { id: nanoid(), kind, message, at: Date.now() } };
       },
     },
     dismissToast(state, action: PayloadAction<string>) {
