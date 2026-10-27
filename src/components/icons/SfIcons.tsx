@@ -75,6 +75,16 @@ export function SfClock(p: SfIconProps) {
   );
 }
 
+/** arrow.up.doc — Upload audio (file dari perangkat) */
+export function SfArrowUpDoc(p: SfIconProps) {
+  return (
+    <Svg {...p}>
+      <path fill={p.filled ? "currentColor" : "none"} fillOpacity={p.filled ? 0.22 : 0} d="M14 2.8H7.6a2.8 2.8 0 0 0-2.8 2.8v12.8a2.8 2.8 0 0 0 2.8 2.8h8.8a2.8 2.8 0 0 0 2.8-2.8V8Z" />
+      <path d="M14 2.8V8h5.2M12 17.2v-6.4M9.4 13.2 12 10.6l2.6 2.6" />
+    </Svg>
+  );
+}
+
 /** cube.transparent — Skybox (kubus 6 sisi) */
 export function SfCube(p: SfIconProps) {
   return (

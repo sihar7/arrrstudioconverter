@@ -48,6 +48,8 @@ export interface HistoryEntry {
   fileExpiresAt: number;
   roblox: RobloxRecord | null;
   cover?: HistoryCover | null;
+  /** "file" = diupload dari perangkat user (videoId & thumbnail kosong); tidak ada = hasil convert YouTube */
+  source?: "file";
 }
 
 export interface HistoryItem extends HistoryEntry {

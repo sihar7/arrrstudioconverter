@@ -350,7 +350,7 @@ export default function LibraryScreen() {
           className="flex min-w-0 basis-full gap-2 sm:basis-auto"
           onSubmit={(e) => {
             e.preventDefault();
-            if (pickCount && /^d{1,20}$/.test(place)) void lib.grant("place", place);
+            if (pickCount && /^\d{1,20}$/.test(place)) void lib.grant("place", place);
           }}
         >
           <input
@@ -358,10 +358,10 @@ export default function LibraryScreen() {
             placeholder={L.placeId}
             inputMode="numeric"
             value={place}
-            onChange={(e) => setPlaceId(e.target.value.replace(/D/g, ""))}
+            onChange={(e) => setPlaceId(e.target.value.replace(/\D/g, ""))}
             className={cn(inputClass, "h-9 min-w-0 flex-1 rounded-full font-mono text-[13px] sm:w-36")}
           />
-          <Button type="submit" size="sm" variant="primary" loading={lib.granting} disabled={!pickCount || !/^d{1,20}$/.test(place)}>
+          <Button type="submit" size="sm" variant="primary" loading={lib.granting} disabled={!pickCount || !/^\d{1,20}$/.test(place)}>
             {lib.granting ? L.granting : L.grantPlace}
           </Button>
         </form>

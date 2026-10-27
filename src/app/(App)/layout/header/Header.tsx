@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { SfClock, SfCrown, SfCube, SfCutout, SfEnlarge, SfGear, SfPlayRect, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
+import { SfArrowUpDoc, SfClock, SfCrown, SfCube, SfCutout, SfEnlarge, SfGear, SfPlayRect, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
 import type { IosTone } from "@/components/ui/AppIcon";
 import { useT } from "@/hooks/useT";
 import { useScrolled } from "@/hooks/useScrollState";
@@ -33,7 +33,10 @@ const TAB_NAV = NAV.filter((n) => n.href !== "/pricing");
 export const YOUTUBE_NAV = { href: "/youtube", key: "youtube", icon: SfPlayRect, tone: "red" } as const satisfies NavItem;
 
 // Menu khusus member (sudah login Discord) — disisipkan setelah Audio saya, ikut grup "Studio" di desktop
-export const MEMBER_NAV = [{ href: "/skybox", key: "skybox", icon: SfCube, tone: "teal" }] as const satisfies readonly NavItem[];
+export const MEMBER_NAV = [
+  { href: "/upload", key: "upload", icon: SfArrowUpDoc, tone: "green" },
+  { href: "/skybox", key: "skybox", icon: SfCube, tone: "teal" },
+] as const satisfies readonly NavItem[];
 
 // Alat gambar (member) — dropdown "Gambar" di desktop, kelompok sendiri di dock app desktop
 export const IMAGE_NAV = [
@@ -61,8 +64,8 @@ export default function Header({ overlay = false }: { overlay?: boolean }) {
   // Menu admin (Obfuscator) ada di menu profil, bukan navbar — lihat UserMenu
   const items: readonly NavItem[] = [NAV[0], YOUTUBE_NAV, NAV[1], ...(loggedIn ? MEMBER_NAV : []), ...imageItems, ...NAV.slice(2)];
   const activeHref = items.find((n) => pathname.startsWith(n.href))?.href;
-  // Desktop: Converter + YouTube + Audio saya + Skybox digabung ke dropdown "Studio"; sisanya tetap tautan datar.
-  const grouped = new Set<string>(["/converter", "/youtube", "/library", "/skybox"]);
+  // Desktop: Converter + YouTube + Audio saya + Upload audio + Skybox digabung ke dropdown "Studio"; sisanya tetap tautan datar.
+  const grouped = new Set<string>(["/converter", "/youtube", "/library", "/upload", "/skybox"]);
   const imageHrefs = new Set<string>(imageItems.map((n) => n.href));
   const groupItems = items.filter((n) => grouped.has(n.href));
   const flatItems = items.filter((n) => !grouped.has(n.href) && !imageHrefs.has(n.href));

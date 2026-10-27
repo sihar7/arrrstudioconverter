@@ -13,6 +13,7 @@ const TITLES: Record<string, string> = {
   "/converter": "converter",
   "/library": "library",
   "/history": "history",
+  "/upload": "upload",
   "/skybox": "skybox",
   "/youtube": "youtube",
   "/remove-bg": "removeBg",

@@ -3,7 +3,7 @@
 import { useState, type MouseEvent } from "react";
 import { withBase } from "@/Url/Url";
 import Image from "next/image";
-import { Check, Copy, Download, Lock, MediaImage, NavArrowDown, OpenNewWindow, Trash, Upload } from "iconoir-react";
+import { Check, Copy, Download, Lock, MediaImage, MusicDoubleNote, NavArrowDown, OpenNewWindow, Trash, Upload } from "iconoir-react";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
 import { summarize } from "@/lib/audioSummary";
 import { ROBLOX_FORMATS } from "@/lib/schemas/convert.schema";
@@ -47,7 +47,8 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
   const [open, setOpen] = useState(false);
   const lp = useLongPress(onLongPress, selecting);
   const rb = item.roblox;
-  const chips = summarize(item.options, t);
+  // File dari perangkat tidak diproses efek apa pun
+  const chips = item.source === "file" ? [] : summarize(item.options, t);
   const canUpload = item.fileAvailable && !rb && (ROBLOX_FORMATS as readonly string[]).includes(item.format);
   const failed = rb?.permissions.filter((p) => p.status === "failed") ?? [];
   const coverId = coverAssetId(item.cover);
@@ -83,7 +84,14 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
         >
           {/* Cover kotak (album, atau thumbnail video dipotong tengah) */}
           <span className={cn("relative size-14 shrink-0 overflow-hidden rounded-s bg-raised transition-transform duration-200 sm:size-16", selected && "scale-[0.94]")}>
-            <Image src={coverUrl ?? item.thumbnail} alt="" fill sizes="64px" unoptimized loading="lazy" className={cn("object-cover", !coverUrl && "scale-[1.35]")} />
+            {coverUrl || item.thumbnail ? (
+              <Image src={coverUrl ?? item.thumbnail} alt="" fill sizes="64px" unoptimized loading="lazy" className={cn("object-cover", !coverUrl && "scale-[1.35]")} />
+            ) : (
+              // File dari perangkat: tanpa thumbnail → ubin nada
+              <span className="absolute inset-0 grid place-items-center text-fg-3">
+                <MusicDoubleNote width={22} height={22} aria-hidden="true" />
+              </span>
+            )}
             <span
               aria-hidden="true"
               className={cn(
@@ -194,13 +202,13 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
                     className="inline-flex min-h-8 min-w-0 cursor-pointer items-center gap-2 rounded-xs bg-raised py-1 pl-1 pr-2 font-mono text-[12.5px] text-fg transition-colors hover:bg-hover"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={coverUrl ?? item.thumbnail} alt="" className="size-6 shrink-0 rounded-[5px] object-cover" />
+                    {(coverUrl || item.thumbnail) && <img src={coverUrl ?? item.thumbnail} alt="" className="size-6 shrink-0 rounded-[5px] object-cover" />}
                     <span className="font-sans text-fg-3">{t.upload.coverLabel}</span>
                     <span className="truncate">{coverId}</span>
                     <Copy width={13} height={13} aria-hidden="true" className="shrink-0" />
                   </button>
                 ) : (
-                  <Button size="sm" variant="ghost" loading={coverBusy} icon={<MediaImage width={14} height={14} />} onClick={onUploadCover}>
+                  (coverUrl || item.videoId) && <Button size="sm" variant="ghost" loading={coverBusy} icon={<MediaImage width={14} height={14} />} onClick={onUploadCover}>
                     {coverBusy ? t.upload.coverUploading : h.uploadCover}
                   </Button>
                 )}

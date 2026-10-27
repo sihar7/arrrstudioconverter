@@ -131,7 +131,8 @@ export function useHistoryActions() {
         const r = await uploadEntry(apiKey, entry, form);
         toast(r.assetId ? f(t.toast.uploaded, { id: r.assetId }) : t.upload.processing, "ok");
         refresh();
-        if (form.uploadCover) void uploadCover(entry, coverUrl, form);
+        // File dari perangkat tanpa cover album → tidak ada sumber gambar untuk Decal
+        if (form.uploadCover && (coverUrl || entry.videoId)) void uploadCover(entry, coverUrl, form);
         return true;
       } catch (e) {
         toast(errMsg(e), "err");
