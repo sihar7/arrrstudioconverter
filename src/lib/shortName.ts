@@ -1,7 +1,7 @@
 // Judul YouTube → nama aset Roblox yang pendek & bersih (dipakai converter dan riwayat)
 
-const TITLE_NOISE =
-  "official|music\s*video|video\s*clip|video|audio|lyrics?|lirik|mv|m\/v|hd|hq|4k|8k|\d{3,4}p|visuali[sz]er|remaster(?:ed)?|explicit|clean|full\s*song|official\s*audio";
+// String.raw: di string biasa "\s"/"\d" kehilangan backslash → regex noise tidak pernah cocok
+const TITLE_NOISE = String.raw`official|music\s*video|video\s*clip|video|audio|lyrics?|lirik|mv|m\/v|hd|hq|4k|8k|\d{3,4}p|visuali[sz]er|remaster(?:ed)?|explicit|clean|full\s*song|official\s*audio`;
 
 const MAX_NAME = 50;
 
@@ -9,15 +9,17 @@ const MAX_NAME = 50;
 export function clean(title: string): string {
   const name = (title.split(/\s+(?:\||\/\/)\s+/)[0] ?? title)
     .replace(/\[[^\]]*\]|【[^】]*】/g, " ")
-    .replace(new RegExp(`\((?:[^()]*\b(?:${TITLE_NOISE})\b[^()]*)\)`, "gi"), " ")
+    .replace(new RegExp(String.raw`\((?:[^()]*\b(?:${TITLE_NOISE})\b[^()]*)\)`, "gi"), " ")
     .replace(/#\S+/g, " ")
-    .replace(new RegExp(`(?:\s+[-–—:]?\s*\b(?:${TITLE_NOISE})\b)+\s*$`, "i"), "");
+    .replace(new RegExp(String.raw`(?:\s+[-–—:]?\s*\b(?:${TITLE_NOISE})\b)+\s*$`, "i"), "");
   return tidy(name);
 }
 
 /** Hanya karakter yang diterima Roblox + rapikan spasi/tanda di ujung */
 function tidy(name: string): string {
   return name
+    // En/em dash pemisah "Artis – Judul" → "-" (dibuang oleh filter karakter di bawah)
+    .replace(/\s+[–—]\s+/g, " - ")
     .replace(/[^\p{L}\p{N} _.\-()]/gu, " ")
     .replace(/\(\s*\)/g, " ")
     .replace(/\s+/g, " ")

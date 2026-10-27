@@ -1,3 +1,4 @@
+import type { CoverStyle } from "@/lib/trackMeta";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { PermissionMode } from "@/type/history";
 
@@ -21,6 +22,8 @@ export interface RobloxState {
   placeId: string;
   /** Cover album ikut diupload sebagai Decal saat audio diupload */
   uploadCover: boolean;
+  /** auto = cover otomatis yang aman dari moderasi (bawaan); original = cover album asli apa adanya */
+  coverStyle: CoverStyle;
   keyCheck: KeyCheck | null;
 }
 
@@ -32,6 +35,7 @@ const initialState: RobloxState = {
   defaultPermission: "none",
   placeId: "",
   uploadCover: true,
+  coverStyle: "safe",
   keyCheck: null,
 };
 

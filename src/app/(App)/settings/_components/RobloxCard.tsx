@@ -6,6 +6,7 @@ import Url from "@/Url/Url";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateRoblox } from "@/store/slices/robloxSlice";
 import { useMeQuery } from "@/store/api/baseApi";
+import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import Button from "@/components/ui/Button";
@@ -130,6 +131,23 @@ export default function RobloxCard() {
         </div>
 
         <Switch label={t.upload.cover} hint={t.upload.coverHint} checked={r.uploadCover} onChange={(uploadCover) => dispatch(updateRoblox({ uploadCover }))} />
+        {r.uploadCover && (
+          <div className="grid gap-2">
+            <span className="text-[13px] font-semibold text-fg-2">{t.upload.coverStyle}</span>
+            <Segmented
+              label={t.upload.coverStyle}
+              value={r.coverStyle}
+              onChange={(coverStyle) => dispatch(updateRoblox({ coverStyle }))}
+              options={[
+                { value: "safe", label: t.upload.coverAuto },
+                { value: "original", label: t.upload.coverOriginal },
+              ]}
+            />
+            <p className={cn("text-[12.5px] leading-relaxed", r.coverStyle === "safe" ? "text-fg-3" : "text-warn")}>
+              {r.coverStyle === "safe" ? t.upload.coverAutoHint : t.upload.coverOriginalHint}
+            </p>
+          </div>
+        )}
 
         <details className="group border-t border-line pt-5">
           <summary className="flex cursor-pointer list-none items-center justify-between text-[14px] font-semibold">

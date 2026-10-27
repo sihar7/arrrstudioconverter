@@ -157,6 +157,7 @@ export default function ConverterScreen() {
           title={uploadItem.title}
           cover={uploadItem.cover ?? uploadItem.thumbnail}
           artist={uploadItem.artist}
+          videoId={uploadItem.videoId}
           block={roblox.blockReason(uploadItem)}
           initial={roblox.defaultForm(uploadItem)}
           onClose={() => setUploadKey(null)}

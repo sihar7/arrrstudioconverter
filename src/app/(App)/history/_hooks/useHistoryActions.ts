@@ -104,7 +104,15 @@ export function useHistoryActions() {
       if (!apiKey || !target.creatorId) return toast(t.history.coverNeedKey, "err");
       setCoverBusy((b) => [...b, entry.id]);
       try {
-        const res = await uploadCoverDecal({ apiKey, ...target, cover: coverUrl, videoId: entry.videoId });
+        const res = await uploadCoverDecal({
+          apiKey,
+          ...target,
+          cover: coverUrl,
+          videoId: entry.videoId,
+          title: entry.title,
+          artist: null,
+          style: roblox.coverStyle,
+        });
         await saveHistoryCover(entry.id, { url: coverUrl, ...res });
         toast(f(t.history.coverDone, { id: res.imageId ?? res.decalId }), "ok");
         refresh();
@@ -114,7 +122,7 @@ export function useHistoryActions() {
         setCoverBusy((b) => b.filter((id) => id !== entry.id));
       }
     },
-    [apiKey, roblox.creatorType, roblox.creatorId, toast, t, f, refresh, errMsg],
+    [apiKey, roblox.creatorType, roblox.creatorId, roblox.coverStyle, toast, t, f, refresh, errMsg],
   );
 
   const upload = useCallback(

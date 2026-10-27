@@ -281,6 +281,7 @@ export default function HistoryScreen() {
         <RobloxUploadDialog
           title={uploadFor.title}
           cover={coverUrlOf(uploadFor, covers) ?? uploadFor.thumbnail}
+          videoId={uploadFor.videoId}
           block={!roblox.apiKey || !roblox.creatorId ? "key" : null}
           initial={{
             displayName: shortName(uploadFor.title),

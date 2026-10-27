@@ -64,7 +64,17 @@ export function useRobloxUpload() {
       mark({ status: "uploading", decalId: null, imageId: null, error: null });
       try {
         const res = await uploadCoverDecal(
-          { apiKey, creatorType: form.creatorType, creatorId: form.creatorId, displayName: form.displayName, cover, videoId: item.videoId },
+          {
+            apiKey,
+            creatorType: form.creatorType,
+            creatorId: form.creatorId,
+            displayName: form.displayName,
+            cover,
+            videoId: item.videoId,
+            title: item.title,
+            artist: store.getState().converter.items.find((i) => i.key === item.key)?.artist ?? item.artist,
+            style: store.getState().roblox.coverStyle,
+          },
           (s) => mark(s.status === "decal" ? { decalId: s.decalId } : { status: "processing" }),
           () => alive.current,
         );

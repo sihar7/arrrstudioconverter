@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WarningTriangle } from "iconoir-react";
+import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import Dialog from "@/components/ui/Dialog";
 import Button, { ButtonLink } from "@/components/ui/Button";
@@ -9,6 +10,8 @@ import Field, { Input, Textarea } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
 import Switch from "@/components/ui/Switch";
 import { nameFor, type NameStyle } from "@/lib/shortName";
+import { coverDataUrl } from "@/lib/trackMeta";
+import { useAppSelector } from "@/store/hooks";
 import NameStylePicker from "./NameStylePicker";
 import type { UploadBlock, UploadForm } from "@/type/roblox";
 
@@ -17,13 +20,15 @@ interface Props {
   /** Cover album (atau thumbnail video) + artis — pratinjau Decal; tanpa cover = opsi Decal disembunyikan */
   cover?: string;
   artist?: string | null;
+  /** Untuk pratinjau cover otomatis (pola per lagu) */
+  videoId?: string;
   block: UploadBlock;
   initial: UploadForm;
   onClose: () => void;
   onSubmit: (form: UploadForm) => Promise<boolean>;
 }
 
-export default function RobloxUploadDialog({ title, cover, artist, block, initial, onClose, onSubmit }: Props) {
+export default function RobloxUploadDialog({ title, cover, artist, videoId, block, initial, onClose, onSubmit }: Props) {
   const { t, f } = useT();
   const u = t.upload;
   const [form, setForm] = useState<UploadForm>(initial);
@@ -31,6 +36,22 @@ export default function RobloxUploadDialog({ title, cover, artist, block, initia
   const [style, setStyle] = useState<NameStyle | null>("short");
   const [placeErr, setPlaceErr] = useState<string | null>(null);
   const set = (patch: Partial<UploadForm>) => setForm((s) => ({ ...s, ...patch }));
+
+  // Cover otomatis → pratinjau persis gambar yang akan diupload sebagai Decal
+  const coverStyle = useAppSelector((s) => s.roblox.coverStyle);
+  const [autoCover, setAutoCover] = useState<string | null>(null);
+  const wantAuto = Boolean(cover && videoId && coverStyle === "safe" && form.uploadCover);
+  useEffect(() => {
+    if (!wantAuto) return;
+    let alive = true;
+    coverDataUrl(cover!, videoId!, { style: "safe", text: { title, artist: artist ?? null } })
+      .then((url) => alive && setAutoCover(url))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [wantAuto, cover, videoId, title, artist]);
+  const shownCover = wantAuto ? (autoCover ?? cover) : cover;
 
   const submit = async () => {
     if (form.permission === "place" && !/^\d{1,20}$/.test(form.placeId)) {
@@ -82,7 +103,12 @@ export default function RobloxUploadDialog({ title, cover, artist, block, initia
           {cover ? (
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cover} alt="" className="size-12 shrink-0 rounded-[10px] bg-fg/[0.07] object-cover" />
+              <img
+                src={shownCover}
+                alt={wantAuto ? u.coverPreview : ""}
+                title={wantAuto ? u.coverPreview : undefined}
+                className={cn("shrink-0 rounded-[10px] bg-fg/[0.07] object-cover transition-[width,height] duration-200", wantAuto ? "size-20" : "size-12")}
+              />
               <div className="min-w-0">
                 <p className="line-clamp-2 text-[13.5px] font-medium leading-snug text-fg-2">{title}</p>
                 {artist && <p className="mt-0.5 truncate text-[12.5px] text-fg-3">{artist}</p>}
