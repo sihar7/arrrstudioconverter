@@ -83,6 +83,7 @@ export default function RemoveBgScreen() {
 
   return (
     <ImageToolFrame
+      compareMode="after"
       title={s.title}
       sub={s.sub}
       source={source}

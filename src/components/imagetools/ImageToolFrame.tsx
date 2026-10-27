@@ -147,6 +147,7 @@ export default function ImageToolFrame({
   busy,
   progress,
   panel,
+  compareMode,
 }: {
   title: string;
   sub: string;
@@ -157,6 +158,8 @@ export default function ImageToolFrame({
   busy: boolean;
   progress?: number | null;
   panel: ReactNode;
+  /** Tampilan awal hasil: "after" = hasil utuh (hapus background), "compare" = slider (upscale) */
+  compareMode?: "after" | "compare";
 }) {
   const { t } = useT();
   const s = t.imgtools;
@@ -185,7 +188,7 @@ export default function ImageToolFrame({
               </DropZone>
             ) : (
               <div className="flex flex-col gap-3">
-                <CompareView before={source.url} after={resultUrl} ratio={source.w / source.h} busy={busy} />
+                <CompareView before={source.url} after={resultUrl} ratio={source.w / source.h} busy={busy} defaultMode={compareMode} />
                 {progress != null && <Progress value={progress * 100} label={s.processing} />}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-[12.5px] tabular-nums text-fg-3">

@@ -868,6 +868,7 @@ const en: Dictionary = {
     before: "Before",
     after: "After",
     compare: "Drag to compare",
+    compareShort: "Compare",
     modelFirst: "The AI model downloads once ({size}), then it's instant.",
     modelLoading: "Downloading AI model… {pct}%",
     modelReady: "AI model ready",

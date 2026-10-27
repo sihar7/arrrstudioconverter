@@ -867,6 +867,7 @@ const id = {
     before: "Sebelum",
     after: "Sesudah",
     compare: "Geser untuk membandingkan",
+    compareShort: "Bandingkan",
     modelFirst: "Model AI diunduh sekali ({size}), berikutnya langsung siap.",
     modelLoading: "Mengunduh model AI… {pct}%",
     modelReady: "Model AI siap",
