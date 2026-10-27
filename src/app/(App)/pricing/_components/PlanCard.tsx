@@ -5,6 +5,7 @@ import { Check, Minus } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { planFeatures } from "@/lib/planFeatures";
+import { usePlans } from "@/hooks/usePlans";
 import type { PlanId } from "@/lib/schemas/plans";
 
 interface Props {
@@ -19,7 +20,8 @@ interface Props {
 /** Kartu plan: nama · tagline · harga · CTA · daftar fitur (tercentang / tercoret) */
 export default function PlanCard({ id, price, billed, highlight, current, action }: Props) {
   const { t } = useT();
-  const features = planFeatures(id, t);
+  const { plans } = usePlans();
+  const features = planFeatures(id, t, plans);
 
   return (
     <article

@@ -48,10 +48,14 @@ export function useYoutubeSearch() {
   );
 
   const loadMore = useCallback(async () => {
-    if (!next || loadingMore) return;
+    if (!next || loadingMore || loading) return;
+    const c = ctrl.current;
     setLoadingMore(true);
+    setError(null);
     try {
-      const res = await searchYoutube("", next);
+      const res = await searchYoutube("", next, c?.signal);
+      // Kata kunci berganti selama memuat → halaman lama dibuang
+      if (ctrl.current !== c) return;
       setItems((prev) => {
         const seen = new Set(prev.map((v) => v.videoId));
         return [...prev, ...res.items.filter((v) => !seen.has(v.videoId))];
@@ -62,7 +66,7 @@ export function useYoutubeSearch() {
     } finally {
       setLoadingMore(false);
     }
-  }, [next, loadingMore, fail]);
+  }, [next, loadingMore, loading, fail]);
 
   return { query, items, hasMore: Boolean(next), loading, loadingMore, error, search, loadMore };
 }

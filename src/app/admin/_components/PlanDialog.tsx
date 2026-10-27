@@ -7,7 +7,8 @@ import Button from "@/components/ui/Button";
 import Segmented from "@/components/ui/Segmented";
 import Field, { Input } from "@/components/ui/Field";
 import { useToast } from "@/hooks/useToast";
-import { PLANS, PLAN_IDS, type PlanId } from "@/lib/schemas/plans";
+import { PLAN_IDS, type PlanId } from "@/lib/schemas/plans";
+import { usePlans } from "@/hooks/usePlans";
 import type { AdminUser } from "@/type/admin";
 import { setUserPlan } from "../_service/admin.service";
 import { errorText, useAuthGuard } from "../_hooks/useAdmin";
@@ -44,6 +45,7 @@ export default function PlanDialog({ user, onClose, onSaved }: { user: AdminUser
 function PlanForm({ user, onClose, onSaved }: { user: AdminUser; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const guard = useAuthGuard();
+  const freeDaily = usePlans().plans.free.daily;
   const [plan, setPlan] = useState<PlanId>(user.plan === "free" ? "pro" : user.plan);
   const [duration, setDuration] = useState<Duration>("30");
   const [date, setDate] = useState(() => new Date(Date.now() + 30 * DAY).toISOString().slice(0, 10));
@@ -116,7 +118,7 @@ function PlanForm({ user, onClose, onSaved }: { user: AdminUser; onClose: () => 
 
       <p className="text-[13px] leading-relaxed text-fg-3">
         {plan === "free"
-          ? `User kembali ke batas Free (${PLANS.free.daily} lagu/hari). Order yang sudah lunas tidak dikembalikan otomatis.`
+          ? `User kembali ke batas Free (${freeDaily ?? "tanpa batas"} lagu/hari). Order yang sudah lunas tidak dikembalikan otomatis.`
           : `Hasil: ${PLAN_LABEL[plan]} ${expiresAt ? `aktif sampai ${dateShort(expiresAt)}` : "permanen"}. Menimpa plan yang sedang aktif.`}
       </p>
 

@@ -1,4 +1,4 @@
-import { PLANS, type PlanId } from "@/lib/schemas/plans";
+import { PLANS, type PlanId, type PlanLimits } from "@/lib/schemas/plans";
 import { fmt } from "@/utils/i18n";
 import type { Dictionary } from "@/utils/languages/id";
 
@@ -12,8 +12,9 @@ export interface PlanFeature {
 
 export const rupiah = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
 
-export function planFeatures(id: PlanId, t: Dictionary): PlanFeature[] {
-  const p = PLANS[id];
+/** `plans` = batas efektif dari server (usePlans) — bawaan dipakai bila belum ada */
+export function planFeatures(id: PlanId, t: Dictionary, plans: Record<PlanId, PlanLimits> = PLANS): PlanFeature[] {
+  const p = plans[id];
   const r = p.ranges;
   const f = t.pricing.features;
   const list = p.formats.map((x) => x.toUpperCase()).join(", ");

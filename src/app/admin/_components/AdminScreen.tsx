@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Activity, ArrowLeft, Cart, ClockRotateRight, Folder, Group, HomeSimple, LogOut, Menu, Server, ShieldCheck, Xmark } from "iconoir-react";
+import { Activity, ArrowLeft, Cart, ClockRotateRight, ControlSlider, Folder, Group, HomeSimple, LogOut, Menu, Server, ShieldCheck, Xmark } from "iconoir-react";
 import { LogoMark } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/PrefToggles";
 import PageLoader from "@/components/shared/PageLoader";
@@ -23,9 +23,10 @@ import JobsTab from "./JobsTab";
 import FilesTab from "./FilesTab";
 import SystemCard from "./SystemCard";
 import AuditTab from "./AuditTab";
+import PlansTab from "./PlansTab";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
-type Tab = "overview" | "orders" | "users" | "jobs" | "files" | "system" | "audit";
+type Tab = "overview" | "orders" | "users" | "plans" | "jobs" | "files" | "system" | "audit";
 interface NavEntry {
   value: Tab;
   label: string;
@@ -44,6 +45,7 @@ const GROUPS: { label: string; items: NavEntry[] }[] = [
     items: [
       { value: "orders", label: "Order", title: "Order & pembayaran", sub: "Konfirmasi pembayaran QRIS", icon: Cart, tone: "green" },
       { value: "users", label: "User & plan", title: "User & plan", sub: "Akun Discord, plan & moderasi", icon: Group, tone: "indigo" },
+      { value: "plans", label: "Batas plan", title: "Batas plan", sub: "Kuota & batas Free / Pro / Studio tanpa deploy", icon: ControlSlider, tone: "purple" },
     ],
   },
   {
@@ -340,6 +342,7 @@ export default function AdminScreen() {
             {tab === "overview" && <OverviewTab onOpen={changeTab} />}
             {tab === "orders" && <OrdersTab onChanged={loadPending} />}
             {tab === "users" && <UsersTab />}
+            {tab === "plans" && <PlansTab />}
             {tab === "jobs" && <JobsTab />}
             {tab === "files" && <FilesTab />}
             {tab === "system" && <SystemCard />}

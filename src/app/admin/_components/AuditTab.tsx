@@ -24,6 +24,7 @@ const ACTION: Record<string, string> = {
   "order.delete": "Hapus order",
   "order.purge": "Hapus order tertutup",
   "user.plan": "Atur plan user",
+  "plans.update": "Ubah batas plan",
   "audit.clear": "Kosongkan log audit",
   "maintenance.cleanup": "Bersihkan storage",
   "maintenance.revoke-admin": "Cabut sesi admin",

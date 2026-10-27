@@ -11,6 +11,7 @@ import { LogoMark } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils";
 import { rupiah } from "@/lib/planFeatures";
 import { PLANS, PLAN_PRICE } from "@/lib/schemas/plans";
+import { usePlans } from "@/hooks/usePlans";
 import Console from "./Console";
 
 const wrap = "mx-auto max-w-[var(--wrap)] px-4 sm:px-8";
@@ -233,9 +234,10 @@ export function Compare() {
   const { data: me } = useMeQuery();
   const l = t.landing;
   const c = l.compare;
-  // Kuota tamu dari server bila pengunjung belum login (default 3)
-  const guestDaily = (!me?.user && me?.quota.limit) || 3;
-  const plan = (col: Col) => PLANS[col === "guest" ? "free" : col];
+  // Batas efektif (bawaan + pengaturan admin); kuota tamu dari sesi bila pengunjung belum login
+  const { plans, guest } = usePlans();
+  const guestDaily = (!me?.user && me?.quota.limit) || guest;
+  const plan = (col: Col) => plans[col === "guest" ? "free" : col];
 
   const rows: { label: string; get: (col: Col) => string }[] = [
     {

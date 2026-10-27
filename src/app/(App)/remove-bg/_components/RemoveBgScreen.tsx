@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Download } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
-import { PLANS } from "@/lib/schemas/plans";
+import { usePlans } from "@/hooks/usePlans";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { useAiModel } from "@/hooks/useAiModel";
@@ -28,7 +28,7 @@ export default function RemoveBgScreen() {
   const toast = useToast();
   const { data: me } = useMeQuery();
   const planId = me?.plan?.id ?? "free";
-  const plan = PLANS[planId];
+  const plan = usePlans().plans[planId];
   const fullBg = plan.imageBg === "full";
 
   const model = useAiModel(MODELS.removeBg);

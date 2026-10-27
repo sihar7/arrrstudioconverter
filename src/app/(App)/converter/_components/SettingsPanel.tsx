@@ -19,6 +19,7 @@ import { updateRoblox } from "@/store/slices/robloxSlice";
 import { useMeQuery } from "@/store/api/baseApi";
 import { DEFAULT_OPTIONS, LIMITS, PRESETS, ROBLOX_FORMATS, type AudioOptions } from "@/lib/schemas/convert.schema";
 import { PLANS, cheapestPlan, clampOptions, fitsPlan, type EffectId, type PlanId } from "@/lib/schemas/plans";
+import { usePlans } from "@/hooks/usePlans";
 import { summarize } from "@/lib/audioSummary";
 import { robloxPlayback } from "@/lib/robloxPlayback";
 import { cn, formatBytes, formatDuration, parseTime } from "@/lib/utils";
@@ -182,7 +183,7 @@ export default function SettingsPanel() {
 
   // Batas plan (guest = free). Selama hydration selalu free → sama dengan HTML server
   const planId: PlanId = (hydrated && me?.plan?.id) || "free";
-  const limits = PLANS[planId];
+  const limits = usePlans().plans[planId];
   const planName = (id: PlanId) => t.plan.names[id];
   const hasFx = (e: EffectId) => limits.effects.includes(e);
   const fxPlan = (e: EffectId) => planName(cheapestPlan((pl) => pl.effects.includes(e)));

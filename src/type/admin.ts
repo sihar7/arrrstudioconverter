@@ -1,4 +1,4 @@
-import type { PlanId } from "@/lib/schemas/plans";
+import type { PlanId, PlanLimits } from "@/lib/schemas/plans";
 import type { JobStatus } from "./converter";
 
 export interface AdminSession {
@@ -118,4 +118,22 @@ export interface JanitorReport {
   dbMb: number;
   pressure: boolean;
   error: string | null;
+}
+
+/** Angka plan yang bisa diatur admin (sama dengan TUNABLE di BE lib/server/planConfig.ts) */
+export const PLAN_TUNABLE = ["daily", "maxDurationSec", "playlistMax", "parallel", "maxBitrate", "fileTtlHours", "historyMax", "bulkRoblox", "imageMaxSide"] as const;
+export type PlanTunable = (typeof PLAN_TUNABLE)[number];
+export type TunableLimits = Pick<PlanLimits, PlanTunable>;
+
+export interface PlanOverrides {
+  guest?: number;
+  plans?: Partial<Record<PlanId, Partial<TunableLimits>>>;
+}
+
+/** GET/PUT /api/admin/plans */
+export interface PlanSettings {
+  defaults: Record<PlanId, TunableLimits>;
+  defaultGuest: number;
+  overrides: PlanOverrides;
+  effective: { guest: number; plans: Record<PlanId, PlanLimits> };
 }

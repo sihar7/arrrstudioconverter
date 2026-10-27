@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OpenNewWindow, Play, Plus, Search, Xmark } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { cn, formatDuration } from "@/lib/utils";
@@ -26,6 +26,20 @@ export default function WebYoutube() {
   const { add, addVideo, busy } = useQuickAdd();
   const [input, setInput] = useState("");
   const [playing, setPlaying] = useState<SearchVideo | null>(null);
+
+  // Sentinel di dasar daftar (pola sama dengan Audio saya)
+  const more = useRef(loadMore);
+  useEffect(() => {
+    more.current = loadMore;
+  });
+  const observer = useRef<IntersectionObserver | null>(null);
+  const sentinel = useCallback((el: HTMLDivElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!el) return;
+    observer.current = new IntersectionObserver(([e]) => e.isIntersecting && void more.current(), { rootMargin: "600px 0px" });
+    observer.current.observe(el);
+  }, []);
 
   // Hasil awal: pilihan cepat pertama
   useEffect(() => {
@@ -138,13 +152,7 @@ export default function WebYoutube() {
         {error && <p className="text-[14px] text-err">{error}</p>}
         <ul className="grid gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {loading
-            ? Array.from({ length: 8 }, (_, i) => (
-                <li key={i} className="flex flex-col gap-3">
-                  <Skeleton className="aspect-video w-full rounded" />
-                  <Skeleton className="h-4 w-4/5" />
-                  <Skeleton className="h-3 w-1/2" />
-                </li>
-              ))
+            ? <CardSkeletons count={8} />
             : items.map((v, i) => (
                 <ResultCard
                   key={v.videoId}
@@ -158,15 +166,35 @@ export default function WebYoutube() {
                   onAdd={() => addVideo(v)}
                 />
               ))}
+          {loadingMore && <CardSkeletons count={4} />}
         </ul>
+        {/* Infinite scroll ala YouTube: halaman berikut dimuat ~600px sebelum dasar daftar terlihat */}
         {hasMore && !loading && (
-          <Button variant="ghost" loading={loadingMore} onClick={loadMore} className="self-center">
-            {y.loadMore}
-          </Button>
+          // key → observer dipasang ulang tiap halaman bertambah (kalau dasar masih terlihat, langsung muat lagi)
+          <div key={items.length} ref={sentinel} className="flex justify-center">
+            {error && !loadingMore && (
+              <Button variant="ghost" onClick={() => void loadMore()}>
+                {y.loadMore}
+              </Button>
+            )}
+            <span className="sr-only" aria-live="polite">
+              {loadingMore ? y.loadMore : ""}
+            </span>
+          </div>
         )}
       </section>
     </div>
   );
+}
+
+function CardSkeletons({ count }: { count: number }) {
+  return Array.from({ length: count }, (_, i) => (
+    <li key={`sk-${i}`} aria-hidden="true" className="flex flex-col gap-3">
+      <Skeleton className="aspect-video w-full rounded" />
+      <Skeleton className="h-4 w-4/5" />
+      <Skeleton className="h-3 w-1/2" />
+    </li>
+  ));
 }
 
 function ResultCard({ video, index, active, onPlay, onAdd }: { video: SearchVideo; index: number; active: boolean; onPlay: () => void; onAdd: () => void }) {

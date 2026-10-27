@@ -3,7 +3,7 @@ import { withBase } from "@/Url/Url";
 import type { PlanId } from "@/lib/schemas/plans";
 import type { UserPlan } from "@/type/auth";
 import type { Order, OrderStatus } from "@/type/billing";
-import type { AdminAuditEntry, AdminFile, AdminJob, AdminMe, AdminStats, AdminUser, JanitorReport, SystemReport } from "@/type/admin";
+import type { AdminAuditEntry, AdminFile, AdminJob, AdminMe, AdminStats, AdminUser, JanitorReport, PlanOverrides, PlanSettings, SystemReport } from "@/type/admin";
 
 // Semua panggilan admin → /api/admin/* (di-proxy ke BE). Cookie sesi admin httpOnly, path /api/admin.
 
@@ -73,3 +73,9 @@ export const getSystem = () => apiFetch<SystemReport>("/api/admin/system", { cac
 /** Jalankan janitor (bersihkan storage & DB) sekarang → laporan janitor + cek sistem terbaru */
 export const runJanitorNow = () =>
   apiFetch<{ janitor: JanitorReport; system: SystemReport }>("/api/admin/system", { method: "POST" });
+
+/** Batas plan: bawaan, override admin & hasil efektif */
+export const getPlanSettings = () => apiFetch<PlanSettings>("/api/admin/plans", { cache: "no-store" });
+
+/** Simpan override batas plan (nilai sama dengan bawaan dibuang server) */
+export const savePlanSettings = (o: PlanOverrides) => apiFetch<PlanSettings>("/api/admin/plans", { method: "PUT", json: o });

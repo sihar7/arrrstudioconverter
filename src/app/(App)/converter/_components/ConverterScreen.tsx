@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { enqueue } from "@/store/slices/converterSlice";
 import { useMeQuery } from "@/store/api/baseApi";
 import { shortName } from "@/lib/shortName";
-import { PLANS } from "@/lib/schemas/plans";
+import { usePlans } from "@/hooks/usePlans";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import PageHeader from "@/components/shared/PageHeader";
@@ -42,6 +42,7 @@ export default function ConverterScreen() {
   const router = useRouter();
   const toast = useToast();
   const { data: me } = useMeQuery();
+  const { plans } = usePlans();
   const [gate, setGate] = useState(false);
   const [help, setHelp] = useState(false);
   const [uploadKey, setUploadKey] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export default function ConverterScreen() {
     let keys = selection.length ? selection : uploadableKeys;
     if (!keys.length) return;
     // Upload massal per plan: 0 = terkunci (satu item tetap boleh lewat dialog tunggal), n = maks n, null = tanpa batas
-    const max = PLANS[me?.plan?.id ?? "free"].bulkRoblox;
+    const max = plans[me?.plan?.id ?? "free"].bulkRoblox;
     if (keys.length > 1 && max === 0) {
       toast(t.plan.bulkLocked, "info");
       router.push("/pricing");
