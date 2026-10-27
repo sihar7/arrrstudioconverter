@@ -5,6 +5,7 @@ import { CheckCircle, InfoCircle, WarningTriangle, Xmark } from "iconoir-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { dismissToast, type Toast } from "@/store/slices/toastSlice";
 import { cn } from "@/lib/utils";
+import QueueNotice from "./QueueNotice";
 
 function ToastRow({ toast }: { toast: Toast }) {
   const dispatch = useAppDispatch();
@@ -46,6 +47,7 @@ export default function Toaster() {
       {items.map((t) => (
         <ToastRow key={t.id} toast={t} />
       ))}
+      <QueueNotice />
     </div>
   );
 }

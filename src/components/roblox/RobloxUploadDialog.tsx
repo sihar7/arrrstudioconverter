@@ -7,19 +7,23 @@ import Dialog from "@/components/ui/Dialog";
 import Button, { ButtonLink } from "@/components/ui/Button";
 import Field, { Input, Textarea } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
+import Switch from "@/components/ui/Switch";
 import { nameFor, type NameStyle } from "@/lib/shortName";
 import NameStylePicker from "./NameStylePicker";
 import type { UploadBlock, UploadForm } from "@/type/roblox";
 
 interface Props {
   title: string;
+  /** Cover album (atau thumbnail video) + artis — pratinjau Decal; tanpa cover = opsi Decal disembunyikan */
+  cover?: string;
+  artist?: string | null;
   block: UploadBlock;
   initial: UploadForm;
   onClose: () => void;
   onSubmit: (form: UploadForm) => Promise<boolean>;
 }
 
-export default function RobloxUploadDialog({ title, block, initial, onClose, onSubmit }: Props) {
+export default function RobloxUploadDialog({ title, cover, artist, block, initial, onClose, onSubmit }: Props) {
   const { t, f } = useT();
   const u = t.upload;
   const [form, setForm] = useState<UploadForm>(initial);
@@ -75,7 +79,18 @@ export default function RobloxUploadDialog({ title, block, initial, onClose, onS
             void submit();
           }}
         >
-          <p className="line-clamp-2 border-l-2 border-line-2 pl-3 text-[13.5px] text-fg-3">{title}</p>
+          {cover ? (
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cover} alt="" className="size-12 shrink-0 rounded-[10px] bg-fg/[0.07] object-cover" />
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-[13.5px] font-medium leading-snug text-fg-2">{title}</p>
+                {artist && <p className="mt-0.5 truncate text-[12.5px] text-fg-3">{artist}</p>}
+              </div>
+            </div>
+          ) : (
+            <p className="line-clamp-2 border-l-2 border-line-2 pl-3 text-[13.5px] text-fg-3">{title}</p>
+          )}
 
           <Field label={u.name} hint={u.nameHelp} aside={<span className="font-mono text-[11px] text-fg-3">{form.displayName.length}/50</span>}>
             {({ id, describedBy }) => (
@@ -104,6 +119,8 @@ export default function RobloxUploadDialog({ title, block, initial, onClose, onS
           <Field label={u.description}>
             {({ id }) => <Textarea id={id} rows={2} maxLength={1000} value={form.description} onChange={(e) => set({ description: e.target.value })} />}
           </Field>
+
+          {cover && <Switch label={u.cover} hint={u.coverHint} checked={form.uploadCover} onChange={(uploadCover) => set({ uploadCover })} />}
 
           <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
             <Field label={u.creator}>

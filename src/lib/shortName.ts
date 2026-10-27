@@ -6,7 +6,7 @@ const TITLE_NOISE =
 const MAX_NAME = 50;
 
 /** Buang tag [..], (Official Video), #hashtag, akhiran noise & karakter yang ditolak Roblox */
-function clean(title: string): string {
+export function clean(title: string): string {
   const name = (title.split(/\s+(?:\||\/\/)\s+/)[0] ?? title)
     .replace(/\[[^\]]*\]|【[^】]*】/g, " ")
     .replace(new RegExp(`\((?:[^()]*\b(?:${TITLE_NOISE})\b[^()]*)\)`, "gi"), " ")

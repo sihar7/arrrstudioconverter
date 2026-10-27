@@ -8,6 +8,7 @@ import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import Field, { Input, Textarea } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
+import Switch from "@/components/ui/Switch";
 import { nameFor, type NameStyle } from "@/lib/shortName";
 import NameStylePicker from "./NameStylePicker";
 import type { UploadForm } from "@/type/roblox";
@@ -188,6 +189,8 @@ export default function BulkUploadDialog({ entries, initial, onClose, onSubmit }
         <Field label={u.description}>
           {({ id }) => <Textarea id={id} rows={2} maxLength={1000} value={form.description} onChange={(e) => set({ description: e.target.value })} />}
         </Field>
+
+        <Switch label={u.cover} hint={u.coverHint} checked={form.uploadCover} onChange={(uploadCover) => set({ uploadCover })} />
 
         <Field
           label={u.permission}

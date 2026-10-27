@@ -14,6 +14,15 @@ export interface UploadState {
   error: string | null;
 }
 
+/** Upload cover album sebagai Decal (berjalan bersama upload audio) */
+export interface DecalState {
+  status: "idle" | "uploading" | "processing" | "done" | "error";
+  decalId: string | null;
+  /** ID gambar di balik decal — yang dipakai ImageLabel/Texture; null = Roblox masih memproses */
+  imageId: string | null;
+  error: string | null;
+}
+
 export interface QueueItem {
   key: string;
   videoId: string;
@@ -21,6 +30,12 @@ export interface QueueItem {
   author: string;
   thumbnail: string;
   duration: number | null;
+  /** Dari katalog musik / tebakan judul; null = tidak diketahui */
+  artist: string | null;
+  album: string | null;
+  /** URL cover album kotak; null = pakai thumbnail video */
+  cover: string | null;
+  metaReady: boolean;
   status: ItemStatus;
   progress: number;
   jobId: string | null;
@@ -29,6 +44,7 @@ export interface QueueItem {
   options: AudioOptions | null;
   autoUpload: boolean;
   upload: UploadState;
+  decal: DecalState;
 }
 
 /** Preset buatan user (disimpan per perangkat) */
@@ -51,6 +67,7 @@ export interface ConverterState {
 }
 
 const emptyUpload: UploadState = { status: "idle", assetId: null, operationId: null, error: null };
+const emptyDecal: DecalState = { status: "idle", decalId: null, imageId: null, error: null };
 
 const initialState: ConverterState = {
   options: DEFAULT_OPTIONS,
@@ -150,6 +167,10 @@ const converterSlice = createSlice({
           author: v.author,
           thumbnail: v.thumbnail,
           duration: v.duration,
+          artist: null,
+          album: null,
+          cover: null,
+          metaReady: false,
           // Auto-convert: langsung masuk antrean server dengan opsi saat ini
           status: state.autoConvert ? "pending" : "idle",
           progress: 0,
@@ -159,6 +180,7 @@ const converterSlice = createSlice({
           options: state.autoConvert ? state.options : null,
           autoUpload: state.autoConvert && state.autoUpload,
           upload: emptyUpload,
+          decal: emptyDecal,
         });
       }
     },
@@ -177,6 +199,7 @@ const converterSlice = createSlice({
           options: state.options,
           autoUpload: state.autoUpload,
           upload: emptyUpload,
+          decal: emptyDecal,
         });
       }
     },
@@ -220,6 +243,15 @@ const converterSlice = createSlice({
       const item = find(state, action.payload.key);
       if (item) item.upload = { ...item.upload, ...action.payload.upload };
     },
+    decalUpdated(state, action: PayloadAction<{ key: string; decal: Partial<DecalState> }>) {
+      const item = find(state, action.payload.key);
+      if (item) item.decal = { ...item.decal, ...action.payload.decal };
+    },
+    /** Metadata lagu berlaku untuk semua item dengan video yang sama */
+    metaResolved(state, action: PayloadAction<{ videoId: string; artist: string | null; album: string | null; cover: string | null }>) {
+      const { videoId, ...meta } = action.payload;
+      for (const item of state.items) if (item.videoId === videoId) Object.assign(item, meta, { metaReady: true });
+    },
     consumeAutoUpload(state, action: PayloadAction<string>) {
       const item = find(state, action.payload);
       if (item) item.autoUpload = false;
@@ -247,6 +279,8 @@ export const {
   removeMany,
   clearFinished,
   uploadUpdated,
+  decalUpdated,
+  metaResolved,
   consumeAutoUpload,
 } = converterSlice.actions;
 export default converterSlice.reducer;

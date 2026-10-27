@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearFinished, enqueue, isRunning, moveItem, removeItem, removeMany, type QueueItem } from "@/store/slices/converterSlice";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
+import { useConfirm } from "@/hooks/useConfirm";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
 import Button, { buttonClass } from "@/components/ui/Button";
@@ -28,8 +29,12 @@ interface Props {
   blockReason: (item: QueueItem) => UploadBlock;
   /** Item siap upload massal (urut antrean) */
   uploadableKeys: string[];
-  /** Pilihan upload, urut sesuai saat dipilih */
+  /** Item yang bisa dipilih (hapus / upload) — semua yang tidak sedang berjalan */
+  selectableKeys: string[];
+  /** Pilihan, urut sesuai saat dipilih */
   selection: string[];
+  /** Bagian pilihan yang bisa diupload ke Roblox */
+  uploadSelection: string[];
   onToggleSelect: (key: string) => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
@@ -45,7 +50,9 @@ export default function QueueCard({
   onUpload,
   blockReason,
   uploadableKeys,
+  selectableKeys,
   selection,
+  uploadSelection,
   onToggleSelect,
   onSelectAll,
   onClearSelection,
@@ -56,6 +63,7 @@ export default function QueueCard({
   const items = useAppSelector((s) => s.converter.items);
   const dispatch = useAppDispatch();
   const { t, f } = useT();
+  const [confirm, confirmDialog] = useConfirm();
   const c = t.converter;
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -81,7 +89,15 @@ export default function QueueCard({
     : 0;
 
   const selIndex = new Map(selection.map((k, i) => [k, i + 1]));
-  const uploadable = new Set(uploadableKeys);
+  const selectable = new Set(selectableKeys);
+  // Hapus semua: item yang sedang berjalan tetap dibiarkan (removeMany melewatinya)
+  const removable = items.filter((i) => !isRunning(i.status)).map((i) => i.key);
+  const removeAll = async () => {
+    if (await confirm(f(c.removeAllConfirm, { n: removable.length }))) {
+      dispatch(removeMany(removable));
+      onClearSelection();
+    }
+  };
   const selectedFileIds = items.filter((i) => selIndex.has(i.key) && i.result).map((i) => i.result!.fileId);
   const order = new Map(items.map((i, n) => [i.key, n]));
 
@@ -175,7 +191,7 @@ export default function QueueCard({
                 )}
               </div>
             ) : (
-              <p className="flex-1 text-[12.5px] text-fg-3">{uploadableKeys.length ? c.pickHint : c.guide[2].desc}</p>
+              <p className="flex-1 text-[12.5px] text-fg-3">{selectableKeys.length ? c.pickHint : c.guide[2].desc}</p>
             )}
             <div className="flex flex-wrap items-center gap-1">
               {failedKeys.length > 0 && (
@@ -196,6 +212,11 @@ export default function QueueCard({
               {finished && (
                 <Button size="sm" variant="subtle" className="h-9 px-3" icon={<Trash width={14} height={14} />} onClick={() => dispatch(clearFinished())}>
                   {c.clearDone}
+                </Button>
+              )}
+              {removable.length > 1 && selection.length === 0 && (
+                <Button size="sm" variant="subtle" className="h-9 px-3 text-err" icon={<Trash width={14} height={14} />} onClick={() => void removeAll()}>
+                  {c.removeAll}
                 </Button>
               )}
             </div>
@@ -250,7 +271,7 @@ export default function QueueCard({
                   item={item}
                   playing={Boolean(item.result && playing === item.result.fileId)}
                   uploadBlock={blockReason(item)}
-                  selectable={uploadable.has(item.key)}
+                  selectable={selectable.has(item.key)}
                   selectIndex={selIndex.get(item.key) ?? null}
                   canMoveUp={n > 0}
                   canMoveDown={n < items.length - 1}
@@ -291,13 +312,13 @@ export default function QueueCard({
             <span aria-live="polite" className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-fg">
               {f(c.picked, { n: selection.length })}
             </span>
-            {selection.length < uploadableKeys.length && (
+            {selection.length < selectableKeys.length && (
               <button
                 type="button"
                 onClick={onSelectAll}
                 className="state-layer h-10 shrink-0 cursor-pointer rounded-full px-3 text-[13px] font-medium text-fg-2 transition-colors hover:text-fg"
               >
-                {f(c.pickAll, { n: uploadableKeys.length })}
+                {f(c.pickAll, { n: selectableKeys.length })}
               </button>
             )}
             <span className="flex-1" />
@@ -307,12 +328,27 @@ export default function QueueCard({
               </a>
             )}
             <IconButton label={c.pickClear} size="sm" icon={<Xmark width={16} height={16} />} onClick={onClearSelection} />
-            <Button size="sm" variant="primary" icon={<CloudUpload width={16} height={16} />} onClick={onUploadMany}>
-              {f(c.uploadSelected, { n: selection.length })}
+            <Button
+              size="sm"
+              variant={uploadSelection.length ? "subtle" : "danger"}
+              icon={<Trash width={15} height={15} />}
+              onClick={() => {
+                dispatch(removeMany(selection));
+                onClearSelection();
+              }}
+              className={cn(uploadSelection.length > 0 && "text-err")}
+            >
+              {f(c.removeSelected, { n: selection.length })}
             </Button>
+            {uploadSelection.length > 0 && (
+              <Button size="sm" variant="primary" icon={<CloudUpload width={16} height={16} />} onClick={onUploadMany}>
+                {f(c.uploadSelected, { n: uploadSelection.length })}
+              </Button>
+            )}
           </div>
         </div>
       )}
+      {confirmDialog}
     </CardBox>
   );
 }

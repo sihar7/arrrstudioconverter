@@ -552,6 +552,24 @@ body::before {
   }
 }
 
+/* Gambar yang baru datang (cover album menggantikan thumbnail) */
+.fade-in {
+  animation: fade-in var(--base) var(--ease) both;
+}
+
+/* Popup antrean: garis sisa waktu tampil menyusut ke kiri */
+.qn-timer {
+  animation: qn-timer linear both;
+}
+@keyframes qn-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 /* Menu HP: panel turun dari atas, item menyusul berurutan */
 .menu-sheet[open] {
   animation: menu-in var(--spring-dur) var(--spring) both;

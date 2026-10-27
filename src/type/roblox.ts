@@ -7,6 +7,8 @@ export interface UploadForm {
   creatorId: string;
   permission: PermissionMode;
   placeId: string;
+  /** Upload cover album sebagai Decal (bersamaan dengan audio) */
+  uploadCover: boolean;
 }
 
 /** Alasan upload tidak bisa: belum login, API key belum diisi, atau format tidak didukung Roblox */

@@ -269,6 +269,8 @@ export default function HistoryScreen() {
             creatorId: roblox.creatorId,
             permission: roblox.defaultPermission,
             placeId: roblox.placeId,
+            // Riwayat tidak menyimpan cover → hanya audio
+            uploadCover: false,
           }}
           onClose={() => setUploadFor(null)}
           onSubmit={async (form) => {

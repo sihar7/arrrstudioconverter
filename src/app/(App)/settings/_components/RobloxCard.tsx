@@ -129,6 +129,8 @@ export default function RobloxCard() {
           </Field>
         </div>
 
+        <Switch label={t.upload.cover} hint={t.upload.coverHint} checked={r.uploadCover} onChange={(uploadCover) => dispatch(updateRoblox({ uploadCover }))} />
+
         <details className="group border-t border-line pt-5">
           <summary className="flex cursor-pointer list-none items-center justify-between text-[14px] font-semibold">
             {s.howTo}

@@ -116,7 +116,11 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
           {item.title}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-fg-3">
-          {item.author && <span className="truncate">{item.author}</span>}
+          {(item.artist ?? item.author) && (
+            <span className="truncate" title={[item.artist ?? item.author, item.album].filter(Boolean).join(" · ")}>
+              {[item.artist ?? item.author, item.album].filter(Boolean).join(" · ")}
+            </span>
+          )}
           {done && (
             <span className="font-mono">
               {item.result!.format.toUpperCase()} · {formatBytes(item.result!.size)}
@@ -176,6 +180,32 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
             </div>
           )}
           {up.status === "error" && <p className="mt-2 text-[12.5px] text-err">{up.error}</p>}
+
+          {/* Cover album → Decal (berjalan bersama upload audio) */}
+          {item.decal.status !== "idle" && (
+            <div className="mt-2 flex min-w-0 items-center gap-2 text-[12.5px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={item.cover ?? item.thumbnail} alt="" className="size-5 shrink-0 rounded-[5px] object-cover" />
+              {(item.decal.status === "uploading" || item.decal.status === "processing") && (
+                <span className="flex items-center gap-1.5 text-fg-2">
+                  <Spinner className="size-3" /> {item.decal.status === "uploading" ? t.upload.coverUploading : t.upload.coverProcessing}
+                </span>
+              )}
+              {item.decal.status === "done" && (item.decal.imageId ?? item.decal.decalId) && (
+                <button
+                  type="button"
+                  onClick={() => copy(item.decal.imageId ?? item.decal.decalId!)}
+                  className="inline-flex min-w-0 cursor-pointer items-center gap-1.5 font-mono text-fg transition-colors hover:text-accent"
+                  title={t.history.copyId}
+                >
+                  <span className="font-sans text-fg-3">{t.upload.coverLabel}</span>
+                  <span className="truncate">rbxassetid://{item.decal.imageId ?? item.decal.decalId}</span>
+                  <Copy width={13} height={13} className="shrink-0" />
+                </button>
+              )}
+              {item.decal.status === "error" && <span className="text-err">{f(t.upload.coverFailed, { error: item.decal.error ?? "" })}</span>}
+            </div>
+          )}
         </div>
       </div>
 

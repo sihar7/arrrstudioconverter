@@ -19,6 +19,8 @@ export interface RobloxState {
   creatorId: string;
   defaultPermission: PermissionMode;
   placeId: string;
+  /** Cover album ikut diupload sebagai Decal saat audio diupload */
+  uploadCover: boolean;
   keyCheck: KeyCheck | null;
 }
 
@@ -29,6 +31,7 @@ const initialState: RobloxState = {
   creatorId: "",
   defaultPermission: "none",
   placeId: "",
+  uploadCover: true,
   keyCheck: null,
 };
 

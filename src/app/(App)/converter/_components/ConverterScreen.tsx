@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { enqueue } from "@/store/slices/converterSlice";
+import { enqueue, isRunning } from "@/store/slices/converterSlice";
 import { useMeQuery } from "@/store/api/baseApi";
 import { shortName } from "@/lib/shortName";
 import { usePlans } from "@/hooks/usePlans";
@@ -60,14 +60,19 @@ export default function ConverterScreen() {
 
   const bulkItems = items.filter(roblox.uploadable);
   const uploadableKeys = bulkItems.map((i) => i.key);
-  // Pilihan yang sudah tidak bisa diupload (terhapus / sedang upload) otomatis gugur
-  const selection = picked.filter((k) => uploadableKeys.includes(k));
+  // Bisa dipilih (hapus / upload): semua yang tidak sedang diproses atau diupload
+  const selectableKeys = items
+    .filter((i) => !isRunning(i.status) && i.upload.status !== "uploading" && i.upload.status !== "processing")
+    .map((i) => i.key);
+  // Pilihan yang sudah tidak bisa dipilih (terhapus / mulai berjalan) otomatis gugur
+  const selection = picked.filter((k) => selectableKeys.includes(k));
+  const uploadSelection = selection.filter((k) => uploadableKeys.includes(k));
   const toggleSelect = (key: string) =>
-    setPicked((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s.filter((k) => uploadableKeys.includes(k)), key]));
-  const selectAll = () => setPicked([...selection, ...uploadableKeys.filter((k) => !selection.includes(k))]);
+    setPicked((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s.filter((k) => selectableKeys.includes(k)), key]));
+  const selectAll = () => setPicked([...selection, ...selectableKeys.filter((k) => !selection.includes(k))]);
 
   const openBulk = () => {
-    let keys = selection.length ? selection : uploadableKeys;
+    let keys = selection.length ? uploadSelection : uploadableKeys;
     if (!keys.length) return;
     // Upload massal per plan: 0 = terkunci (satu item tetap boleh lewat dialog tunggal), n = maks n, null = tanpa batas
     const max = plans[me?.plan?.id ?? "free"].bulkRoblox;
@@ -118,7 +123,9 @@ export default function ConverterScreen() {
             onTogglePlay={preview.toggle}
             onUpload={(item) => setUploadKey(item.key)}
             uploadableKeys={uploadableKeys}
+            selectableKeys={selectableKeys}
             selection={selection}
+            uploadSelection={uploadSelection}
             onToggleSelect={toggleSelect}
             onSelectAll={selectAll}
             onClearSelection={() => setPicked([])}
@@ -134,6 +141,8 @@ export default function ConverterScreen() {
         <RobloxUploadDialog
           key={uploadItem.key}
           title={uploadItem.title}
+          cover={uploadItem.cover ?? uploadItem.thumbnail}
+          artist={uploadItem.artist}
           block={roblox.blockReason(uploadItem)}
           initial={roblox.defaultForm(uploadItem)}
           onClose={() => setUploadKey(null)}
@@ -143,12 +152,19 @@ export default function ConverterScreen() {
       {bulkEntries.length > 0 && (
         <BulkUploadDialog
           entries={bulkEntries.map((i) => ({ key: i.key, title: i.title, thumbnail: i.thumbnail, displayName: shortName(i.title) }))}
-          initial={roblox.defaultForm(bulkEntries[0])}
+          // Deskripsi kosong = tiap audio memakai artisnya sendiri (lihat onSubmit)
+          initial={{ ...roblox.defaultForm(bulkEntries[0]), description: "" }}
           onClose={() => setBulk(null)}
           onSubmit={(chosen) => {
             const byKey = new Map(bulkEntries.map((i) => [i.key, i]));
             setPicked([]);
-            void roblox.uploadMany(chosen.flatMap((p) => (byKey.has(p.key) ? [{ item: byKey.get(p.key)!, form: p.form }] : [])));
+            void roblox.uploadMany(
+              chosen.flatMap((p) => {
+                const item = byKey.get(p.key);
+                if (!item) return [];
+                return [{ item, form: p.form.description.trim() ? p.form : { ...p.form, description: roblox.defaultForm(item).description } }];
+              }),
+            );
           }}
         />
       )}

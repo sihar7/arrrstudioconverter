@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/store/hooks";
-import { consumeAutoUpload, uploadUpdated, type QueueItem } from "@/store/slices/converterSlice";
+import { consumeAutoUpload, decalUpdated, uploadUpdated, type QueueItem } from "@/store/slices/converterSlice";
 import { baseApi, useMeQuery } from "@/store/api/baseApi";
 import { ROBLOX_FORMATS } from "@/lib/schemas/convert.schema";
 import { ApiError } from "@/lib/utils";
@@ -11,9 +11,13 @@ import { useToast } from "@/hooks/useToast";
 import { checkOperation, uploadToRoblox } from "../_service/converter.service";
 import { OPERATION_POLL_MS, UPLOAD_PARALLEL } from "../_constants/converter.constants";
 import { shortName } from "@/lib/shortName";
+import { coverDataUrl } from "@/lib/trackMeta";
+import { checkOperation as checkDecal, fetchTextureId, uploadDecal } from "../../skybox/_service/skybox.service";
 import type { UploadBlock, UploadForm } from "@/type/roblox";
 
-/** Upload hasil ke Roblox + polling operasi sampai asset ID keluar */
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Upload hasil ke Roblox + polling operasi sampai asset ID keluar (+ cover album sebagai Decal bila diaktifkan) */
 export function useRobloxUpload() {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -43,13 +47,55 @@ export function useRobloxUpload() {
   const defaultForm = useCallback(
     (item: QueueItem): UploadForm => ({
       displayName: shortName(item.title),
-      description: "",
+      description: item.artist ? f(t.upload.byArtist, { artist: item.artist }) : "",
       creatorType: roblox.creatorType,
       creatorId: roblox.creatorId,
       permission: roblox.defaultPermission,
       placeId: roblox.placeId,
+      uploadCover: roblox.uploadCover,
     }),
-    [roblox],
+    [roblox, t, f],
+  );
+
+  /** Cover → Decal → ID gambar. Gagal di sini tidak membatalkan audio yang sudah terkirim. */
+  const uploadCover = useCallback(
+    async (item: QueueItem, form: UploadForm) => {
+      const apiKey = store.getState().roblox.apiKey;
+      const mark = (decal: Parameters<typeof decalUpdated>[0]["decal"]) => alive.current && dispatch(decalUpdated({ key: item.key, decal }));
+      // Metadata terbaru (cover iTunes bisa datang setelah item diambil)
+      const cover = store.getState().converter.items.find((i) => i.key === item.key)?.cover ?? item.cover;
+      mark({ status: "uploading", decalId: null, imageId: null, error: null });
+      try {
+        let res = await uploadDecal({
+          apiKey,
+          creatorType: form.creatorType,
+          creatorId: form.creatorId,
+          displayName: form.displayName.trim().slice(0, 50) || "Cover",
+          image: await coverDataUrl(cover, item.videoId),
+        });
+        mark({ status: "processing" });
+        for (let i = 0; !res.assetId && res.operationId && i < 30 && alive.current; i++) {
+          await sleep(2000);
+          res = await checkDecal(apiKey, res.operationId);
+        }
+        if (!res.assetId) throw new Error("timeout");
+        const decalId = res.assetId;
+        mark({ decalId });
+        // Roblox butuh beberapa detik sebelum ID gambar di balik decal bisa dibaca
+        for (let i = 0; i < 12 && alive.current; i++) {
+          const { imageId } = await fetchTextureId(apiKey, decalId).catch(() => ({ imageId: null }));
+          if (imageId) {
+            mark({ status: "done", imageId });
+            return;
+          }
+          await sleep(3000);
+        }
+        mark({ status: "done" });
+      } catch (e) {
+        mark({ status: "error", error: e instanceof ApiError ? (e.code === "NETWORK" ? t.toast.network : e.message) : String(e) });
+      }
+    },
+    [dispatch, store, t],
   );
 
   const pollOperation = useCallback(
@@ -94,6 +140,7 @@ export function useRobloxUpload() {
           placeId: form.permission === "place" ? form.placeId : undefined,
         });
         dispatch(baseApi.util.invalidateTags(["History"]));
+        if (form.uploadCover) void uploadCover(item, form);
         if (r.assetId) {
           dispatch(uploadUpdated({ key: item.key, upload: { status: "done", assetId: r.assetId } }));
           if (!quiet) toast(f(t.toast.uploaded, { id: r.assetId }), "ok");
@@ -109,7 +156,7 @@ export function useRobloxUpload() {
         return false;
       }
     },
-    [dispatch, store, toast, t, f, pollOperation],
+    [dispatch, store, toast, t, f, pollOperation, uploadCover],
   );
 
   /** Item yang bisa ikut upload massal: selesai, belum terupload, format diterima Roblox */
