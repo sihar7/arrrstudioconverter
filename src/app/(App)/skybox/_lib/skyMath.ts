@@ -5,6 +5,8 @@
  * Tiap sisi: arah tengah (dir), sumbu kanan gambar (right), sumbu atas gambar (up).
  * Piksel (s, t) ∈ [-1, 1] (s ke kanan, t ke atas) → arah = dir + s·right + t·up.
  */
+import { atmosphereLua, type SkyAtmosphere } from "./atmosphere";
+
 export type FaceId = "ft" | "lf" | "bk" | "rt" | "up" | "dn";
 type Vec3 = readonly [number, number, number];
 
@@ -62,7 +64,8 @@ export function parseAssetId(raw: string): string {
   return m ? m[1] : "";
 }
 
-export function luauScript(ids: Partial<Record<FaceId, string>>, name: string) {
+/** Script Command Bar: Sky (+ Atmosphere yang cocok bila ada) */
+export function luauScript(ids: Partial<Record<FaceId, string>>, name: string, atmosphere?: SkyAtmosphere | null) {
   const safe = (name.trim() || "ARRR_Skybox").replace(/["\\]/g, "");
   const line = (f: FaceId) => `sky.${FACE_PROP[f]} = "rbxassetid://${ids[f] || 0}"`;
   return [
@@ -71,6 +74,7 @@ export function luauScript(ids: Partial<Record<FaceId, string>>, name: string) {
     `sky.Name = "${safe}"`,
     ...(["bk", "dn", "ft", "lf", "rt", "up"] as const).map(line),
     `sky.Parent = Lighting`,
+    ...(atmosphere ? ["", ...atmosphereLua(atmosphere)] : []),
     `print("Skybox '${safe}' terpasang")`,
   ].join("\n");
 }

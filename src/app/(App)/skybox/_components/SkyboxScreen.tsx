@@ -16,12 +16,14 @@ import { useSkyRenderer } from "../_hooks/useSkyRenderer";
 import { DEFAULT_ADJUST, edgeMismatch, imageDataToPng, loadBitmap, type SkyAdjust } from "../_lib/skyGl";
 import { FACE_PROP, FACES, guessFace, type FaceId } from "../_lib/skyMath";
 import { makeZip, saveBlob } from "../_lib/zip";
+import { analyzeAtmosphere, atmosphereRbxmx, atmosphereScript, type SkyAtmosphere } from "../_lib/atmosphere";
 import SkyPreview from "./SkyPreview";
 import DropZone from "@/components/shared/ImageDropZone";
 import FaceCross from "./FaceCross";
 import AdjustPanel from "./AdjustPanel";
 import MergePanel from "./MergePanel";
 import InstallCard from "./InstallCard";
+import AtmospherePanel from "./AtmospherePanel";
 import InputCard, { type SourceInfo } from "./InputCard";
 import PreviewEmpty from "./PreviewEmpty";
 import PromptPanel from "./PromptPanel";
@@ -151,9 +153,39 @@ export default function SkyboxScreen() {
     }
   };
 
+  // Atmosphere: otomatis dari warna langit hasil convert, bisa diatur; ikut ZIP, script & .rbxmx
+  const [atmoAuto, setAtmoAuto] = useState<SkyAtmosphere | null>(null);
+  const [atmoEdit, setAtmoEdit] = useState<SkyAtmosphere | null>(null);
+  const [atmoOn, setAtmoOn] = useState(true);
+  useEffect(() => {
+    if (!result) return;
+    let alive = true;
+    analyzeAtmosphere(result.faces).then(
+      (a) => {
+        if (!alive) return;
+        setAtmoAuto(a);
+        setAtmoEdit(a);
+      },
+      () => alive && setAtmoAuto(null),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [result]);
+  const atmosphere = result && atmoOn ? atmoEdit : null;
+
   const downloadZip = async () => {
     if (!result) return;
-    const zip = await makeZip(FACES.map((face) => ({ name: `${FACE_PROP[face]}.png`, blob: result.faces[face].blob })));
+    const text = (s: string) => new Blob([s], { type: "text/plain" });
+    const zip = await makeZip([
+      ...FACES.map((face) => ({ name: `${FACE_PROP[face]}.png`, blob: result.faces[face].blob })),
+      ...(atmosphere
+        ? [
+            { name: "Atmosphere.rbxmx", blob: text(atmosphereRbxmx(atmosphere)) },
+            { name: "Atmosphere.lua", blob: text(atmosphereScript(atmosphere)) },
+          ]
+        : []),
+    ]);
     saveBlob(zip, `${baseName(source?.name ?? "skybox")}-skybox.zip`);
   };
 
@@ -429,7 +461,7 @@ export default function SkyboxScreen() {
             </CardBox>
           )}
 
-          {mode === "convert" && <InstallCard faces={result?.faces ?? null} stale={stale} />}
+          {mode === "convert" && <InstallCard faces={result?.faces ?? null} stale={stale} atmosphere={atmosphere} />}
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
@@ -456,7 +488,11 @@ export default function SkyboxScreen() {
               hasResult={Boolean(result)}
               onConvert={() => void convert()}
             />
-          ) : mode === "merge" ? (
+          ) : null}
+          {mode === "convert" && result && atmoAuto && atmoEdit && (
+            <AtmospherePanel value={atmoEdit} auto={atmoAuto} on={atmoOn} onToggle={setAtmoOn} onChange={setAtmoEdit} />
+          )}
+          {mode === "merge" ? (
             <MergePanel
               filled={Object.keys(slots).length}
               busy={busy}

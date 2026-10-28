@@ -12,6 +12,7 @@ import Button from "@/components/ui/Button";
 import Field, { inputClass } from "@/components/ui/Field";
 import { FACE_PROP, FACES, luauScript, parseAssetId, type FaceId } from "../_lib/skyMath";
 import { saveBlob } from "../_lib/zip";
+import type { SkyAtmosphere } from "../_lib/atmosphere";
 import { checkOperation, faceDataUrl, fetchTextureId, skyRbxmx, uploadDecal } from "../_service/skybox.service";
 
 type Status = "idle" | "uploading" | "processing" | "texture" | "done" | "pending" | "error";
@@ -36,7 +37,16 @@ const TONE: Record<Status, string> = {
  * Pasang di Roblox: upload otomatis 6 sisi (Decal → Texture ID) memakai API key dari Pengaturan,
  * atau isi ID manual. Hasilnya script Command Bar + file Sky .rbxmx.
  */
-export default function InstallCard({ faces, stale }: { faces: Record<FaceId, { blob: Blob }> | null; stale: boolean }) {
+export default function InstallCard({
+  faces,
+  stale,
+  atmosphere,
+}: {
+  faces: Record<FaceId, { blob: Blob }> | null;
+  stale: boolean;
+  /** Atmosphere yang ikut script & .rbxmx; null = belum ada hasil / tidak disertakan */
+  atmosphere: SkyAtmosphere | null;
+}) {
   const { t, f } = useT();
   const s = t.skybox;
   const toast = useToast();
@@ -47,7 +57,7 @@ export default function InstallCard({ faces, stale }: { faces: Record<FaceId, { 
   const [up, setUp] = useState<Partial<Record<FaceId, FaceUpload>>>({});
   const [busy, setBusy] = useState(false);
   const alive = useRef(true);
-  const script = luauScript(ids, name);
+  const script = luauScript(ids, name, atmosphere);
 
   useEffect(() => {
     alive.current = true;
@@ -136,7 +146,7 @@ export default function InstallCard({ faces, stale }: { faces: Record<FaceId, { 
     }
   };
 
-  const downloadRbxmx = () => saveBlob(new Blob([skyRbxmx(ids, name)], { type: "application/xml" }), `${(name.trim() || "ARRR_Skybox").replace(/[^\w-]+/g, "_")}.rbxmx`);
+  const downloadRbxmx = () => saveBlob(new Blob([skyRbxmx(ids, name, atmosphere)], { type: "application/xml" }), `${(name.trim() || "ARRR_Skybox").replace(/[^\w-]+/g, "_")}.rbxmx`);
 
   const uploadedCount = FACES.filter((face) => up[face]?.status === "done").length;
   const hasPending = FACES.some((face) => up[face]?.status === "pending");

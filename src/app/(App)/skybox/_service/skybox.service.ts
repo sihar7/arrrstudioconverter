@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/utils";
 import { FACE_PROP, type FaceId } from "../_lib/skyMath";
+import { atmosphereItem, type SkyAtmosphere } from "../_lib/atmosphere";
 
 interface UploadResult {
   assetId: string | null;
@@ -47,8 +48,8 @@ export async function faceDataUrl(png: Blob): Promise<string> {
 
 const xml = (s: string) => s.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
 
-/** File model Sky (.rbxmx) berisi 6 ID — seret ke Studio lalu pindahkan ke Lighting */
-export function skyRbxmx(ids: Partial<Record<FaceId, string>>, name: string) {
+/** File model Sky (.rbxmx) berisi 6 ID (+ Atmosphere bila ada) — seret ke Studio lalu pindahkan ke Lighting */
+export function skyRbxmx(ids: Partial<Record<FaceId, string>>, name: string, atmosphere?: SkyAtmosphere | null) {
   const faces = (["bk", "dn", "ft", "lf", "rt", "up"] as const)
     .map((f) => `      <Content name="${FACE_PROP[f]}"><url>rbxassetid://${ids[f] || 0}</url></Content>`)
     .join("\n");
@@ -61,6 +62,6 @@ ${faces}
       <int name="StarCount">3000</int>
     </Properties>
   </Item>
-</roblox>
+${atmosphere ? atmosphereItem(atmosphere) : ""}</roblox>
 `;
 }
