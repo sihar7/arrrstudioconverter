@@ -22,6 +22,8 @@ export function useLibrary() {
   const [loading, setLoading] = useState(false);
   // Kunci sinkron: infinite scroll bisa memicu load berkali-kali sebelum state loading ter-render
   const busy = useRef(false);
+  // Halaman lanjutan terakhir gagal → scroll otomatis dijeda
+  const [autoFailed, setAutoFailed] = useState(false);
   // Muat semua: jumlah aset terkumpul (null = tidak sedang berjalan) + flag berhenti
   const [loadingAll, setLoadingAll] = useState<number | null>(null);
   const stopAll = useRef(false);
@@ -62,7 +64,10 @@ export function useLibrary() {
         if (!opts.assetIds) setNextToken(r.nextPageToken);
         // Halaman lanjutan (scroll otomatis) tidak perlu toast
         if (!opts.more) toast(f(t.library.loadedToast, { n: r.assets.length }), "ok");
+        setAutoFailed(false);
       } catch (e) {
+        // Halaman lanjutan gagal → infinite scroll berhenti (tidak mengulang terus & kena rate limit) sampai muat manual
+        if (opts.more) setAutoFailed(true);
         toast(errText(e, t.toast.network), "err");
       } finally {
         busy.current = false;
@@ -179,6 +184,7 @@ export function useLibrary() {
   return {
     assets,
     nextToken,
+    autoFailed,
     loading,
     granting,
     archiving,

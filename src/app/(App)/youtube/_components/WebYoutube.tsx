@@ -38,7 +38,7 @@ export default function WebYoutube() {
     observer.current?.disconnect();
     observer.current = null;
     if (!el) return;
-    observer.current = new IntersectionObserver(([e]) => e.isIntersecting && void more.current(), { rootMargin: "600px 0px" });
+    observer.current = new IntersectionObserver(([e]) => e.isIntersecting && void more.current(true), { rootMargin: "600px 0px" });
     observer.current.observe(el);
   }, []);
 

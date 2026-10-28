@@ -47,26 +47,33 @@ export function useYoutubeSearch() {
     [fail],
   );
 
-  const loadMore = useCallback(async () => {
-    if (!next || loadingMore || loading) return;
-    const c = ctrl.current;
-    setLoadingMore(true);
-    setError(null);
-    try {
-      const res = await searchYoutube("", next, c?.signal);
-      // Kata kunci berganti selama memuat → halaman lama dibuang
-      if (ctrl.current !== c) return;
-      setItems((prev) => {
-        const seen = new Set(prev.map((v) => v.videoId));
-        return [...prev, ...res.items.filter((v) => !seen.has(v.videoId))];
-      });
-      setNext(res.continuation);
-    } catch (e) {
-      fail(e);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [next, loadingMore, loading, fail]);
+  /**
+   * Halaman berikutnya. auto = dari infinite scroll: TIDAK mengulang setelah error (dulu gagal → skeleton hilang →
+   * sentinel terlihat lagi → muat lagi → halaman bergetar & kena rate limit). Ulang manual lewat tombol (auto=false).
+   */
+  const loadMore = useCallback(
+    async (auto = false) => {
+      if (!next || loadingMore || loading || (auto && error)) return;
+      const c = ctrl.current;
+      setLoadingMore(true);
+      setError(null);
+      try {
+        const res = await searchYoutube("", next, c?.signal);
+        // Kata kunci berganti selama memuat → halaman lama dibuang
+        if (ctrl.current !== c) return;
+        const seen = new Set(items.map((v) => v.videoId));
+        const fresh = res.items.filter((v) => !seen.has(v.videoId));
+        setItems((prev) => [...prev, ...fresh]);
+        // Halaman tanpa video baru (YouTube mengulang hasil) → berhenti, jangan memuat tanpa akhir
+        setNext(fresh.length ? res.continuation : null);
+      } catch (e) {
+        fail(e);
+      } finally {
+        setLoadingMore(false);
+      }
+    },
+    [next, loadingMore, loading, error, items, fail],
+  );
 
   return { query, items, hasMore: Boolean(next), loading, loadingMore, error, search, loadMore };
 }

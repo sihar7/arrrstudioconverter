@@ -76,7 +76,7 @@ export default function LibraryScreen() {
   const loadMore = useRef(() => {});
   useEffect(() => {
     loadMore.current = () => {
-      if (lib.nextToken && !lib.loading) void lib.load({ more: true });
+      if (lib.nextToken && !lib.loading && !lib.autoFailed) void lib.load({ more: true });
     };
   });
   const observer = useRef<IntersectionObserver | null>(null);
@@ -312,8 +312,17 @@ export default function LibraryScreen() {
             {lib.nextToken && (
               // key = jumlah aset → sentinel dipasang ulang tiap halaman masuk, jadi tetap memicu kalau masih terlihat
               <div key={lib.assets.length} ref={sentinel} className="flex h-16 items-center justify-center border-t border-line/70 text-fg-3">
-                {lib.loading && <Spinner />}
-                <span className="sr-only">{L.loadMore}</span>
+                {lib.loading ? (
+                  <Spinner />
+                ) : (
+                  lib.autoFailed && (
+                    // Halaman lanjutan gagal → scroll otomatis dijeda, ulang manual
+                    <Button size="sm" variant="ghost" onClick={() => void lib.load({ more: true })}>
+                      {L.loadMore}
+                    </Button>
+                  )
+                )}
+                {!lib.autoFailed && <span className="sr-only">{L.loadMore}</span>}
               </div>
             )}
           </>
