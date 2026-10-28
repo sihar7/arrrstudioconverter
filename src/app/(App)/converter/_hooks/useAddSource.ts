@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/store/hooks";
-import { addItems } from "@/store/slices/converterSlice";
+import { addItems, type QueueInput } from "@/store/slices/converterSlice";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
@@ -19,6 +19,19 @@ const fromPlaylist = (items: PlaylistItem[]): VideoInfo[] =>
     thumbnail: `https://i.ytimg.com/vi/${i.videoId}/hqdefault.jpg`,
     duration: i.duration,
   }));
+
+/** Video album (server mengirim `tracks` hanya untuk admin) → satu item antrean per lagu, dipotong saat convert */
+const fromAlbum = (v: VideoInfo): QueueInput[] =>
+  (v.tracks ?? []).map((tr, i, all) => ({
+    videoId: v.videoId,
+    title: tr.title,
+    author: v.author,
+    thumbnail: v.thumbnail,
+    duration: (tr.end ?? v.duration ?? tr.start) - tr.start || null,
+    clip: { start: tr.start, end: tr.end, index: i + 1, total: all.length },
+  }));
+
+const itemKey = (v: QueueInput) => `${v.videoId}@${v.clip?.start ?? ""}`;
 
 /** Input link → info video / playlist → masuk antrean */
 export function useAddSource() {
@@ -44,7 +57,7 @@ export function useAddSource() {
     setSuggestion(null);
 
     // Hasil disimpan per indeks link → urutan antrean sama dengan urutan input
-    const results: VideoInfo[][] = links.map(() => []);
+    const results: QueueInput[][] = links.map(() => []);
     let invalid = 0;
     let lastError = "";
     let next = 0;
@@ -55,7 +68,10 @@ export function useAddSource() {
         const link = links[idx];
         try {
           const res = await fetchInfo(link);
-          if (res.type === "video") {
+          if (res.type === "video" && res.video.tracks?.length) {
+            results[idx] = fromAlbum(res.video);
+            toast(f(t.converter.albumSplit, { n: res.video.tracks.length, title: res.video.title }), "ok");
+          } else if (res.type === "video") {
             results[idx] = [res.video];
             if (res.playlistId && links.length === 1) setSuggestion({ url: link, playlistId: res.playlistId });
           } else {
@@ -72,9 +88,14 @@ export function useAddSource() {
     await Promise.all([worker(), worker(), worker()]);
 
     // Duplikat (sudah di antrean & belum selesai) dilewati slice — beri tahu jumlahnya
-    const queued = new Set(store.getState().converter.items.filter((i) => i.status !== "done" && i.status !== "error").map((i) => i.videoId));
+    const queued = new Set(
+      store
+        .getState()
+        .converter.items.filter((i) => i.status !== "done" && i.status !== "error")
+        .map((i) => itemKey({ ...i, clip: i.clip ?? undefined })),
+    );
     const seen = new Set<string>();
-    const videos = results.flat().filter((v) => !queued.has(v.videoId) && !seen.has(v.videoId) && seen.add(v.videoId));
+    const videos = results.flat().filter((v) => !queued.has(itemKey(v)) && !seen.has(itemKey(v)) && seen.add(itemKey(v)));
     const dups = results.flat().length - videos.length;
     if (videos.length) dispatch(addItems(videos));
     if (dups) toast(f(t.converter.dupSkipped, { n: dups }), "info");

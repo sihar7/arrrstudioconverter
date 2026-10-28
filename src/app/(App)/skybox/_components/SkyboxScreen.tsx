@@ -13,6 +13,8 @@ import Badge from "@/components/ui/Badge";
 import Segmented from "@/components/ui/Segmented";
 import { SfCube } from "@/components/icons/SfIcons";
 import { useSkyRenderer } from "../_hooks/useSkyRenderer";
+import { useMeQuery } from "@/store/api/baseApi";
+import { usePlans } from "@/hooks/usePlans";
 import { DEFAULT_ADJUST, edgeMismatch, imageDataToPng, loadBitmap, type SkyAdjust } from "../_lib/skyGl";
 import { FACE_PROP, FACES, guessFace, type FaceId } from "../_lib/skyMath";
 import { makeZip, saveBlob } from "../_lib/zip";
@@ -51,6 +53,12 @@ export default function SkyboxScreen() {
   const [source, setSource] = useState<SourceInfo | null>(null);
   const [adjust, setAdjust] = useState<SkyAdjust>(DEFAULT_ADJUST);
   const [size, setSize] = useState(1024);
+  // Admin: sisi s/d 4096 + panorama sumber s/d 16384 (bila GPU mampu) supaya sisi 4096 benar-benar tajam
+  const { data: me } = useMeQuery();
+  const maxFace = usePlans().plans[me?.plan?.id ?? "free"].skyboxMaxFace;
+  useEffect(() => {
+    renderer?.setTextureCap(maxFace >= 4096 ? 16384 : 8192);
+  }, [renderer, maxFace]);
   const [result, setResult] = useState<Result | null>(null);
   const [busy, setBusy] = useState(false);
   const [version, setVersion] = useState(0);
@@ -502,6 +510,7 @@ export default function SkyboxScreen() {
               onAdjust={setAdjust}
               size={size}
               onSize={setSize}
+              maxFace={maxFace}
               disabled={!source || Boolean(errorText)}
               busy={busy || stale}
               hasResult={Boolean(result)}
@@ -517,6 +526,7 @@ export default function SkyboxScreen() {
               merged={merged}
               onMerge={(faceSize) => void exportMerge(faceSize)}
               onUseInConvert={() => void sendMergedToConvert()}
+              maxFace={maxFace}
             />
           ) : null}
         </div>

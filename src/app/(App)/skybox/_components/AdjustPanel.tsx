@@ -10,7 +10,8 @@ import { SfCube } from "@/components/icons/SfIcons";
 import Spinner from "@/components/ui/Spinner";
 import { DEFAULT_ADJUST, type SkyAdjust } from "../_lib/skyGl";
 
-const FACE_SIZES = [512, 1024, 2048] as const;
+// 4096 hanya untuk plan dengan skyboxMaxFace ≥ 4096 (admin)
+const FACE_SIZES = [512, 1024, 2048, 4096] as const;
 const deg = (v: number) => `${v > 0 ? "+" : ""}${v}°`;
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const signed = (v: number) => `${v > 0 ? "+" : ""}${Math.round(v * 100)}`;
@@ -20,6 +21,7 @@ export default function AdjustPanel({
   onAdjust,
   size,
   onSize,
+  maxFace,
   disabled,
   busy,
   hasResult,
@@ -28,6 +30,8 @@ export default function AdjustPanel({
   onAdjust: (a: SkyAdjust) => void;
   size: number;
   onSize: (n: number) => void;
+  /** ukuran sisi maksimal plan */
+  maxFace: number;
   disabled: boolean;
   busy: boolean;
   hasResult: boolean;
@@ -66,7 +70,7 @@ export default function AdjustPanel({
 
       <div className="flex flex-col gap-3 border-t border-[var(--hairline)] px-5 py-5">
         <p className="text-[14px] font-medium">{s.faceSize}</p>
-        <Segmented label={s.faceSize} value={size} onChange={onSize} options={FACE_SIZES.map((n) => ({ value: n, label: `${n}px` }))} />
+        <Segmented label={s.faceSize} value={size} onChange={onSize} options={FACE_SIZES.filter((n) => n <= maxFace).map((n) => ({ value: n, label: `${n}px` }))} />
         <p className="text-[12.5px] leading-relaxed text-fg-3">{s.faceSizeHint}</p>
         {/* Convert otomatis — tidak perlu tombol; cukup status */}
         {!disabled && (

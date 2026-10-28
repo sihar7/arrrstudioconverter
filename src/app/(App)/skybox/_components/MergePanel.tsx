@@ -8,7 +8,8 @@ import Button from "@/components/ui/Button";
 import Segmented from "@/components/ui/Segmented";
 import { saveBlob } from "../_lib/zip";
 
-const SIZES = [512, 1024, 2048] as const;
+// 4096 per sisi (panorama 16384) hanya untuk plan dengan skyboxMaxFace ≥ 4096 (admin)
+const SIZES = [512, 1024, 2048, 4096] as const;
 
 export default function MergePanel({
   filled,
@@ -16,12 +17,15 @@ export default function MergePanel({
   merged,
   onMerge,
   onUseInConvert,
+  maxFace,
 }: {
   filled: number;
   busy: boolean;
   merged: { blob: Blob; url: string } | null;
   onMerge: (faceSize: number) => void;
   onUseInConvert: () => void;
+  /** ukuran sisi maksimal plan */
+  maxFace: number;
 }) {
   const { t } = useT();
   const s = t.skybox;
@@ -32,7 +36,7 @@ export default function MergePanel({
       <CardHeader title={s.merge} />
       <div className="flex flex-col gap-3 px-5 py-5">
         <p className="text-[14px] font-medium">{s.mergeWidth}</p>
-        <Segmented label={s.mergeWidth} value={size} onChange={setSize} options={SIZES.map((n) => ({ value: n, label: `${n * 4}px` }))} />
+        <Segmented label={s.mergeWidth} value={size} onChange={setSize} options={SIZES.filter((n) => n <= maxFace).map((n) => ({ value: n, label: `${n * 4}px` }))} />
         <p className="text-[12.5px] leading-relaxed text-fg-3">{s.mergeWidthHint}</p>
         <Button variant="primary" size="lg" className="mt-2 w-full" loading={busy} disabled={!filled} onClick={() => onMerge(size)}>
           {busy ? s.merging : s.merge}

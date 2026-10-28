@@ -37,6 +37,8 @@ export default function UpscaleScreen() {
   const [progress, setProgress] = useState<number | null>(null);
   const cancelled = useRef(false);
 
+  // Admin: tiap tile diproses asli + cermin lalu dirata-rata (lib/ai/pipelines upscaleImage)
+  const pro = plan.imageAi === "pro";
   // Input diperkecil supaya hasil (input × skala) tidak melewati batas plan
   const plan4 = plan.upscaleScales.includes(4);
   const inSize = source ? fitWithin(source.w, source.h, Math.floor(plan.imageMaxSide / scale)) : null;
@@ -53,7 +55,7 @@ export default function UpscaleScreen() {
       const { session } = await model.ensure();
       await nextFrame();
       const input = drawScaled(src.bitmap, inSize.w, inSize.h);
-      const out = await upscaleImage(session, input, scale, (p) => setProgress(p), () => cancelled.current);
+      const out = await upscaleImage(session, input, scale, (p) => setProgress(p), () => cancelled.current, { tta: pro });
       setResult(await canvasToBlob(out), out.width, out.height);
       toast(s.done, "ok");
     } catch (e) {
@@ -102,6 +104,14 @@ export default function UpscaleScreen() {
               <p className="text-[14px] font-medium">{g.output}</p>
               <p className="text-[13px] tabular-nums text-fg-2">{outSize ? f(g.outputSize, outSize) : "—"}</p>
             </div>
+            {pro && (
+              <div className="flex flex-col gap-1">
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-fg">
+                  <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" /> {g.proMode}
+                </p>
+                <p className="text-[12.5px] leading-relaxed text-fg-3">{f(s.proHint, { max: plan.imageMaxSide })}</p>
+              </div>
+            )}
             <PlanCap plan={planId} planName={t.plan.names[planId]} max={plan.imageMaxSide} scaledFrom={scaledFrom} top={isTopPlan(planId)} />
 
             <div className="flex flex-col gap-2">

@@ -270,7 +270,10 @@ const rad = (deg: number) => (deg * Math.PI) / 180;
 
 export class SkyRenderer {
   readonly gl: WebGL2RenderingContext;
-  readonly maxTexture: number;
+  /** batas tekstur GPU (MAX_TEXTURE_SIZE) */
+  readonly gpuMax: number;
+  /** plafon pemakaian (8192 = aman di semua GPU; admin 16384 untuk sisi 4096 yang benar-benar tajam) */
+  private textureCap = 8192;
   private sky: WebGLProgram;
   private merge: WebGLProgram;
   private vao: WebGLVertexArrayObject;
@@ -287,7 +290,7 @@ export class SkyRenderer {
     const gl = canvas.getContext("webgl2", { antialias: false, preserveDrawingBuffer: false, alpha: false });
     if (!gl || gl.isContextLost()) throw new Error("webgl2");
     this.gl = gl;
-    this.maxTexture = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) as number, 8192);
+    this.gpuMax = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
     this.sky = compile(gl, VERT, SKY_FRAG);
     this.merge = compile(gl, VERT, MERGE_FRAG);
     this.vao = gl.createVertexArray()!;
@@ -317,6 +320,16 @@ export class SkyRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
     if (mip) gl.generateMipmap(gl.TEXTURE_2D);
     return tex;
+  }
+
+  /** Ukuran tekstur maksimal yang dipakai (sumber panorama, hasil gabung) */
+  get maxTexture() {
+    return Math.min(this.gpuMax, this.textureCap);
+  }
+
+  /** Admin: naikkan plafon (mis. 16384) — dibatasi kemampuan GPU */
+  setTextureCap(cap: number) {
+    this.textureCap = cap;
   }
 
   /** Panorama sumber (sudah diperkecil ≤ maxTexture oleh pemanggil) */

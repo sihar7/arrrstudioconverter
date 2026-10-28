@@ -31,8 +31,10 @@ export default function RemoveBgScreen() {
   const planId = me?.plan?.id ?? "free";
   const plan = usePlans().plans[planId];
   const fullBg = plan.imageBg === "full";
+  // Admin: model presisi penuh + inferensi ganda + penyempurnaan tepi (lib/ai/pipelines predictMask)
+  const pro = plan.imageAi === "pro";
 
-  const model = useAiModel(MODELS.removeBg);
+  const model = useAiModel(pro ? MODELS.removeBgPro : MODELS.removeBg);
   const { source, load, clear } = useImageSource();
   const [result, setResult] = useResultUrl();
   const [busy, setBusy] = useState(false);
@@ -54,7 +56,7 @@ export default function RemoveBgScreen() {
       const { session } = await model.ensure();
       await nextFrame();
       const size = fitWithin(src.w, src.h, plan.imageMaxSide);
-      mask.current = await predictMask(session, src.bitmap, size.w, size.h);
+      mask.current = await predictMask(session, src.bitmap, size.w, size.h, { tta: pro, refine: pro });
       await compose(src, bg, color);
       toast(s.done, "ok");
     } catch {
@@ -130,6 +132,14 @@ export default function RemoveBgScreen() {
               <p className="text-[14px] font-medium">{g.output}</p>
               <p className="text-[13px] tabular-nums text-fg-2">{size ? f(g.outputSize, size) : "—"}</p>
             </div>
+            {pro && (
+              <div className="flex flex-col gap-1">
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-fg">
+                  <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" /> {g.proMode}
+                </p>
+                <p className="text-[12.5px] leading-relaxed text-fg-3">{s.proHint}</p>
+              </div>
+            )}
             <PlanCap plan={planId} planName={t.plan.names[planId]} max={plan.imageMaxSide} scaledFrom={scaledFrom} top={isTopPlan(planId)} />
 
             <div className="flex flex-col gap-2">

@@ -9,8 +9,9 @@ import type { PromptFields, PromptStyle } from "./prompts";
 /** off = AI belum diaktifkan di server · busy = AI ada tapi gagal kali ini */
 export type AiFailure = "off" | "busy";
 
-export async function aiCompose(idea: string, style: PromptStyle, signal?: AbortSignal): Promise<PromptFields> {
-  return apiFetch<PromptFields>("/api/skybox/prompt", { method: "POST", json: { idea: idea.slice(0, 300), style }, signal });
+/** ultra = Ultra detail (admin): server mengisi juga cahaya, atmosfer, palet & detail */
+export async function aiCompose(idea: string, style: PromptStyle, signal?: AbortSignal, ultra = false): Promise<PromptFields> {
+  return apiFetch<PromptFields>("/api/skybox/prompt", { method: "POST", json: { idea: idea.slice(0, 300), style, detail: ultra ? "ultra" : "standard" }, signal });
 }
 
 export const failureOf = (e: unknown): AiFailure => (e instanceof ApiError && e.code === "AI_OFF" ? "off" : "busy");

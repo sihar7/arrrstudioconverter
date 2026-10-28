@@ -7,6 +7,17 @@ export interface VideoInfo {
   thumbnail: string;
   /** detik; null kalau belum diketahui (oEmbed tidak memberi durasi) */
   duration: number | null;
+  /** Video album (khusus admin): lagu-lagu dari chapter → dipecah jadi item antrean sendiri */
+  tracks?: AlbumTrack[];
+}
+
+/** Satu lagu dalam video album (chapter) — dipotong lewat trimStart/trimEnd saat convert */
+export interface AlbumTrack {
+  title: string;
+  /** detik mulai */
+  start: number;
+  /** detik selesai; null = sampai akhir video */
+  end: number | null;
 }
 
 export interface PlaylistItem {

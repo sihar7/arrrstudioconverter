@@ -92,7 +92,10 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
 
     const start = async (item: QueueItem, ctrl: AbortController) => {
       try {
-        const { job } = await createJob(item.videoId, item.options!, ctrl.signal);
+        // Lagu dari video album: potong ke rentang lagunya + judul tetap
+        const { clip } = item;
+        const options = clip ? { ...item.options!, trimStart: clip.start || null, trimEnd: clip.end } : item.options!;
+        const { job } = await createJob(item.videoId, options, ctrl.signal, clip ? item.title : undefined);
         dispatch(jobUpdated({ key: item.key, job }));
         dispatch(baseApi.util.invalidateTags(["Me"]));
         await poll(item.key, job.id, ctrl);

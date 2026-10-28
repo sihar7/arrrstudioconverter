@@ -9,7 +9,10 @@ import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import Button from "@/components/ui/Button";
 import Field, { inputClass } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
-import { PLACEHOLDER, PRESET_CATS, PROMPT_PRESETS, PROMPT_SOFT_LIMIT, buildPrompt, buildScene, type PresetCat, type PromptFields, type PromptStyle } from "../_lib/prompts";
+import { useMeQuery } from "@/store/api/baseApi";
+import { usePlans } from "@/hooks/usePlans";
+import { PLACEHOLDER, PRESET_CATS, PROMPT_PRESETS, PROMPT_SOFT_LIMIT, ULTRA_KEYS, buildPrompt, buildScene, type PresetCat, type PromptFields, type PromptStyle } from "../_lib/prompts";
+import { PRO_PRESETS } from "../_lib/promptsPro";
 import { aiCompose, failureOf, localCompose } from "../_lib/aiPrompt";
 
 const STYLES: PromptStyle[] = ["realistic", "anime", "stylized", "painterly"];
@@ -54,7 +57,13 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
   const [busy, setBusy] = useState(false);
   const aiCtrl = useRef<AbortController | null>(null);
   const toast = useToast();
-  const shown = PROMPT_PRESETS.filter((p) => cat === "all" || p.cat === cat || p.id === "blank");
+  // Admin (imageAi "pro"): pustaka preset detail + mode Ultra detail (kolom cahaya, atmosfer, palet, detail)
+  const { data: me } = useMeQuery();
+  const pro = usePlans().plans[me?.plan?.id ?? "free"].imageAi === "pro";
+  const [ultra, setUltra] = useState(true);
+  const useUltra = pro && ultra;
+  const presets = pro ? [...PROMPT_PRESETS, ...PRO_PRESETS] : PROMPT_PRESETS;
+  const shown = presets.filter((p) => cat === "all" || p.cat === cat || p.id === "blank");
 
   const compose = async (text = idea) => {
     const q = text.trim();
@@ -65,7 +74,7 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
     const ctrl = new AbortController();
     aiCtrl.current = ctrl;
     try {
-      setFields(await aiCompose(q, style, ctrl.signal));
+      setFields(await aiCompose(q, style, ctrl.signal, useUltra));
       toast(s.aiDone, "ok");
     } catch (e) {
       if (ctrl.signal.aborted && aiCtrl.current !== ctrl) return;
@@ -78,24 +87,35 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
   };
 
   const pick = (id: string) => {
-    const p = PROMPT_PRESETS.find((x) => x.id === id)!;
+    const p = presets.find((x) => x.id === id)!;
     setPresetId(id);
-    setFields({ scene: p.scene === PLACEHOLDER ? "" : p.scene, subject: p.subject, top: p.top, bottom: p.bottom, avoid: p.avoid });
+    setFields({
+      scene: p.scene === PLACEHOLDER ? "" : p.scene,
+      subject: p.subject,
+      top: p.top,
+      bottom: p.bottom,
+      avoid: p.avoid,
+      light: p.light ?? "",
+      atmosphere: p.atmosphere ?? "",
+      palette: p.palette ?? "",
+      details: p.details ?? "",
+    });
   };
   const set = (k: keyof PromptFields) => (v: string) => {
     setFields((x) => ({ ...x, [k]: v }));
   };
 
-  const prompt = buildPrompt(fields, style);
+  const prompt = buildPrompt(fields, style, useUltra);
   const scene = buildScene(fields, style);
   const missing = !fields.scene.trim();
   const long = prompt.length > PROMPT_SOFT_LIMIT;
 
-  const input = (k: keyof PromptFields, label: string, placeholder?: string) => (
+  const input = (k: keyof PromptFields, label: string, placeholder?: string, max = 160) => (
     <Field label={label}>
-      {({ id }) => <input id={id} className={inputClass} value={fields[k]} placeholder={placeholder} maxLength={160} onChange={(e) => set(k)(e.target.value)} />}
+      {({ id }) => <input id={id} className={inputClass} value={fields[k] ?? ""} placeholder={placeholder} maxLength={max} onChange={(e) => set(k)(e.target.value)} />}
     </Field>
   );
+  const ultraLabel: Record<(typeof ULTRA_KEYS)[number], string> = { light: s.promptLight, atmosphere: s.promptAtmosphere, palette: s.promptPalette, details: s.promptDetails };
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -212,10 +232,26 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
             {input("bottom", s.promptBottom)}
           </div>
           {input("avoid", s.promptAvoid)}
+          {/* Ultra detail (admin): kolom cahaya, atmosfer, palet & detail ikut membentuk prompt */}
+          {useUltra && ULTRA_KEYS.map((k) => <div key={k}>{input(k, ultraLabel[k], undefined, 240)}</div>)}
           <div className="flex flex-col gap-2">
             <p className="text-[13px] font-semibold text-fg-2">{s.promptStyle}</p>
             <Segmented label={s.promptStyle} value={style} onChange={setStyle} options={STYLES.map((v) => ({ value: v, label: s.promptStyles[v] }))} />
           </div>
+          {pro && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[13px] font-semibold text-fg-2">{s.promptDetail}</p>
+              <Segmented
+                label={s.promptDetail}
+                value={ultra ? "ultra" : "std"}
+                onChange={(v) => setUltra(v === "ultra")}
+                options={[
+                  { value: "std", label: s.promptDetailStd },
+                  { value: "ultra", label: s.promptDetailUltra },
+                ]}
+              />
+            </div>
+          )}
         </div>
       </CardBox>
 
@@ -230,7 +266,13 @@ export default function PromptPanel({ onOpenConvert }: { onOpenConvert: () => vo
           hint={s.promptFullHint}
           text={prompt}
           copyLabel={s.copyPrompt}
-          meta={<span className={cn("tabular-nums", long && "text-warn")}>{long ? f(s.promptLong, { n: prompt.length, max: PROMPT_SOFT_LIMIT }) : f(s.promptChars, { n: prompt.length })}</span>}
+          meta={
+            useUltra ? (
+              <span className="tabular-nums">{f(s.promptUltraLen, { n: prompt.length, max: PROMPT_SOFT_LIMIT })}</span>
+            ) : (
+              <span className={cn("tabular-nums", long && "text-warn")}>{long ? f(s.promptLong, { n: prompt.length, max: PROMPT_SOFT_LIMIT }) : f(s.promptChars, { n: prompt.length })}</span>
+            )
+          }
         />
         <CopyBox title={s.promptOnlyScene} hint={s.promptOnlySceneHint} text={scene} copyLabel={s.copyScene} />
         <CardBox>

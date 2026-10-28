@@ -37,6 +37,8 @@ export const audioOptionsSchema = z
     reverb: num(LIMITS.reverb),
     spatial8d: z.boolean(),
     normalize: z.boolean(),
+    // Mode Master (khusus admin): mastering adaptif per lagu — EQ korektif, glue, kilau, stereo, loudness 2-pass
+    master: z.boolean().default(false),
     fadeIn: num(LIMITS.fade),
     fadeOut: num(LIMITS.fade),
     trimStart: z.number().finite().min(0).max(86400).nullable(),
@@ -65,6 +67,7 @@ export const DEFAULT_OPTIONS: AudioOptions = {
   reverb: 0,
   spatial8d: false,
   normalize: false,
+  master: false,
   fadeIn: 0,
   fadeOut: 0,
   trimStart: null,
@@ -79,6 +82,8 @@ export const PRESETS = {
   slowedReverb: { speed: 0.85, preservePitch: false, pitch: 0, reverb: 45 },
   bassBoost: { bass: 10, normalize: true },
   eightD: { spatial8d: true, reverb: 20 },
+  // Khusus admin (plan dengan efek "master"); disembunyikan dari plan lain
+  master: { master: true },
 } satisfies Record<string, Partial<AudioOptions>>;
 
 export type PresetId = keyof typeof PRESETS;
@@ -86,6 +91,8 @@ export type PresetId = keyof typeof PRESETS;
 export const createJobSchema = z.object({
   videoId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
   options: audioOptionsSchema,
+  // Judul tetap (lagu dari video album) — tidak ditimpa judul video; dibersihkan server sebelum jadi nama file
+  title: z.string().trim().min(1).max(200).optional(),
 });
 
 export const robloxUploadSchema = z.object({

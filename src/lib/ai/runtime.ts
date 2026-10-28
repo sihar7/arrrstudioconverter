@@ -20,6 +20,12 @@ export const MODELS = {
     url: "https://huggingface.co/onnx-community/ormbg-ONNX/resolve/main/onnx/model_quantized.onnx",
     bytes: 44_300_000,
   },
+  // Model yang sama presisi penuh (fp32, tanpa kuantisasi) — tepi & rambut lebih akurat. Khusus plan imageAi "pro"
+  removeBgPro: {
+    id: "ormbg-fp32",
+    url: "https://huggingface.co/onnx-community/ormbg-ONNX/resolve/main/onnx/model.onnx",
+    bytes: 176_100_000,
+  },
   // Real-ESRGAN general x4v3 (BSD-3-Clause) — SRVGGNetCompact, input RGB 0–1 NCHW dinamis → 4×
   upscale: {
     id: "realesr-general-x4v3",

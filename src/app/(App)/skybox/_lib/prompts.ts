@@ -9,7 +9,19 @@ export interface PromptFields {
   top: string;
   bottom: string;
   avoid: string;
+  // Kolom Ultra detail (khusus admin) — opsional supaya preset & penyusun biasa tetap berlaku
+  /** arah, warna & sifat cahaya (mis. sinar matahari rendah dari kiri, rim light jingga di tepi awan) */
+  light?: string;
+  /** kabut, hamburan, kelembapan, kedalaman udara */
+  atmosphere?: string;
+  /** 4–7 warna bernama dari zenith ke horizon */
+  palette?: string;
+  /** jenis awan, benda langit, partikel, tekstur halus */
+  details?: string;
 }
+
+/** Kolom tambahan yang hanya tampil & dipakai di mode Ultra detail */
+export const ULTRA_KEYS = ["light", "atmosphere", "palette", "details"] as const;
 
 /** Kelompok preset (filter di tab AI Prompt) */
 export type PresetCat = "morning" | "day" | "evening" | "night" | "weather" | "fantasy";
@@ -273,8 +285,45 @@ export function buildScene(f: PromptFields, style: PromptStyle) {
   return [clean(f.scene) || PLACEHOLDER, STYLE[style]].join(", ");
 }
 
-/** Prompt lengkap untuk generator gambar umum (Bing, ChatGPT, Gemini, Midjourney, …) */
-export function buildPrompt(f: PromptFields, style: PromptStyle) {
+// ---------- Ultra detail (khusus admin) ----------
+// Prompt panjang & terstruktur untuk generator yang menerima teks panjang (ChatGPT, Gemini, Midjourney, Flux, SDXL):
+// tata letak equirectangular yang ketat + cahaya, atmosfer, palet, detail awan + mutu render per gaya.
+const ULTRA_LAYOUT =
+  "Ultra-detailed 360° equirectangular sky panorama for a game skybox, exact 2:1 aspect ratio, perfectly level horizon at the exact vertical center, seamless wrap-around between the left and right edges, natural stretching toward the zenith and nadir with no pinching";
+const ULTRA_STYLE: Record<PromptStyle, string> = {
+  realistic:
+    "photorealistic high-dynamic-range sky, physically based atmospheric scattering, volumetric clouds with crisp silver linings and soft self-shadowing, natural cinematic color grading, 8K resolution, smooth gradients with no banding or noise",
+  anime:
+    "feature-film quality anime background art, hand-painted cloud masses with crisp cel-shaded edges and soft inner gradients, luminous saturated color, clean confident shapes, 8K resolution",
+  stylized:
+    "polished stylized game-art skybox, sculpted readable cloud forms, smooth simplified gradients, soft ambient occlusion inside the clouds, clean silhouettes, 8K resolution",
+  painterly:
+    "gallery-quality digital matte painting, refined layered brushwork, glazed light and soft color transitions, painterly cloud edges with subtle texture, 8K resolution",
+};
+const ULTRA_AVOID = "text, watermark, logo, signature, border, vignette, lens flare streaks, chromatic aberration, visible seams or stitching lines, tilted horizon, close-up objects";
+
+function buildUltra(f: PromptFields, style: PromptStyle) {
+  const opt = (v: string | undefined, label: string) => v?.trim() && `${label}: ${clean(v)}.`;
+  return [
+    `${ULTRA_LAYOUT}.`,
+    `${clean(f.scene) || PLACEHOLDER}.`,
+    f.subject.trim() && `Focal point, centered on the horizon: ${clean(f.subject)}.`,
+    f.top.trim() && `Zenith (upper sky): ${clean(f.top)}.`,
+    f.bottom.trim() && `Below the horizon: ${clean(f.bottom)}.`,
+    opt(f.light, "Lighting"),
+    opt(f.atmosphere, "Atmosphere"),
+    opt(f.palette, "Color palette"),
+    opt(f.details, "Details"),
+    `${ULTRA_STYLE[style]}.`,
+    `Avoid ${[clean(f.avoid), ULTRA_AVOID].filter(Boolean).join(", ")}.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/** Prompt lengkap untuk generator gambar umum (Bing, ChatGPT, Gemini, Midjourney, …); ultra = mode detail admin */
+export function buildPrompt(f: PromptFields, style: PromptStyle, ultra = false) {
+  if (ultra) return buildUltra(f, style);
   const parts = [
     `${LAYOUT}.`,
     `${clean(f.scene) || PLACEHOLDER}.`,

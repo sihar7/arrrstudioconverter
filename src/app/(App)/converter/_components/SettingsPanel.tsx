@@ -192,6 +192,8 @@ export default function SettingsPanel() {
   const lockedText = (id: PlanId) => f(t.plan.locked, { plan: planName(id) });
   /** Preset di luar plan (efek / rentang speed-pitch) → label plan termurah yang bisa memakainya utuh */
   const presetLock = (opts: Partial<AudioOptions>) => (fitsPlan(opts, limits) ? undefined : planName(cheapestPlan((pl) => fitsPlan(opts, pl))));
+  // Preset Master khusus admin → disembunyikan (bukan dikunci) dari plan lain
+  const presetIds = PRESET_ORDER.filter((id) => id !== "master" || hasFx("master"));
 
   // Rentang efek dasar bertingkat; catatan menunjuk plan berikutnya yang rentangnya lebih lebar
   const R = limits.ranges;
@@ -325,15 +327,15 @@ export default function SettingsPanel() {
         {tab === "preset" && (
           <>
             <div className="grid grid-cols-2 gap-2" role="group" aria-label={p.presets}>
-              {PRESET_ORDER.map((id, n) => (
+              {presetIds.map((id, n) => (
                 <PresetTile
                   key={id}
-                  name={c.presetNames[id]}
+                  name={id === "master" ? `${c.presetNames[id]} · ${p.adminOnly}` : c.presetNames[id]}
                   desc={c.presetDesc[id]}
                   active={preset === id}
                   locked={presetLock(PRESETS[id])}
                   onClick={() => dispatch(applyPreset(id))}
-                  className={PRESET_ORDER.length % 2 && n === PRESET_ORDER.length - 1 ? "col-span-2" : undefined}
+                  className={presetIds.length % 2 && n === presetIds.length - 1 ? "col-span-2" : undefined}
                 />
               ))}
             </div>
@@ -520,9 +522,14 @@ export default function SettingsPanel() {
 
         {tab === "effects" && (
           <>
+            {/* Mode Master — hanya plan dengan efek "master" (admin); plan lain tidak melihatnya sama sekali */}
+            {hasFx("master") && (
+              <Switch label={`${p.master} · ${p.adminOnly}`} hint={p.masterHint} checked={o.master} onChange={(master) => set({ master })} />
+            )}
             {/* Efek dasar (semua plan) */}
             <Slider label={p.volume} min={-R.volume} max={R.volume} step={LIMITS.volume.step} value={o.volume} defaultValue={0} format={dbLabel} onChange={(volume) => set({ volume })} />
-            <Switch label={p.normalize} hint={p.normalizeHint} checked={o.normalize} onChange={(normalize) => set({ normalize })} />
+            {/* Mode Master sudah mengatur loudness sendiri */}
+            <Switch label={p.normalize} hint={p.normalizeHint} checked={o.normalize || o.master} disabled={o.master} onChange={(normalize) => set({ normalize })} />
 
             {/* Efek bertingkat: EQ & reverb (Pro), 8D (Studio) */}
             <Group title={t.pricing.features.eq}>

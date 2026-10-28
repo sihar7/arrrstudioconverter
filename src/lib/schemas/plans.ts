@@ -20,8 +20,9 @@ export type PlanId = (typeof ALL_PLAN_IDS)[number];
  *   eq        — bass & treble (Pro)
  *   reverb    — gema ruang, untuk preset Slowed + Reverb (Pro)
  *   spatial8d — audio 8D berputar (Studio)
+ *   master    — Mode Master: mastering adaptif per lagu (KHUSUS admin; UI menyembunyikannya dari plan lain)
  */
-export const EFFECT_IDS = ["eq", "reverb", "spatial8d"] as const;
+export const EFFECT_IDS = ["eq", "reverb", "spatial8d", "master"] as const;
 export type EffectId = (typeof EFFECT_IDS)[number];
 
 /** Kompres pintar: off · standard (hemat) · max (super hemat, VBR paling agresif yang masih transparan) */
@@ -66,12 +67,21 @@ export interface PlanLimits {
   library: LibraryLevel;
   /** antrean server didahulukan */
   priority: boolean;
+  /** Video album (chapter) otomatis dipecah per lagu saat link ditambahkan — khusus admin (UI tidak menampilkannya ke plan lain) */
+  albumSplit: boolean;
   /** Alat gambar (Hapus background & Upscale, diproses di perangkat): sisi terpanjang hasil maksimal (px) */
   imageMaxSide: number;
   /** skala upscale yang boleh dipilih */
   upscaleScales: readonly (2 | 4)[];
   /** latar hasil hapus background: basic = transparan & putih · full = + warna bebas & blur foto asli */
   imageBg: "basic" | "full";
+  /**
+   * Kualitas AI gambar: standard = model int8 · pro = model presisi penuh + inferensi ganda (cermin) + guided filter
+   * di tepi (hapus background) & tile ganda (upscale) — khusus admin
+   */
+  imageAi: "standard" | "pro";
+  /** Skybox: ukuran sisi maksimal (px) */
+  skyboxMaxFace: number;
 }
 
 // Free < Pro < Studio tetap terasa beda tiap baris; Admin JAUH di atas Studio (±2–4× tiap batas, token &
@@ -94,9 +104,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     bulkRoblox: 0,
     library: "off",
     priority: false,
+    albumSplit: false,
     imageMaxSide: 768,
     upscaleScales: [2],
     imageBg: "basic",
+    imageAi: "standard",
+    skyboxMaxFace: 2048,
   },
   pro: {
     id: "pro",
@@ -114,9 +127,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     bulkRoblox: 5,
     library: "basic",
     priority: false,
+    albumSplit: false,
     imageMaxSide: 2048,
     upscaleScales: [2, 4],
     imageBg: "full",
+    imageAi: "standard",
+    skyboxMaxFace: 2048,
   },
   studio: {
     id: "studio",
@@ -134,9 +150,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     bulkRoblox: 15,
     library: "full",
     priority: true,
+    albumSplit: false,
     imageMaxSide: 2560,
     upscaleScales: [2, 4],
     imageBg: "full",
+    imageAi: "standard",
+    skyboxMaxFace: 2048,
   },
   // Semua fitur terbuka; durasi = batas keras server (MAX_DURATION_SEC tetap jadi plafon, lihat planCap)
   admin: {
@@ -147,7 +166,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     parallel: 5,
     maxBitrate: 320,
     formats: ["mp3", "ogg", "m4a", "wav", "flac"],
-    effects: ["eq", "reverb", "spatial8d"],
+    effects: ["eq", "reverb", "spatial8d", "master"],
     ranges: { speed: [0.5, 2], pitch: 12, volume: 20, fade: 15, bass: [-10, 20], treble: [-10, 15], reverb: 100 },
     smartCompress: "max",
     fileTtlHours: 72,
@@ -155,9 +174,12 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     bulkRoblox: null,
     library: "full",
     priority: true,
-    imageMaxSide: 4096,
+    albumSplit: true,
+    imageMaxSide: 8192,
     upscaleScales: [2, 4],
     imageBg: "full",
+    imageAi: "pro",
+    skyboxMaxFace: 4096,
   },
 };
 
@@ -220,6 +242,7 @@ export function effectsUsed(o: Partial<AudioOptions>): EffectId[] {
   if (o.bass || o.treble) out.push("eq");
   if (o.reverb) out.push("reverb");
   if (o.spatial8d) out.push("spatial8d");
+  if (o.master) out.push("master");
   return out;
 }
 
@@ -244,6 +267,7 @@ export function clampOptions(o: AudioOptions, plan: PlanLimits): AudioOptions {
   }
   next.reverb = plan.effects.includes("reverb") ? clampNum(next.reverb, 0, r.reverb) : 0;
   if (!plan.effects.includes("spatial8d")) next.spatial8d = false;
+  if (!plan.effects.includes("master")) next.master = false;
   return next;
 }
 

@@ -23,9 +23,23 @@ export interface DecalState {
   error: string | null;
 }
 
+/** Satu lagu dari video album (khusus admin): dipotong start–end, judul tetap */
+export interface Clip {
+  start: number;
+  /** null = sampai akhir video */
+  end: number | null;
+  /** urutan lagu (1-based) & jumlah lagu di album */
+  index: number;
+  total: number;
+}
+
+/** Item baru untuk antrean: info video, opsional potongan lagu album */
+export type QueueInput = VideoInfo & { clip?: Clip };
+
 export interface QueueItem {
   key: string;
   videoId: string;
+  clip: Clip | null;
   title: string;
   author: string;
   thumbnail: string;
@@ -156,13 +170,17 @@ const converterSlice = createSlice({
       state.customPresets = Array.isArray(state.customPresets) ? state.customPresets : [];
     },
 
-    addItems(state, action: PayloadAction<VideoInfo[]>) {
+    addItems(state, action: PayloadAction<QueueInput[]>) {
       for (const v of action.payload) {
-        const dup = state.items.find((i) => i.videoId === v.videoId && i.status !== "done" && i.status !== "error");
+        // Duplikat = video sama DAN potongan sama (lagu-lagu dari satu video album bukan duplikat)
+        const dup = state.items.find(
+          (i) => i.videoId === v.videoId && (i.clip?.start ?? null) === (v.clip?.start ?? null) && i.status !== "done" && i.status !== "error",
+        );
         if (dup) continue;
         state.items.push({
           key: nanoid(10),
           videoId: v.videoId,
+          clip: v.clip ?? null,
           title: v.title,
           author: v.author,
           thumbnail: v.thumbnail,

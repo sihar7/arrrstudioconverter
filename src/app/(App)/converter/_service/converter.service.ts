@@ -9,8 +9,9 @@ export function fetchInfo(url: string, playlist = false) {
   return apiFetch<InfoResponse>("/api/youtube/info", { method: "POST", json: { url, playlist } });
 }
 
-export function createJob(videoId: string, options: AudioOptions, signal?: AbortSignal) {
-  return apiFetch<CreateJobResponse>("/api/convert", { method: "POST", json: { videoId, options }, signal });
+/** title = judul tetap (lagu dari video album) — server tidak menimpanya dengan judul video */
+export function createJob(videoId: string, options: AudioOptions, signal?: AbortSignal, title?: string) {
+  return apiFetch<CreateJobResponse>("/api/convert", { method: "POST", json: { videoId, options, title }, signal });
 }
 
 export function getJob(id: string, signal?: AbortSignal) {

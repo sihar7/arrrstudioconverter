@@ -14,7 +14,8 @@ export function summarize(o: AudioOptions, t: Dictionary): string[] {
   if (o.reverb) out.push(`${p.reverb} ${o.reverb}`);
   if (o.spatial8d) out.push("8D");
   if (o.volume) out.push(`${sign(o.volume)} dB`);
-  if (o.normalize) out.push("LUFS");
+  if (o.master) out.push("Master");
+  else if (o.normalize) out.push("LUFS");
   if (o.trimStart != null || o.trimEnd != null) out.push("Trim");
   return out;
 }

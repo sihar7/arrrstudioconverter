@@ -10,4 +10,5 @@ export const ROBLOX_SOFT_LIMIT_SEC = 7 * 60;
 export const FORMAT_OPTIONS = AUDIO_FORMATS.map((f) => ({ value: f, label: f.toUpperCase() }));
 export const BITRATE_OPTIONS = BITRATES.map((b) => ({ value: b, label: `${b} kbps` }));
 export const SPEED_QUICK = [0.8, 1, 1.25, 1.3, 1.5];
-export const PRESET_ORDER: PresetId[] = ["normal", "nightcore", "spedUp", "slowed", "slowedReverb", "bassBoost", "eightD"];
+// "master" khusus admin (SettingsPanel menyembunyikannya dari plan lain)
+export const PRESET_ORDER: PresetId[] = ["normal", "nightcore", "spedUp", "slowed", "slowedReverb", "bassBoost", "eightD", "master"];
