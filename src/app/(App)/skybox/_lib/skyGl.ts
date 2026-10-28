@@ -154,28 +154,39 @@ vec3 scene(vec3 ro, vec3 rd) {
   return sky(rd);
 }
 
-// Kabut atmosphere: langit tertutup dari horizon ke atas (Offset = setinggi apa), benda memudar sesuai jarak
+/*
+ * Atmosphere mengikuti aturan Roblox (create.roblox.com/docs/environment/atmosphere):
+ *   Density  → kabut pada objek & terrain menurut jarak (langit ikut tertutup tipis di horizon)
+ *   Offset   → tinggi = objek jauh jadi siluet berwarna kabut; rendah = objek jauh menyatu ke langit
+ *   Haze     → kabut di atas horizon & kejauhan; Color baru terlihat saat Haze tinggi
+ *   Glare    → pendar di sekitar matahari, hanya bila Haze > 0
+ *   Decay    → rona memudar dari Color ke Decay menjauhi matahari, hanya bila Haze & Glare > 0
+ */
 vec3 atmosphere(vec3 c, vec3 rd) {
   if (uAtmo == 0) return c;
   float e = rd.y;
   float sunAmt = max(dot(rd, SUN), 0.0);
-  // Decay = warna di arah menjauhi matahari
-  vec3 fog = mix(uAtmoDecay, uAtmoColor, 0.35 + 0.65 * sunAmt);
-  fog = mix(fog, vec3(1.0), clamp(uHaze * 0.04, 0.0, 0.35) * (1.0 - smoothstep(0.0, 0.35, e)));
-  // Seperti Roblox: warna kabut digelapkan cahaya waktu (ClockTime) — malam tidak jadi putih
-  fog *= uLight;
-  // Baseplate & karakter ikut gelap saat malam (langit skybox tetap terang sendiri)
-  if (gDist < 1e8) c *= mix(0.3, 1.0, uLight);
-  float amt;
-  if (gDist > 1e8) {
-    float top = mix(0.08, 0.7, uOffset);
-    amt = uDensity * (1.0 - smoothstep(-0.05, top, e)) * (1.4 + uHaze * 0.12);
+  float hazeK = clamp(uHaze / 3.0, 0.0, 1.0);
+  float glareK = uHaze > 0.0 ? uGlare : 0.0;
+  // Warna kabut: netral tanpa Haze → makin ke Color seiring Haze; Decay hanya kalau Haze & Glare aktif
+  vec3 tint = glareK > 0.0 ? mix(uAtmoDecay, uAtmoColor, pow(sunAmt, 2.0)) : uAtmoColor;
+  vec3 fog = mix(vec3(0.78, 0.8, 0.84), tint, hazeK) * uLight;
+  // Baseplate & karakter ikut gelap saat malam (langit skybox terang sendiri)
+  if (gDist < 1e8) {
+    c *= mix(0.3, 1.0, uLight);
+    // Offset rendah: objek jauh menyatu ke langit; tinggi: memudar ke warna kabut (siluet)
+    vec3 target = mix(sky(rd), fog, uOffset);
+    float amt = 1.0 - exp(-gDist * uDensity * (0.01 + 0.02 * hazeK));
+    c = mix(c, target, clamp(amt, 0.0, 1.0));
   } else {
-    amt = 1.0 - exp(-gDist * uDensity * 0.012);
+    // Langit: pita tipis dari Density di horizon + kabut Haze yang naik lebih tinggi
+    float band = 1.0 - smoothstep(-0.05, 0.12, e);
+    float rise = 1.0 - smoothstep(-0.05, 0.2 + 0.4 * hazeK, e);
+    float amt = uDensity * 0.35 * band + hazeK * 0.75 * rise;
+    c = mix(c, fog, clamp(amt, 0.0, 1.0));
   }
-  c = mix(c, fog, clamp(amt, 0.0, 1.0));
-  // Glare: pendar di sekitar arah matahari
-  c += uAtmoColor * pow(sunAmt, 12.0) * uGlare * 0.06 * uLight;
+  // Glare: pendar di sekitar matahari (makin lebar & terang seiring Glare)
+  c += uAtmoColor * uLight * min(uHaze, 1.0) * glareK * 0.05 * pow(sunAmt, mix(24.0, 6.0, clamp(glareK / 10.0, 0.0, 1.0)));
   // ColorCorrection (Brightness, Contrast, Saturation, TintColor)
   c += uCc.x;
   c = (c - 0.5) * (1.0 + uCc.y) + 0.5;
@@ -396,7 +407,7 @@ export class SkyRenderer {
       gl.uniform1f(this.u(p, "uOffset"), atmo.offset);
       gl.uniform1f(this.u(p, "uHaze"), atmo.haze);
       gl.uniform1f(this.u(p, "uGlare"), atmo.glare);
-      gl.uniform1f(this.u(p, "uLight"), daylight(atmo.clockTime));
+      gl.uniform1f(this.u(p, "uLight"), daylight(atmo.clockTime, atmo.latitude));
       gl.uniform3fv(this.u(p, "uCc"), [atmo.ccBrightness, atmo.ccContrast, atmo.ccSaturation]);
       gl.uniform3fv(this.u(p, "uTint"), atmo.ccTint.map((v) => v / 255));
     }

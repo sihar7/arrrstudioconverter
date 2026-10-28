@@ -28,6 +28,8 @@ export interface SkyAtmosphere {
   ccContrast: number;
   ccSaturation: number;
   ccTint: Rgb;
+  /** Bloom + SunRays */
+  effects: boolean;
 }
 
 const SIDES: FaceId[] = ["ft", "bk", "lf", "rt"];
@@ -108,66 +110,81 @@ export async function analyzeAtmosphere(faces: Record<FaceId, { blob: Blob }>): 
 
   const light = Math.max(lum(horizon), lum(zenith) * 0.8);
   const warm = horizon[0] - horizon[2];
-  const theme: SkyTheme = light < 0.14 ? "night" : warm > 0.06 && light < 0.62 ? "dusk" : "day";
+  // Langit malam (biru gelap, horizon agak terang oleh cahaya kota/bulan) bisa sampai luminans ±0.25;
+  // langit siang hampir selalu > 0.4. Horizon hangat & redup = senja.
+  const dusk = warm > 0.06 && light > 0.12 && light < 0.62;
+  const theme: SkyTheme = dusk ? "dusk" : light < 0.3 ? "night" : "day";
   const sun = peak > 0.96 && theme !== "night";
   const grey = 1 - hsv(horizon).s;
 
+  // Acuan angka: ReplicatedStorage.SkyTemplate di place ArrStudio (tema Night & Day)
   if (theme === "night") {
     return {
       theme,
-      // Malam: kabut terang keabu-abuan + decay biru pekat (Roblox menggelapkannya sendiri)
+      // Kabut terang keabu-abuan + decay biru pekat → Roblox menggelapkannya sendiri
       color: to255(recolor(horizon, 0.12, 0.85)),
       decay: to255(recolor(zenith, 1, 0.5)),
-      // Acuan: tema Night ArrStudio (Density 0.333 · Offset 0.28 · Glare 0.21 · Haze 1.2)
       density: 0.333,
       offset: 0.28,
       glare: 0.21,
       haze: 1.2,
-      clockTime: 0,
-      latitude: 41.7,
-      ccBrightness: 0,
+      // Malam = matahari dibalik ke bawah horizon lewat latitude 188 (bukan jam 00:00)
+      clockTime: 16.5,
+      latitude: 188,
+      ccBrightness: 0.05,
       ccContrast: 0.15,
-      ccSaturation: -0.05,
-      ccTint: to255(recolor(zenith, 0.1, 1)),
+      ccSaturation: 0.05,
+      ccTint: to255(recolor(zenith, 0.07, 1)),
+      effects: false,
     };
   }
   if (theme === "dusk") {
     return {
       theme,
-      color: to255(recolor(horizon, 0.35, 0.95)),
-      decay: to255(recolor(zenith, 0.75, 0.55)),
-      density: 0.35,
-      offset: 0.3,
-      glare: sun ? 0.6 : 0.3,
-      haze: 1.8,
-      clockTime: 17.7,
-      latitude: 41.7,
-      ccBrightness: 0,
+      color: to255(recolor(horizon, 0.25, 1)),
+      decay: to255(recolor(zenith, 0.5, 0.5)),
+      density: 0.31,
+      offset: 0.15,
+      glare: sun ? 0.3 : 0.1,
+      haze: 0.6,
+      clockTime: 17.6,
+      latitude: 0,
+      ccBrightness: 0.03,
       ccContrast: 0.1,
-      ccSaturation: 0.15,
-      ccTint: to255(recolor(horizon, 0.08, 1)),
+      ccSaturation: 0.1,
+      ccTint: to255(recolor(horizon, 0.06, 1)),
+      effects: true,
     };
   }
-  const haze = clamp(grey * light * 1.5, 0, 2);
   return {
     theme,
-    color: to255(recolor(horizon, 0.2, 0.85)),
-    decay: to255(recolor(zenith, 0.5, 0.6)),
-    density: round(clamp(0.25 + 0.15 * grey * Math.min(1, light * 1.5), 0.25, 0.4), 0.01),
-    offset: 0.25,
-    glare: sun ? round(clamp(0.2 + haze * 0.15, 0, 1), 0.05) : 0,
-    haze: round(haze, 0.1),
-    clockTime: 14,
-    latitude: 41.7,
+    // Siang: kabut putih + decay abu kebiruan (bawaan Roblox), tanpa glare & haze
+    color: to255(recolor(horizon, 0.04, 1)),
+    decay: to255(recolor(zenith, 0.15, 0.49)),
+    density: 0.291,
+    offset: 0.05,
+    glare: 0,
+    haze: round(clamp((grey - 0.7) * light * 2, 0, 1), 0.1),
+    clockTime: 7,
+    latitude: 0,
     ccBrightness: 0,
-    ccContrast: 0.05,
-    ccSaturation: 0.1,
+    ccContrast: 0,
+    ccSaturation: 0,
     ccTint: [255, 255, 255],
+    effects: true,
   };
 }
 
-/** Terang cahaya matahari/bulan menurut ClockTime (dipakai preview 3D): siang 1, malam ±0.2 */
-export const daylight = (clock: number) => clamp(Math.sin(((clock - 6) / 12) * Math.PI) * 1.4 + 0.25, 0.2, 1);
+/**
+ * Terang cahaya (preview 3D): tinggi matahari kira-kira dari ClockTime × latitude — latitude ±180 membalik
+ * matahari ke bawah horizon (trik tema malam). 1 = siang terik, 0.2 = malam.
+ */
+export const daylight = (clock: number, latitude: number) =>
+  clamp(Math.sin(((clock - 6) / 12) * Math.PI) * Math.cos((latitude * Math.PI) / 180) * 1.4 + 0.25, 0.2, 1);
+
+/** Bloom & SunRays tema siang (acuan SkyTemplate.Day) */
+const BLOOM = { intensity: 0.03, size: 14, threshold: 1.35 };
+const SUN_RAYS = { intensity: 0.05, spread: 0.03 };
 
 const n = (v: number) => Number(v.toFixed(3));
 
@@ -190,6 +207,19 @@ export function atmosphereLua(a: SkyAtmosphere) {
     `cc.Saturation = ${n(a.ccSaturation)}`,
     `cc.TintColor = Color3.fromRGB(${a.ccTint.join(", ")})`,
     `cc.Parent = Lighting`,
+    ...(a.effects
+      ? [
+          `local bloom = Lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect")`,
+          `bloom.Intensity = ${BLOOM.intensity}`,
+          `bloom.Size = ${BLOOM.size}`,
+          `bloom.Threshold = ${BLOOM.threshold}`,
+          `bloom.Parent = Lighting`,
+          `local sunRays = Lighting:FindFirstChildOfClass("SunRaysEffect") or Instance.new("SunRaysEffect")`,
+          `sunRays.Intensity = ${SUN_RAYS.intensity}`,
+          `sunRays.Spread = ${SUN_RAYS.spread}`,
+          `sunRays.Parent = Lighting`,
+        ]
+      : []),
   ];
 }
 
@@ -206,7 +236,7 @@ const item = (cls: string, props: string[], children = "") =>
   `<Item class="${cls}" referent="RBX${ref++}"><Properties>${props.join("")}</Properties>${children}</Item>`;
 
 /**
- * Folder pencahayaan untuk .rbxmx (pola tema: Atmosphere, ColorCorrection, ClockTime, GeographicLatitude [+ Sky]).
+ * Folder pencahayaan untuk .rbxmx (pola SkyTemplate: [Sky,] Atmosphere, ColorCorrection, [Bloom, SunRays,] ClockTime, GeographicLatitude).
  * Isinya dipindahkan ke Lighting; ClockTime & GeographicLatitude = nilai untuk properti Lighting.
  */
 export function lightingFolder(a: SkyAtmosphere, name: string, sky = "") {
@@ -216,6 +246,12 @@ export function lightingFolder(a: SkyAtmosphere, name: string, sky = "") {
     sky,
     item("Atmosphere", [str("Name", "Atmosphere"), color3("Color", a.color), color3("Decay", a.decay), num("Density", a.density), num("Offset", a.offset), num("Glare", a.glare), num("Haze", a.haze)]),
     item("ColorCorrectionEffect", [str("Name", "ColorCorrection"), `<bool name="Enabled">true</bool>`, num("Brightness", a.ccBrightness), num("Contrast", a.ccContrast), num("Saturation", a.ccSaturation), color3("TintColor", a.ccTint)]),
+    ...(a.effects
+      ? [
+          item("BloomEffect", [str("Name", "Bloom"), `<bool name="Enabled">true</bool>`, num("Intensity", BLOOM.intensity), num("Size", BLOOM.size), num("Threshold", BLOOM.threshold)]),
+          item("SunRaysEffect", [str("Name", "SunRays"), `<bool name="Enabled">true</bool>`, num("Intensity", SUN_RAYS.intensity), num("Spread", SUN_RAYS.spread)]),
+        ]
+      : []),
     item("NumberValue", [str("Name", "ClockTime"), `<double name="Value">${n(a.clockTime)}</double>`]),
     item("NumberValue", [str("Name", "GeographicLatitude"), `<double name="Value">${n(a.latitude)}</double>`]),
   ].join("\n");

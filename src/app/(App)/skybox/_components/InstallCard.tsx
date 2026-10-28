@@ -56,6 +56,15 @@ export default function InstallCard({
   const [copied, setCopied] = useState(false);
   const [up, setUp] = useState<Partial<Record<FaceId, FaceUpload>>>({});
   const [busy, setBusy] = useState(false);
+  // Hasil dirender ulang (convert otomatis) → ID upload lama tidak cocok lagi dengan gambar baru
+  const [uploadedFaces, setUploadedFaces] = useState(faces);
+  if (uploadedFaces !== faces && !busy) {
+    setUploadedFaces(faces);
+    if (Object.keys(up).length) {
+      setUp({});
+      setIds({});
+    }
+  }
   const alive = useRef(true);
   const script = luauScript(ids, name, atmosphere);
 
@@ -193,7 +202,7 @@ export default function InstallCard({
               })}
             </ul>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="primary" icon={<Upload width={18} height={18} />} loading={busy} disabled={!faces || busy} onClick={() => void uploadAll()}>
+              <Button variant="primary" icon={<Upload width={18} height={18} />} loading={busy} disabled={!faces || busy || stale} onClick={() => void uploadAll()}>
                 {busy ? f(s.uploadingN, { n: Math.min(6, uploadedCount + 1) }) : s.uploadAll}
               </Button>
               {hasPending && !busy && (

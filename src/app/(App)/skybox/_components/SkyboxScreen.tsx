@@ -133,45 +133,63 @@ export default function SkyboxScreen() {
     setSource(null);
   };
 
-  const convert = async () => {
-    if (!renderer || !source) return;
-    setBusy(true);
-    try {
+  // Convert otomatis: 6 sisi dirender ulang ±0.5 dtk setelah sumber/pengaturan terakhir berubah (tanpa tombol).
+  // Render yang tersusul perubahan baru dibuang di tengah jalan.
+  const renderKey = useRef("");
+  useEffect(() => {
+    // Kembali dari tab lain tanpa perubahan → hasil lama masih berlaku
+    if (!renderer || !source || mode !== "convert" || result?.key === resultKey) return;
+    const key = resultKey;
+    renderKey.current = key;
+    const timer = setTimeout(async () => {
+      setBusy(true);
       const faces = {} as Record<FaceId, FaceFile>;
-      for (const face of FACES) {
-        const blob = await imageDataToPng(renderer.renderFace(face, size, adjust));
-        faces[face] = { blob, url: track(blob) };
-        await yieldFrame(); // beri napas ke UI di antara sisi
+      try {
+        for (const face of FACES) {
+          const blob = await imageDataToPng(renderer.renderFace(face, size, adjust));
+          faces[face] = { blob, url: track(blob) };
+          await yieldFrame(); // beri napas ke UI di antara sisi
+          if (renderKey.current !== key) throw new Error("superseded");
+        }
+        replaceResult({ key, faces });
+      } catch (e) {
+        FACES.forEach((face) => release(faces[face]?.url));
+        if ((e as Error).message !== "superseded") toast(s.convertFail, "err");
+      } finally {
+        if (renderKey.current === key) setBusy(false);
+        setVersion((v) => v + 1); // render ulang preview setelah pakai framebuffer offscreen
       }
-      replaceResult({ key: resultKey, faces });
-      toast(s.done, "ok");
-    } catch {
-      toast(s.convertFail, "err");
-    } finally {
-      setBusy(false);
-      setVersion((v) => v + 1); // render ulang preview setelah pakai framebuffer offscreen
-    }
-  };
+    }, 500);
+    return () => clearTimeout(timer);
+    // resultKey sudah mewakili adjust, size, sumber, flat & seam
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderer, resultKey, mode]);
 
   // Atmosphere: otomatis dari warna langit hasil convert, bisa diatur; ikut ZIP, script & .rbxmx
   const [atmoAuto, setAtmoAuto] = useState<SkyAtmosphere | null>(null);
   const [atmoEdit, setAtmoEdit] = useState<SkyAtmosphere | null>(null);
   const [atmoOn, setAtmoOn] = useState(true);
+  const analyzedSource = useRef(-1);
+  const atmoAutoRef = useRef<SkyAtmosphere | null>(null);
   useEffect(() => {
     if (!result) return;
     let alive = true;
     analyzeAtmosphere(result.faces).then(
       (a) => {
         if (!alive) return;
+        // Render ulang karena slider: nilai yang sudah diatur manual dipertahankan; gambar baru → mulai dari otomatis
+        const fresh = analyzedSource.current !== sourceId;
+        analyzedSource.current = sourceId;
+        setAtmoEdit((prev) => (fresh || !prev || JSON.stringify(prev) === JSON.stringify(atmoAutoRef.current) ? a : prev));
+        atmoAutoRef.current = a;
         setAtmoAuto(a);
-        setAtmoEdit(a);
       },
       () => alive && setAtmoAuto(null),
     );
     return () => {
       alive = false;
     };
-  }, [result]);
+  }, [result, sourceId]);
   const atmosphere = result && atmoOn ? atmoEdit : null;
 
   const downloadZip = async () => {
@@ -372,7 +390,7 @@ export default function SkyboxScreen() {
                 aside={
                   result && (
                     <div className="flex items-center gap-2">
-                      {stale && <Badge tone="warn">{s.stale}</Badge>}
+                      {(busy || stale) && <Badge tone="neutral">{s.converting}</Badge>}
                       <Button size="sm" variant="primary" icon={<Download width={16} height={16} />} onClick={() => void downloadZip()}>
                         {s.zip}
                       </Button>
@@ -462,7 +480,7 @@ export default function SkyboxScreen() {
             </CardBox>
           )}
 
-          {mode === "convert" && <InstallCard faces={result?.faces ?? null} stale={stale} atmosphere={atmosphere} />}
+          {mode === "convert" && <InstallCard faces={result?.faces ?? null} stale={busy || stale} atmosphere={atmosphere} />}
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
@@ -485,9 +503,8 @@ export default function SkyboxScreen() {
               size={size}
               onSize={setSize}
               disabled={!source || Boolean(errorText)}
-              busy={busy}
+              busy={busy || stale}
               hasResult={Boolean(result)}
-              onConvert={() => void convert()}
             />
           ) : null}
           {mode === "convert" && result && atmoAuto && atmoEdit && (

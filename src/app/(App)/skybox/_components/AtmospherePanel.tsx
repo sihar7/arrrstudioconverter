@@ -41,7 +41,8 @@ export default function AtmospherePanel({
   const slider = (k: NumKey, label: string, min: number, max: number, step: number, format = fixed) => (
     <Slider label={label} value={value[k]} min={min} max={max} step={step} defaultValue={auto[k]} onChange={(v) => onChange({ ...value, [k]: v })} format={format} disabled={!on} />
   );
-  const swatch = (k: ColorKey, label: string) => (
+  /** `idle` = alasan properti belum berpengaruh (aturan Roblox), ditampilkan di bawah nilai */
+  const swatch = (k: ColorKey, label: string, idle: string | null = null) => (
     <label className="flex min-w-[140px] flex-1 cursor-pointer items-center gap-3 rounded-s bg-fg/[0.05] px-3 py-2.5 transition-colors hover:bg-fg/[0.08] has-[:disabled]:cursor-default has-[:disabled]:opacity-45">
       <input
         type="color"
@@ -53,6 +54,7 @@ export default function AtmospherePanel({
       <span className="min-w-0">
         <span className="block text-[14px] font-medium">{label}</span>
         <span className="block font-mono text-[12px] text-fg-3">{value[k].join(", ")}</span>
+        {idle && on && <span className="mt-0.5 block text-[11.5px] leading-snug text-warn">{idle}</span>}
       </span>
     </label>
   );
@@ -75,22 +77,28 @@ export default function AtmospherePanel({
         <Switch label={s.atmoInclude} hint={s.atmoHint} checked={on} onChange={onToggle} />
       </div>
 
-      {section("Atmosphere")}
+      {/* Urutan & grup sama dengan panel Properties Atmosphere di Studio */}
+      {section("Atmosphere · Appearance")}
       <div className="flex flex-col gap-5 px-5 pb-5 pt-3">
-        <div className="flex flex-wrap gap-2">
-          {swatch("color", "Color")}
-          {swatch("decay", "Decay")}
-        </div>
         {slider("density", "Density", 0, 1, 0.001)}
         {slider("offset", "Offset", 0, 1, 0.01)}
-        {slider("haze", "Haze", 0, 10, 0.1)}
+      </div>
+      {section("Atmosphere · State")}
+      <div className="flex flex-col gap-5 px-5 pb-5 pt-3">
+        <div className="flex flex-wrap gap-2">
+          {swatch("color", "Color", value.haze > 0 ? null : s.atmoNeedHaze)}
+          {swatch("decay", "Decay", value.haze > 0 && value.glare > 0 ? null : s.atmoNeedHazeGlare)}
+        </div>
         {slider("glare", "Glare", 0, 10, 0.01)}
+        {value.haze <= 0 && value.glare > 0 && <p className="-mt-3 text-[12.5px] text-warn">{s.atmoNeedHaze}</p>}
+        {slider("haze", "Haze", 0, 10, 0.1)}
       </div>
 
       {section("Lighting")}
       <div className="flex flex-col gap-5 px-5 pb-5 pt-3">
         {slider("clockTime", "ClockTime", 0, 24, 0.1, clock)}
-        {slider("latitude", "GeographicLatitude", -90, 90, 0.1, deg)}
+        {slider("latitude", "GeographicLatitude", -180, 360, 1, deg)}
+        <Switch label="Bloom & SunRays" hint={s.atmoEffectsHint} checked={value.effects} onChange={(v) => onChange({ ...value, effects: v })} disabled={!on} />
       </div>
 
       {section("ColorCorrection")}

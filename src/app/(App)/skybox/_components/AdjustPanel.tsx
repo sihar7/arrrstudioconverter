@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Slider from "@/components/ui/Slider";
 import Segmented from "@/components/ui/Segmented";
 import { SfCube } from "@/components/icons/SfIcons";
+import Spinner from "@/components/ui/Spinner";
 import { DEFAULT_ADJUST, type SkyAdjust } from "../_lib/skyGl";
 
 const FACE_SIZES = [512, 1024, 2048] as const;
@@ -22,7 +23,6 @@ export default function AdjustPanel({
   disabled,
   busy,
   hasResult,
-  onConvert,
 }: {
   adjust: SkyAdjust;
   onAdjust: (a: SkyAdjust) => void;
@@ -31,7 +31,6 @@ export default function AdjustPanel({
   disabled: boolean;
   busy: boolean;
   hasResult: boolean;
-  onConvert: () => void;
 }) {
   const { t } = useT();
   const s = t.skybox;
@@ -69,9 +68,13 @@ export default function AdjustPanel({
         <p className="text-[14px] font-medium">{s.faceSize}</p>
         <Segmented label={s.faceSize} value={size} onChange={onSize} options={FACE_SIZES.map((n) => ({ value: n, label: `${n}px` }))} />
         <p className="text-[12.5px] leading-relaxed text-fg-3">{s.faceSizeHint}</p>
-        <Button variant="primary" size="lg" className="mt-2 w-full" icon={<SfCube size={20} />} loading={busy} disabled={disabled} onClick={onConvert}>
-          {busy ? s.converting : hasResult ? s.reconvert : s.convert}
-        </Button>
+        {/* Convert otomatis — tidak perlu tombol; cukup status */}
+        {!disabled && (
+          <p role="status" className="mt-2 flex items-center gap-2 text-[13px] text-fg-2">
+            {busy ? <Spinner className="size-3.5" /> : <SfCube size={16} />}
+            {busy ? s.converting : hasResult ? s.autoDone : s.converting}
+          </p>
+        )}
       </div>
     </CardBox>
   );
