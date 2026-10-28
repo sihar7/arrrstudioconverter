@@ -181,7 +181,10 @@ export default function QueueCard({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line/70 px-5 py-2.5">
             {started.length > 0 ? (
               <div className="flex min-w-[200px] flex-1 items-center gap-3 text-[12.5px]">
-                <Progress value={batchPct} tone={running === 0 && !failedKeys.length ? "ok" : "accent"} label={f(c.batchDone, { done: doneCount, total: started.length })} />
+                {/* 1 lagu → gelombang di barisnya sudah jadi progres, bar batch tidak perlu (tidak dobel) */}
+                {started.length > 1 && (
+                  <Progress value={batchPct} tone={running === 0 && !failedKeys.length ? "ok" : "accent"} label={f(c.batchDone, { done: doneCount, total: started.length })} />
+                )}
                 <span className="shrink-0 font-mono tabular-nums text-fg-2">{f(c.batchDone, { done: doneCount, total: started.length })}</span>
                 {running > 0 && (
                   <span className="hidden shrink-0 items-center gap-1.5 text-fg-2 sm:flex">
