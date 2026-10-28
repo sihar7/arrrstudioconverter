@@ -28,7 +28,15 @@ const isInView = (url) => {
   }
 };
 
-const current = () => views.get(active) ?? null;
+// Menutup jendela (app tetap jalan di tray) menghancurkan view yang menempel padanya → view mati dibuang &
+// dibuat ulang saat dibutuhkan (login tetap ada: sesi persist:claude-N tersimpan di disk)
+const alive = (v) => Boolean(v && !v.webContents.isDestroyed());
+function current() {
+  const v = views.get(active);
+  if (alive(v)) return v;
+  views.delete(active);
+  return null;
+}
 
 function state() {
   const wc = current()?.webContents;
@@ -76,6 +84,24 @@ function createView(profile) {
     if (/^https?:/.test(url)) shell.openExternal(url);
   });
   wc.on("will-attach-webview", (e) => e.preventDefault());
+  // Halaman memanggil window.close() (mis. selesai login OAuth) → webContents hancur. Buat ulang & tempel lagi
+  // bila profil ini sedang tampil (sesi login tersimpan di disk, jadi tetap masuk).
+  wc.once("destroyed", () => {
+    if (views.get(profile) === view) views.delete(profile);
+    if (shown && profile === active && host && !host.isDestroyed()) {
+      setImmediate(() => {
+        try {
+          if (shown && profile === active && host && !host.isDestroyed()) attach(host);
+        } catch (err) {
+          console.warn("[claude] recreate", err?.message || err);
+        }
+      });
+    }
+  });
+  // Proses halaman mati (crash / kehabisan memori) → muat ulang
+  wc.on("render-process-gone", (_e, d) => {
+    if (d.reason !== "clean-exit" && !wc.isDestroyed()) wc.reload();
+  });
   for (const ev of ["did-navigate", "did-navigate-in-page", "page-title-updated", "did-start-loading", "did-stop-loading"]) {
     wc.on(ev, () => profile === active && pushState());
   }
@@ -102,18 +128,32 @@ function createView(profile) {
   return view;
 }
 
+/** Lepas view dari jendela tanpa melempar (view/jendela bisa sudah dihancurkan) */
+function removeFrom(win, v) {
+  try {
+    if (win && !win.isDestroyed() && alive(v)) win.contentView.removeChildView(v);
+  } catch {
+    // sudah terlepas
+  }
+}
+
 function attach(win) {
   if (host !== win) {
-    if (host && !host.isDestroyed()) for (const v of views.values()) host.contentView.removeChildView(v);
+    for (const v of views.values()) removeFrom(host, v);
     host = win;
     win.on("closed", () => {
-      if (host === win) host = null;
+      if (host !== win) return;
+      host = null;
+      shown = false;
+      // View ikut hancur bersama jendela → buang, dibuat ulang saat jendela baru dibuka
+      for (const [n, v] of views) if (!alive(v)) views.delete(n);
     });
     win.on("resize", applyBounds);
   }
+  for (const [n, v] of views) if (!alive(v)) views.delete(n);
   const view = current() ?? createView(active);
   // Hanya profil aktif yang ditempel; profil lain tetap hidup di latar (chat yang sedang berjalan tidak putus)
-  for (const [n, v] of views) if (n !== active) win.contentView.removeChildView(v);
+  for (const [n, v] of views) if (n !== active) removeFrom(win, v);
   win.contentView.addChildView(view);
   view.setVisible(true);
   shown = true;
@@ -123,8 +163,7 @@ function attach(win) {
 
 function detach() {
   shown = false;
-  if (!host || host.isDestroyed()) return;
-  for (const v of views.values()) host.contentView.removeChildView(v);
+  for (const v of views.values()) removeFrom(host, v);
 }
 
 /** Area dari web (px CSS) → DIP jendela; ikut faktor zoom halaman */
@@ -146,8 +185,26 @@ const fromApp = (e) => {
     return false;
   }
 };
-const on = (channel, fn) => ipcMain.on(channel, (e, ...args) => fromApp(e) && fn(BrowserWindow.fromWebContents(e.sender), ...args));
-const handle = (channel, fn) => ipcMain.handle(channel, (e, ...args) => (fromApp(e) ? fn(BrowserWindow.fromWebContents(e.sender), ...args) : null));
+// Galat di handler dicatat saja — jangan sampai jadi dialog "JavaScript error in the main process"
+const on = (channel, fn) =>
+  ipcMain.on(channel, (e, ...args) => {
+    if (!fromApp(e)) return;
+    try {
+      fn(BrowserWindow.fromWebContents(e.sender), ...args);
+    } catch (err) {
+      console.warn(`[claude] ${channel}`, err?.message || err);
+    }
+  });
+const handle = (channel, fn) =>
+  ipcMain.handle(channel, async (e, ...args) => {
+    if (!fromApp(e)) return null;
+    try {
+      return await fn(BrowserWindow.fromWebContents(e.sender), ...args);
+    } catch (err) {
+      console.warn(`[claude] ${channel}`, err?.message || err);
+      return null;
+    }
+  });
 
 on("claude:show", (win, rect) => {
   if (!win) return;
@@ -190,7 +247,8 @@ handle("claude:state", () => state());
 handle("claude:signOut", async (_win, n) => {
   const profile = Math.min(PROFILES, Math.max(1, Number(n) || active));
   await session.fromPartition(`persist:claude-${profile}`).clearStorageData();
-  views.get(profile)?.webContents.loadURL(HOME);
+  const v = views.get(profile);
+  if (alive(v)) v.webContents.loadURL(HOME);
   return state();
 });
 
