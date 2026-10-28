@@ -23,8 +23,8 @@ export type LibraryLevel = "off" | "basic" | "full";
 
 export interface PlanLimits {
   id: PlanId;
-  /** lagu per 24 jam; null = tanpa batas */
-  daily: number | null;
+  /** token per periode (lihat TOKEN_RULES — terisi penuh lagi tiap `windowHours`); null = tanpa batas */
+  tokens: number | null;
   /** durasi video maksimal (detik) */
   maxDurationSec: number;
   /** item maksimal saat impor playlist */
@@ -69,7 +69,7 @@ export interface PlanLimits {
 export const PLANS: Record<PlanId, PlanLimits> = {
   free: {
     id: "free",
-    daily: 5,
+    tokens: 5,
     maxDurationSec: 10 * 60,
     playlistMax: 10,
     parallel: 1,
@@ -89,7 +89,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
   },
   pro: {
     id: "pro",
-    daily: 50,
+    tokens: 50,
     maxDurationSec: 30 * 60,
     playlistMax: 50,
     parallel: 3,
@@ -109,7 +109,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
   },
   studio: {
     id: "studio",
-    daily: null,
+    tokens: null,
     maxDurationSec: 60 * 60,
     playlistMax: 200,
     parallel: 5,
@@ -128,6 +128,22 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     imageBg: "full",
   },
 };
+
+// ---------- Token ----------
+
+/**
+ * Aturan token bawaan (bisa diatur admin): jatah token tiap plan terisi penuh lagi setiap `windowHours`
+ * (dihitung sejak token pertama dipakai). 1 convert = 1 token per `minutesPerToken` menit audio, minimal 1.
+ */
+export interface TokenRules {
+  windowHours: number;
+  minutesPerToken: number;
+}
+export const TOKEN_RULES: TokenRules = { windowHours: 5, minutesPerToken: 5 };
+
+/** Biaya token convert untuk durasi ini (detik); durasi belum diketahui → 1 */
+export const tokenCost = (durationSec: number | null | undefined, rules: TokenRules = TOKEN_RULES): number =>
+  Math.max(1, Math.ceil((durationSec ?? 0) / (rules.minutesPerToken * 60)));
 
 /** Batas teratas semua plan — dipakai untuk batas keras download / baca riwayat */
 export const PLAN_CAP = {

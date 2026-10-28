@@ -26,24 +26,35 @@ export function Avatar({ src, name, size = 30 }: { src: string | null; name: str
   );
 }
 
-/** Sisa kuota: guest (x/3 gratis) atau user login (x/5 hari ini); admin tanpa batas → disembunyikan */
-export function QuotaPill() {
+/** Teks token: label pendek, tooltip lengkap, dan kapan terisi lagi (null = belum dipakai periode ini) */
+export function useQuotaText() {
   const { data } = useMeQuery();
   const { t, f } = useT();
   if (!data || data.quota.limit == null) return null;
-  const { remaining, limit } = data.quota;
-  const low = (remaining ?? 0) <= 1;
-  const [short, long] = data.user ? [t.quota.daily, t.quota.dailyLong] : [t.quota.guest, t.quota.guestLong];
+  const { remaining, limit, resetIn, windowHours, minutesPerToken } = data.quota;
+  const left = remaining ?? 0;
+  const [short, long] = data.user ? [t.quota.tokens, t.quota.tokensLong] : [t.quota.guest, t.quota.guestLong];
+  const vars = { left, max: limit, min: minutesPerToken, hours: windowHours };
+  const mins = resetIn ? Math.max(1, Math.ceil(resetIn / 60)) : 0;
+  const time = mins >= 60 ? f(t.quota.hm, { h: Math.floor(mins / 60), m: mins % 60 }) : f(t.quota.m, { m: mins });
+  const reset = resetIn ? f(t.quota.resetIn, { time }) : null;
+  return { left, limit, low: left <= 1, short: f(short, vars), long: [f(long, vars), reset].filter(Boolean).join(" · "), reset };
+}
+
+/** Sisa token: guest (x/3 gratis) atau user login (x/5 token); admin tanpa batas → disembunyikan */
+export function QuotaPill() {
+  const q = useQuotaText();
+  if (!q) return null;
   return (
     <span
-      title={f(long, { left: remaining ?? 0, max: limit })}
+      title={q.long}
       className={cn(
         "inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[12.5px] font-semibold",
-        low ? "bg-warn/12 text-warn" : "bg-tonal text-on-tonal",
+        q.low ? "bg-warn/12 text-warn" : "bg-tonal text-on-tonal",
       )}
     >
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
-      {f(short, { left: remaining ?? 0, max: limit })}
+      {q.short}
     </span>
   );
 }

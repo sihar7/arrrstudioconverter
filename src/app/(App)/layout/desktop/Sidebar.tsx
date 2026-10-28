@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, SidebarCollapse, SidebarExpand } from "iconoir-react";
 import { LogoMark } from "@/components/shared/Logo";
-import UserMenu from "@/components/shared/UserMenu";
+import UserMenu, { useQuotaText } from "@/components/shared/UserMenu";
 import { useAppSelector } from "@/store/hooks";
 import { isRunning } from "@/store/slices/converterSlice";
 import { useMeQuery } from "@/store/api/baseApi";
@@ -176,27 +176,24 @@ function QueueBadge() {
   );
 }
 
-/** Sisa kuota harian (tamu: gratis) sebagai meter tipis; admin tanpa batas → disembunyikan */
+/** Sisa token (tamu: gratis) sebagai meter tipis + kapan terisi lagi; admin tanpa batas → disembunyikan */
 function QuotaMeter({ rail }: { rail: boolean }) {
-  const { data } = useMeQuery();
-  const { t, f } = useT();
-  if (!data || data.quota.limit == null) return null;
-  const { remaining, limit } = data.quota;
-  const left = remaining ?? 0;
-  const low = left <= 1;
-  const [short, long] = data.user ? [t.quota.daily, t.quota.dailyLong] : [t.quota.guest, t.quota.guestLong];
+  const q = useQuotaText();
+  if (!q) return null;
+  const { left, limit, low } = q;
   const pct = limit ? Math.max(0, Math.min(1, left / limit)) : 0;
   if (rail) {
     return (
-      <span title={f(long, { left, max: limit })} className={cn("mx-auto mb-1 text-[11px] font-semibold tabular-nums", low ? "text-warn" : "text-fg-3")}>
+      <span title={q.long} className={cn("mx-auto mb-1 text-[11px] font-semibold tabular-nums", low ? "text-warn" : "text-fg-3")}>
         {left}/{limit}
       </span>
     );
   }
   return (
-    <div className="mb-1 px-2.5 py-1.5" title={f(long, { left, max: limit })}>
-      <div className="flex items-center justify-between text-[12px]">
-        <span className="font-medium text-fg-2">{f(short, { left, max: limit })}</span>
+    <div className="mb-1 px-2.5 py-1.5" title={q.long}>
+      <div className="flex items-center justify-between gap-2 text-[12px]">
+        <span className="font-medium text-fg-2">{q.short}</span>
+        {q.reset && <span className="truncate text-fg-3">{q.reset}</span>}
       </div>
       <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-fg/[0.08]">
         <div className={cn("h-full rounded-full transition-[width] duration-500 ease-[var(--ease)]", low ? "bg-warn" : "bg-accent")} style={{ width: `${pct * 100}%` }} />

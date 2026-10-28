@@ -98,8 +98,8 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
         await poll(item.key, job.id, ctrl);
       } catch (e) {
         if (ctrl.signal.aborted) return;
-        if (e instanceof ApiError && (e.code === "GUEST_LIMIT" || e.code === "DAILY_LIMIT")) {
-          // Kembalikan semua yang menunggu ke "siap"; guest → gerbang login, user → toast batas harian
+        if (e instanceof ApiError && (e.code === "GUEST_LIMIT" || e.code === "TOKEN_LIMIT")) {
+          // Kembalikan semua yang menunggu ke "siap"; guest → gerbang login, user → toast token habis
           for (const i of store.getState().converter.items) {
             if (i.status === "pending") dispatch(itemFailed({ key: i.key, error: "", reset: true }));
           }

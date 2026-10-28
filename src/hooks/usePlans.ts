@@ -1,10 +1,10 @@
 "use client";
 
-import { PLANS } from "@/lib/schemas/plans";
+import { PLANS, TOKEN_RULES } from "@/lib/schemas/plans";
 import { baseApi } from "@/store/api/baseApi";
 import { useHydrated } from "@/hooks/useHydrated";
 
-/** Kuota tamu bawaan (sama dengan GUEST_LIMIT default di server) */
+/** Token tamu bawaan (sama dengan GUEST_LIMIT default di server) */
 const GUEST_DEFAULT = 3;
 
 /**
@@ -14,5 +14,5 @@ const GUEST_DEFAULT = 3;
 export function usePlans() {
   const hydrated = useHydrated();
   const { data } = baseApi.usePlansQuery();
-  return hydrated && data ? data : { guest: GUEST_DEFAULT, plans: PLANS };
+  return hydrated && data ? { ...data, tokens: data.tokens ?? TOKEN_RULES } : { guest: GUEST_DEFAULT, tokens: TOKEN_RULES, plans: PLANS };
 }

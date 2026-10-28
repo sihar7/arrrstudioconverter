@@ -45,7 +45,8 @@ export default function PlanDialog({ user, onClose, onSaved }: { user: AdminUser
 function PlanForm({ user, onClose, onSaved }: { user: AdminUser; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const guard = useAuthGuard();
-  const freeDaily = usePlans().plans.free.daily;
+  const { plans, tokens } = usePlans();
+  const freeTokens = plans.free.tokens;
   const [plan, setPlan] = useState<PlanId>(user.plan === "free" ? "pro" : user.plan);
   const [duration, setDuration] = useState<Duration>("30");
   const [date, setDate] = useState(() => new Date(Date.now() + 30 * DAY).toISOString().slice(0, 10));
@@ -118,7 +119,7 @@ function PlanForm({ user, onClose, onSaved }: { user: AdminUser; onClose: () => 
 
       <p className="text-[13px] leading-relaxed text-fg-3">
         {plan === "free"
-          ? `User kembali ke batas Free (${freeDaily ?? "tanpa batas"} lagu/hari). Order yang sudah lunas tidak dikembalikan otomatis.`
+          ? `User kembali ke batas Free (${freeTokens == null ? "token tanpa batas" : `${freeTokens} token/${tokens.windowHours} jam`}). Order yang sudah lunas tidak dikembalikan otomatis.`
           : `Hasil: ${PLAN_LABEL[plan]} ${expiresAt ? `aktif sampai ${dateShort(expiresAt)}` : "permanen"}. Menimpa plan yang sedang aktif.`}
       </p>
 

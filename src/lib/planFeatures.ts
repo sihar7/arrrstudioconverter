@@ -1,4 +1,4 @@
-import { PLANS, type PlanId, type PlanLimits } from "@/lib/schemas/plans";
+import { PLANS, TOKEN_RULES, type PlanId, type PlanLimits, type TokenRules } from "@/lib/schemas/plans";
 import { fmt } from "@/utils/i18n";
 import type { Dictionary } from "@/utils/languages/id";
 
@@ -13,14 +13,14 @@ export interface PlanFeature {
 export const rupiah = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
 
 /** `plans` = batas efektif dari server (usePlans) — bawaan dipakai bila belum ada */
-export function planFeatures(id: PlanId, t: Dictionary, plans: Record<PlanId, PlanLimits> = PLANS): PlanFeature[] {
+export function planFeatures(id: PlanId, t: Dictionary, plans: Record<PlanId, PlanLimits> = PLANS, tokens: TokenRules = TOKEN_RULES): PlanFeature[] {
   const p = plans[id];
   const r = p.ranges;
   const f = t.pricing.features;
   const list = p.formats.map((x) => x.toUpperCase()).join(", ");
   const allFormats = p.formats.length === PLANS.studio.formats.length;
   return [
-    { text: p.daily == null ? f.unlimited : fmt(f.daily, { n: p.daily }), included: true },
+    { text: p.tokens == null ? f.unlimited : fmt(f.tokens, { n: p.tokens, hours: tokens.windowHours }), included: true },
     { text: fmt(f.duration, { n: Math.floor(p.maxDurationSec / 60) }), included: true },
     { text: fmt(f.bitrate, { n: p.maxBitrate }), included: true },
     { text: fmt(allFormats ? f.formatsAll : f.formatsFew, { list }), included: true },

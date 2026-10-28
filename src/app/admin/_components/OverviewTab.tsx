@@ -274,7 +274,7 @@ export default function OverviewTab({ onOpen }: { onOpen: (tab: "orders" | "user
             <div>
               <dt className="caps text-[10px] text-fg-3">Kuota</dt>
               <dd className="mt-1 font-semibold tabular-nums">
-                Guest {data.server.guestLimit} · Free {data.server.userDaily}/hari
+                Guest {data.server.guestLimit} · Free {data.server.userTokens} token/{data.server.tokenWindowHours} jam
               </dd>
             </div>
           </dl>

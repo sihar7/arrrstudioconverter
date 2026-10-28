@@ -4,7 +4,7 @@ import { withBase } from "@/Url/Url";
 import type { MeResponse } from "@/type/auth";
 import type { HistoryItem } from "@/type/history";
 import type { RobloxProfile } from "@/type/roblox";
-import type { PlanId, PlanLimits } from "@/lib/schemas/plans";
+import type { PlanId, PlanLimits, TokenRules } from "@/lib/schemas/plans";
 
 // RTK Query untuk data yang di-cache & di-invalidate (sesi/kuota, riwayat)
 export const baseApi = createApi({
@@ -14,7 +14,7 @@ export const baseApi = createApi({
   endpoints: (b) => ({
     me: b.query<MeResponse, void>({ query: () => "auth/me", providesTags: ["Me"] }),
     // Batas plan efektif (bawaan + pengaturan admin) — lihat hooks/usePlans
-    plans: b.query<{ guest: number; plans: Record<PlanId, PlanLimits> }, void>({ query: () => "plans", keepUnusedDataFor: 600, providesTags: ["Plans"] }),
+    plans: b.query<{ guest: number; tokens: TokenRules; plans: Record<PlanId, PlanLimits> }, void>({ query: () => "plans", keepUnusedDataFor: 600, providesTags: ["Plans"] }),
     logout: b.mutation<{ ok: boolean }, void>({
       query: () => ({ url: "auth/logout", method: "POST" }),
       invalidatesTags: ["Me", "History"],

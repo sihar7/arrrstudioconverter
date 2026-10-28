@@ -1,4 +1,4 @@
-import type { PlanId, PlanLimits } from "@/lib/schemas/plans";
+import type { PlanId, PlanLimits, TokenRules } from "@/lib/schemas/plans";
 import type { JobStatus } from "./converter";
 
 export interface AdminSession {
@@ -33,7 +33,7 @@ export interface AdminStats {
     /** user dengan plan berbayar aktif */
     subscribers: { pro: number; studio: number };
   };
-  server: { uptimeSec: number; rssBytes: number; node: string; concurrent: number; guestLimit: number; userDaily: number };
+  server: { uptimeSec: number; rssBytes: number; node: string; concurrent: number; guestLimit: number; userTokens: number; tokenWindowHours: number };
 }
 
 export interface AdminUser {
@@ -121,12 +121,13 @@ export interface JanitorReport {
 }
 
 /** Angka plan yang bisa diatur admin (sama dengan TUNABLE di BE lib/server/planConfig.ts) */
-export const PLAN_TUNABLE = ["daily", "maxDurationSec", "playlistMax", "parallel", "maxBitrate", "fileTtlHours", "historyMax", "bulkRoblox", "imageMaxSide"] as const;
+export const PLAN_TUNABLE = ["tokens", "maxDurationSec", "playlistMax", "parallel", "maxBitrate", "fileTtlHours", "historyMax", "bulkRoblox", "imageMaxSide"] as const;
 export type PlanTunable = (typeof PLAN_TUNABLE)[number];
 export type TunableLimits = Pick<PlanLimits, PlanTunable>;
 
 export interface PlanOverrides {
   guest?: number;
+  tokens?: Partial<TokenRules>;
   plans?: Partial<Record<PlanId, Partial<TunableLimits>>>;
 }
 
@@ -134,6 +135,7 @@ export interface PlanOverrides {
 export interface PlanSettings {
   defaults: Record<PlanId, TunableLimits>;
   defaultGuest: number;
+  defaultTokens: TokenRules;
   overrides: PlanOverrides;
-  effective: { guest: number; plans: Record<PlanId, PlanLimits> };
+  effective: { guest: number; tokens: TokenRules; plans: Record<PlanId, PlanLimits> };
 }

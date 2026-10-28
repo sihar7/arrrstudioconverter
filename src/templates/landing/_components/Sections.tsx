@@ -235,8 +235,8 @@ export function Compare() {
   const l = t.landing;
   const c = l.compare;
   // Batas efektif (bawaan + pengaturan admin); kuota tamu dari sesi bila pengunjung belum login
-  const { plans, guest } = usePlans();
-  const guestDaily = (!me?.user && me?.quota.limit) || guest;
+  const { plans, guest, tokens } = usePlans();
+  const guestTokens = (!me?.user && me?.quota.limit) || guest;
   const plan = (col: Col) => plans[col === "guest" ? "free" : col];
 
   const rows: { label: string; get: (col: Col) => string }[] = [
@@ -245,8 +245,11 @@ export function Compare() {
       get: (col) => (col === "guest" || col === "free" ? c.free : `${rupiah(PLAN_PRICE[col])}${c.perMonth}`),
     },
     {
-      label: c.daily,
-      get: (col) => (col === "guest" ? f(c.perDay, { n: guestDaily }) : (plan(col).daily ?? c.unlimited).toString()),
+      label: c.tokens,
+      get: (col) => {
+        const n = col === "guest" ? guestTokens : plan(col).tokens;
+        return n == null ? c.unlimited : f(c.perWindow, { n, hours: tokens.windowHours });
+      },
     },
     { label: c.duration, get: (col) => f(c.minutes, { n: Math.floor(plan(col).maxDurationSec / 60) }) },
     { label: c.quality, get: (col) => `${plan(col).maxBitrate} kbps` },

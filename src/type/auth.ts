@@ -23,8 +23,12 @@ export interface QuotaInfo {
   limit: number | null;
   used: number;
   remaining: number | null;
-  /** detik sampai kuota reset; null = tidak reset */
+  /** detik sampai token terisi penuh lagi; null = belum dipakai / tanpa batas */
   resetIn: number | null;
+  /** panjang periode token (jam) */
+  windowHours: number;
+  /** menit audio per 1 token */
+  minutesPerToken: number;
 }
 
 export interface MeResponse {

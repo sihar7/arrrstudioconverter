@@ -9,7 +9,7 @@ import Field, { Input, Select } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
 import Skeleton from "@/components/ui/Skeleton";
 import { useToast } from "@/hooks/useToast";
-import { PLAN_IDS, type PlanId } from "@/lib/schemas/plans";
+import { PLAN_IDS, type PlanId, type TokenRules } from "@/lib/schemas/plans";
 import { baseApi } from "@/store/api/baseApi";
 import { useAppDispatch } from "@/store/hooks";
 import { PLAN_TUNABLE, type PlanOverrides, type PlanSettings, type PlanTunable, type TunableLimits } from "@/type/admin";
@@ -34,7 +34,7 @@ interface Spec {
 
 // Batas min/max sama dengan validasi zod di BE (planConfig.ts), dalam satuan form
 const SPEC: Record<PlanTunable, Spec> = {
-  daily: { label: "Lagu per hari", hint: "Per 24 jam. Kosongkan = tanpa batas.", unit: "lagu", min: 0, max: 100_000, nullable: true },
+  tokens: { label: "Token per periode", hint: "Terisi penuh lagi tiap periode. Kosongkan = tanpa batas.", unit: "token", min: 0, max: 100_000, nullable: true },
   maxDurationSec: { label: "Durasi video maksimal", hint: "Video lebih panjang ditolak.", unit: "menit", scale: 60, min: 1, max: 240 },
   playlistMax: { label: "Item playlist maksimal", hint: "Sekali impor playlist.", unit: "item", min: 1, max: 1000 },
   parallel: { label: "Konversi bersamaan", hint: "Per akun.", unit: "job", min: 1, max: 20 },
@@ -45,12 +45,21 @@ const SPEC: Record<PlanTunable, Spec> = {
   imageMaxSide: { label: "Sisi gambar maksimal", hint: "Hapus background & Upscale.", unit: "px", min: 256, max: 8192 },
 };
 
-type Draft = { guest: string; plans: Record<PlanId, Record<PlanTunable, string>> };
+type TokenKey = keyof TokenRules;
+// Sama dengan validasi zod di BE (planConfig.ts → overridesSchema.tokens)
+const TOKEN_SPEC: Record<TokenKey, Spec> = {
+  windowHours: { label: "Periode isi ulang", hint: "Token terisi penuh lagi sekian jam sejak token pertama dipakai.", unit: "jam", min: 1, max: 168 },
+  minutesPerToken: { label: "Menit audio per token", hint: "Mis. 5 menit/token: lagu 4 menit = 1 token, 12 menit = 3 token.", unit: "menit", min: 1, max: 240 },
+};
+const TOKEN_KEYS = Object.keys(TOKEN_SPEC) as TokenKey[];
+
+type Draft = { guest: string; tokens: Record<TokenKey, string>; plans: Record<PlanId, Record<PlanTunable, string>> };
 
 const toText = (k: PlanTunable, v: number | null) => (v == null ? "" : String(v / (SPEC[k].scale ?? 1)));
 
 const toDraft = (s: PlanSettings): Draft => ({
   guest: String(s.effective.guest),
+  tokens: { windowHours: String(s.effective.tokens.windowHours), minutesPerToken: String(s.effective.tokens.minutesPerToken) },
   plans: Object.fromEntries(
     PLAN_IDS.map((id) => [id, Object.fromEntries(PLAN_TUNABLE.map((k) => [k, toText(k, s.effective.plans[id][k])]))]),
   ) as Draft["plans"],
@@ -73,9 +82,16 @@ function parseGuest(text: string): number | string {
   return n < 0 || n > 100 ? "Antara 0–100" : n;
 }
 
+function parseToken(k: TokenKey, text: string): number | string {
+  const s = TOKEN_SPEC[k];
+  const n = Number(text.trim());
+  if (!text.trim() || !Number.isInteger(n)) return "Harus bilangan bulat";
+  return n < s.min || n > s.max ? `Antara ${nf(s.min)}–${nf(s.max)}` : n;
+}
+
 const show = (k: PlanTunable, v: number | null) => (v == null ? "tanpa batas" : `${nf(v / (SPEC[k].scale ?? 1))} ${SPEC[k].unit}`);
 
-/** Admin console → Plan: atur angka batas tiap plan & kuota tamu tanpa deploy */
+/** Admin console → Plan: atur token (periode & tarif), batas tiap plan & token tamu tanpa deploy */
 export default function PlansTab() {
   const { data, error, reload } = useAdminData(getPlanSettings, []);
   if (error && !data) return <ErrorBox message={error} onRetry={reload} />;
@@ -102,10 +118,13 @@ function PlansForm({ settings }: { settings: PlanSettings }) {
   const base = toDraft(saved);
   const dirty = JSON.stringify(draft) !== JSON.stringify(base);
   const guestVal = parseGuest(draft.guest);
+  const tokenVals = Object.fromEntries(TOKEN_KEYS.map((k) => [k, parseToken(k, draft.tokens[k])])) as Record<TokenKey, number | string>;
   const values = Object.fromEntries(
     PLAN_IDS.map((id) => [id, Object.fromEntries(PLAN_TUNABLE.map((k) => [k, parse(k, draft.plans[id][k])]))]),
   ) as Record<PlanId, Record<PlanTunable, number | null | string>>;
-  const invalid = typeof guestVal === "string" || PLAN_IDS.some((id) => PLAN_TUNABLE.some((k) => typeof values[id][k] === "string"));
+  const invalid =
+    typeof guestVal === "string" ||
+    TOKEN_KEYS.some((k) => typeof tokenVals[k] === "string") || PLAN_IDS.some((id) => PLAN_TUNABLE.some((k) => typeof values[id][k] === "string"));
   const planDirty = (id: PlanId) => PLAN_TUNABLE.some((k) => draft.plans[id][k] !== base.plans[id][k]);
   const overridden = (id: PlanId) => Object.keys(saved.overrides.plans?.[id] ?? {}).length;
 
@@ -117,6 +136,7 @@ function PlansForm({ settings }: { settings: PlanSettings }) {
     try {
       const body: PlanOverrides = {
         guest: guestVal as number,
+        tokens: tokenVals as TokenRules,
         plans: Object.fromEntries(PLAN_IDS.map((id) => [id, values[id] as unknown as TunableLimits])),
       };
       const next = await savePlanSettings(body);
@@ -143,16 +163,45 @@ function PlansForm({ settings }: { settings: PlanSettings }) {
       </p>
 
       <CardBox>
-        <CardHeader title="Tamu (tanpa login)" />
-        <div className="grid gap-5 p-5 sm:grid-cols-2">
+        <CardHeader title="Token" />
+        <div className="grid gap-x-6 gap-y-5 p-5 sm:grid-cols-2 xl:grid-cols-3">
+          {TOKEN_KEYS.map((k) => {
+            const s = TOKEN_SPEC[k];
+            const v = tokenVals[k];
+            const def = saved.defaultTokens[k];
+            return (
+              <Field
+                key={k}
+                label={s.label}
+                hint={typeof v === "string" ? undefined : s.hint}
+                error={typeof v === "string" ? v : null}
+                aside={
+                  draft.tokens[k] !== String(def) && (
+                    <ResetLink label={`Bawaan: ${def} ${s.unit}`} onClick={() => setDraft((d) => ({ ...d, tokens: { ...d.tokens, [k]: String(def) } }))} />
+                  )
+                }
+              >
+                {({ id, describedBy, invalid: bad }) => (
+                  <UnitInput
+                    id={id}
+                    describedBy={describedBy}
+                    invalid={bad}
+                    unit={s.unit}
+                    value={draft.tokens[k]}
+                    onChange={(t) => setDraft((d) => ({ ...d, tokens: { ...d.tokens, [k]: t } }))}
+                  />
+                )}
+              </Field>
+            );
+          })}
           <Field
-            label="Convert gratis tanpa login"
-            hint={typeof guestVal === "string" ? undefined : "Per 24 jam per perangkat/IP. 0 = wajib login."}
+            label="Token tamu (tanpa login)"
+            hint={typeof guestVal === "string" ? undefined : "Per periode per perangkat/IP. 0 = wajib login."}
             error={typeof guestVal === "string" ? guestVal : null}
-            aside={guestChanged && <ResetLink label={`Bawaan: ${guestDefault} lagu`} onClick={() => setDraft((d) => ({ ...d, guest: String(guestDefault) }))} />}
+            aside={guestChanged && <ResetLink label={`Bawaan: ${guestDefault} token`} onClick={() => setDraft((d) => ({ ...d, guest: String(guestDefault) }))} />}
           >
             {({ id, describedBy, invalid: bad }) => (
-              <UnitInput id={id} describedBy={describedBy} invalid={bad} unit="lagu" value={draft.guest} onChange={(v) => setDraft((d) => ({ ...d, guest: v }))} />
+              <UnitInput id={id} describedBy={describedBy} invalid={bad} unit="token" value={draft.guest} onChange={(v) => setDraft((d) => ({ ...d, guest: v }))} />
             )}
           </Field>
         </div>

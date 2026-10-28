@@ -20,8 +20,8 @@ interface Props {
 /** Kartu plan: nama · tagline · harga · CTA · daftar fitur (tercentang / tercoret) */
 export default function PlanCard({ id, price, billed, highlight, current, action }: Props) {
   const { t } = useT();
-  const { plans } = usePlans();
-  const features = planFeatures(id, t, plans);
+  const { plans, tokens } = usePlans();
+  const features = planFeatures(id, t, plans, tokens);
 
   return (
     <article
