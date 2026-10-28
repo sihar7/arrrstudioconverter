@@ -1,6 +1,8 @@
 # Build app desktop (desktop/) untuk Windows & macOS lalu terbitkan ke GitHub Releases.
-# Rilis: naikkan "version" di desktop/package.json → commit → push tag "desktop-v<versi>" (mis. desktop-v1.0.1),
-# atau tab Actions → Desktop Release → Run workflow (memakai versi di package.json).
+# OTOMATIS: setiap push ke main yang mengubah desktop/ → bila "version" di desktop/package.json belum pernah dirilis
+# (tag v<versi> belum ada) langsung build + rilis; versi sama → dilewati (tidak ada rilis ganda).
+# Jadi cukup naikkan "version" saat mengubah app desktop lalu push. Manual tetap bisa: push tag "desktop-v<versi>"
+# atau tab Actions → Desktop Release → Run workflow.
 # Halaman /download web memakai link releases/latest/download/<nama tetap> → otomatis versi terbaru.
 # Opsional (tanda tangan kode): secret CSC_LINK + CSC_KEY_PASSWORD (Windows/macOS).
 #
@@ -11,14 +13,44 @@ name: Desktop Release
 
 on:
   push:
+    branches: [main]
+    paths: ["desktop/**", ".github/workflows/desktop-release.yml"]
     tags: ["desktop-v*"]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+# Push beruntun → hanya run terbaru yang jalan (run lama untuk versi yang sama dibatalkan)
+concurrency:
+  group: desktop-release
+  cancel-in-progress: true
+
 jobs:
+  # Versi di package.json sudah punya rilis? → lewati build & rilis
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.ver.outputs.tag }}
+      release: ${{ steps.ver.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(node -p "require('./desktop/package.json').version")"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$tag sudah dirilis — naikkan \"version\" di desktop/package.json untuk rilis baru"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: check
+    if: needs.check.outputs.release == 'true'
     strategy:
       fail-fast: false
       matrix:
