@@ -106,24 +106,22 @@ const converterSlice = createSlice({
   reducers: {
     setOptions(state, action: PayloadAction<Partial<AudioOptions>>) {
       state.options = { ...state.options, ...action.payload };
-      state.preset = "custom";
+      // Preset yang sudah dipilih tetap terpilih walau diatur manual (sampai Reset); Normal + ubahan = Kustom
+      if (state.preset === "normal") state.preset = "custom";
     },
     /** Penyesuaian otomatis ke batas plan — bukan ubahan user, jadi label preset tetap */
     fitToPlan(state, action: PayloadAction<AudioOptions>) {
       state.options = action.payload;
     },
     applyPreset(state, action: PayloadAction<PresetId>) {
-      // Preset hanya menyentuh efek; format/bitrate/trim tetap
-      const keep = {
-        format: state.options.format,
-        bitrate: state.options.bitrate,
-        sampleRate: state.options.sampleRate,
-        mono: state.options.mono,
-        compress: state.options.compress,
-        trimStart: state.options.trimStart,
-        trimEnd: state.options.trimEnd,
-      };
-      state.options = { ...DEFAULT_OPTIONS, ...keep, ...PRESETS[action.payload] };
+      // Preset hanya mengganti nilai miliknya sendiri; ubahan manual (speed, EQ, format, trim, …) tetap sampai Reset.
+      // Nilai preset sebelumnya yang belum diubah manual dilepas dulu → ganti Nightcore → Slowed tidak menumpuk.
+      const prev: Partial<AudioOptions> = state.preset in PRESETS ? PRESETS[state.preset as PresetId] : {};
+      const next: Record<string, unknown> = { ...state.options };
+      for (const [k, v] of Object.entries(prev)) {
+        if (next[k] === v) next[k] = DEFAULT_OPTIONS[k as keyof AudioOptions];
+      }
+      state.options = { ...(next as AudioOptions), ...PRESETS[action.payload] };
       state.preset = action.payload;
     },
     resetOptions(state) {

@@ -43,6 +43,8 @@ const nextConfig: NextConfig = {
   // sub-path, isi Url.basePath; withBase() di kode sudah siap untuk itu.
   ...(Url.basePath ? { basePath: Url.basePath } : {}),
   poweredByHeader: false,
+  // Penanda build: dibaked ke bundle klien & ke /build-id → tab yang masih terbuka tahu ada deploy baru (UpdateWatcher)
+  env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()) },
   async redirects() {
     // Domain lama (*.vercel.app produksi) → domain publik. Server hanya menerima request dari APP_URL
     // (cek lintas situs), jadi pengunjung lama dialihkan supaya tidak kena "Permintaan lintas situs ditolak".

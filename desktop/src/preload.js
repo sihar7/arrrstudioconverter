@@ -40,6 +40,15 @@ if (origin && location.origin === origin && (!base || location.pathname === base
     getSaveSettings: () => ipcRenderer.invoke("download:getSettings"),
     setSaveMode: (mode) => ipcRenderer.invoke("download:setMode", mode),
     resetDownloadsFolder: () => ipcRenderer.invoke("download:resetFolder"),
+    /** cb({ type: downloading|ready|manual|none|error, version?, percent?, bps? }) — status terakhir langsung dikirim → fungsi unsubscribe */
+    onUpdate(cb) {
+      const listener = (_e, payload) => cb(payload);
+      ipcRenderer.on("update:event", listener);
+      ipcRenderer.invoke("update:subscribe").then((last) => last && cb(last), () => {});
+      return () => ipcRenderer.removeListener("update:event", listener);
+    },
+    installUpdate: () => ipcRenderer.invoke("update:install"),
+    openUpdatePage: () => ipcRenderer.invoke("update:openPage"),
     /** VPN rumah (akun admin): { state: off|connecting|online|logged-out|not-admin|error, streams, mbIn, mbOut, server } */
     vpnStatus: () => ipcRenderer.invoke("vpn:status"),
     /** cb(status) saat status VPN rumah berubah → fungsi unsubscribe */

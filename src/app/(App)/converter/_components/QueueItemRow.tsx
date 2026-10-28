@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { memo, useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { Check, Copy, Download, NavArrowDown, NavArrowUp, Pause, Play, Refresh, Upload, WarningTriangle, Xmark } from "iconoir-react";
 import { isRunning, type ItemStatus, type QueueItem } from "@/store/slices/converterSlice";
@@ -284,22 +284,12 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
 const stageOf = (s: ItemStatus) => (s === "downloading" ? 1 : s === "processing" ? 2 : 0);
 
 /** Progres server → isi unduh & proses (0–1). Server: unduh 1–55%, proses 56–98% */
+// Progres server (jobs.ts): unduh 1–55, proses 56–98, selesai 100 → batas segmen Unduh | Proses
+const DL_END = 55;
 function fills(stage: number, progress: number) {
-  const dl = stage >= 2 ? 1 : stage === 1 ? Math.min(1, progress / 55) : 0;
-  const proc = stage === 2 ? Math.min(1, Math.max(0, (progress - 56) / 42)) : 0;
+  const dl = stage >= 2 ? 1 : stage === 1 ? Math.min(1, progress / DL_END) : 0;
+  const proc = stage === 2 ? Math.min(1, Math.max(0, (progress - DL_END) / (100 - DL_END))) : 0;
   return { dl, proc };
-}
-
-const BARS = 44;
-/** "Sidik jari" gelombang per lagu — tinggi bar deterministik dari id (tiap lagu polanya beda, stabil antar render) */
-function fingerprint(id: string): number[] {
-  let h = 2166136261;
-  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
-  return Array.from({ length: BARS }, (_, i) => {
-    h = Math.imul(h ^ (h >>> 13), 1274126177) + i;
-    const env = Math.sin((i / (BARS - 1)) * Math.PI) * 0.55 + 0.45; // tengah lebih tinggi
-    return Math.max(0.18, ((h >>> 0) % 1000) / 1000 * env);
-  });
 }
 
 function Elapsed() {
@@ -323,7 +313,6 @@ function RunningStatus({ item }: { item: QueueItem }) {
       : d[item.status as "pending" | "queued" | "downloading"];
   const pct = stage === 0 ? null : Math.round(item.progress);
   const { dl, proc } = fills(stage, item.progress);
-  const bars = useMemo(() => fingerprint(item.videoId), [item.videoId]);
 
   return (
     <div
@@ -348,14 +337,14 @@ function RunningStatus({ item }: { item: QueueItem }) {
           <Elapsed />
         </span>
       </div>
-      {/* Gelombang proses: antre = bernapas · unduh = bar terisi samar · proses = bar menyala solid + playhead */}
-      <div className={cn("wave-track", stage === 0 && "is-waiting")} aria-hidden="true">
-        {bars.map((v, i) => {
-          const x = (i + 0.5) / BARS;
-          const lit = x <= proc ? "done" : x <= dl ? "dl" : "idle";
-          return <i key={i} data-lit={lit} style={{ "--h": v, "--d": `${i * 28}ms` } as CSSProperties} />;
-        })}
-        {stage === 2 && <span className="wave-head" style={{ left: `${proc * 100}%` }} />}
+      {/* Satu track bersegmen (Unduh | Proses) — panjang isi = angka persen; antre = kilau tanpa isi */}
+      <div className="run-track" aria-hidden="true">
+        <span className="run-seg" data-active={stage <= 1 || undefined} style={{ flex: DL_END }}>
+          <span className="run-fill" style={{ "--p": dl } as CSSProperties} />
+        </span>
+        <span className="run-seg" data-active={stage === 2 || undefined} style={{ flex: 100 - DL_END }}>
+          <span className="run-fill" style={{ "--p": proc } as CSSProperties} />
+        </span>
       </div>
       <ol className="flex items-center gap-1.5 text-[12px] font-medium" aria-hidden="true">
         {labels.map((label, i) => (

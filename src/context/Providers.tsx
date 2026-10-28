@@ -8,6 +8,7 @@ import TopLoader from "@/components/shared/TopLoader";
 import CookieConsent from "@/components/shared/CookieConsent";
 import DesktopLoginGuard from "@/components/shared/DesktopLoginGuard";
 import TrackMetaSync from "@/components/shared/TrackMetaSync";
+import UpdateWatcher from "@/components/shared/UpdateWatcher";
 
 /** Terapkan tema & bahasa ke <html> setiap preferensi berubah */
 function HtmlSync() {
@@ -28,6 +29,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       <TopLoader />
       {children}
       <Toaster />
+      <UpdateWatcher />
       <TrackMetaSync />
       <CookieConsent />
     </StoreProvider>

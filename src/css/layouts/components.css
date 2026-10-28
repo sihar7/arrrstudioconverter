@@ -570,6 +570,25 @@ body::before {
   }
 }
 
+/* Kartu update: ikon unduh mengangguk pelan selama update app diunduh */
+.update-bob {
+  animation: update-bob 1.6s var(--ease) infinite;
+}
+@keyframes update-bob {
+  0%,
+  100% {
+    transform: translateY(-1.5px);
+  }
+  50% {
+    transform: translateY(1.5px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .update-bob {
+    animation: none;
+  }
+}
+
 /* Menu HP: panel turun dari atas, item menyusul berurutan */
 .menu-sheet[open] {
   animation: menu-in var(--spring-dur) var(--spring) both;
@@ -857,59 +876,51 @@ body::before {
 }
 
 /* ============================================================
-   Gelombang proses (antrean converter) — pengganti progress bar biasa.
-   44 bar (transform/opacity saja → murah). data-lit: idle | dl | done.
+   Progres job (antrean converter): satu track bersegmen per tahap (Unduh | Proses). Lebar segmen =
+   porsi tahap di progres server (0–55 / 56–100) → panjang isi selalu sama dengan angka persen.
    ============================================================ */
-.wave-track {
-  position: relative;
+.run-track {
   display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 30px;
+  gap: 3px;
+  height: 6px;
 }
-.wave-track i {
-  flex: 1;
-  height: 100%;
+.run-seg {
+  position: relative;
+  overflow: hidden;
   border-radius: 99px;
-  background: var(--fg);
-  opacity: 0.14;
-  transform: scaleY(var(--h));
-  transition:
-    opacity 0.35s var(--ease),
-    transform 0.5s var(--spring-bounce),
-    background-color 0.35s var(--ease);
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
 }
-.wave-track i[data-lit="dl"] {
-  opacity: 0.42;
-}
-.wave-track i[data-lit="done"] {
-  opacity: 1;
-  background: var(--accent);
-}
-/* Antre: gelombang "bernapas" bergiliran kiri → kanan */
-.wave-track.is-waiting i {
-  animation: wave-breathe 1.6s var(--ease) var(--d) infinite;
-}
-@keyframes wave-breathe {
-  0%,
-  100% {
-    transform: scaleY(calc(var(--h) * 0.35));
-  }
-  50% {
-    transform: scaleY(var(--h));
-  }
-}
-/* Playhead saat proses: garis terang yang mengikuti progres */
-.wave-head {
+.run-fill {
   position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 2px;
-  margin-left: -1px;
-  border-radius: 2px;
-  background: var(--fg);
-  box-shadow: 0 0 10px 1px color-mix(in srgb, var(--fg) 45%, transparent);
-  transition: left 0.5s var(--spring);
+  inset: 0;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: left;
+  transform: scaleX(var(--p));
+  transition: transform 0.5s var(--ease);
+}
+/* Kilau tipis yang lewat di segmen yang sedang berjalan */
+.run-seg[data-active]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fg) 22%, transparent), transparent);
+  animation: run-sheen 1.8s var(--ease) infinite;
+}
+@keyframes run-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .run-seg[data-active]::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* Cincin gauge konsol landing: arc terisi dari nol dengan pegas saat pertama tampil */

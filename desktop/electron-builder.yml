@@ -10,6 +10,8 @@ files:
   - src/**/*
   - package.json
 asar: true
+# Hanya bahasa yang dipakai UI (web berbahasa id/en) — 55 locale Chromium ±49 MB → installer & unduhan update lebih kecil
+electronLanguages: [en-US, id]
 
 publish:
   provider: github
