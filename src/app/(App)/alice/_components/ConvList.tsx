@@ -5,6 +5,7 @@ import { useT } from "@/hooks/useT";
 import { cn } from "@/lib/utils";
 import { alice, useAlice } from "../_lib/store";
 import { stop } from "../_lib/chat";
+import { claudeBridge } from "../_lib/claudeView";
 
 /**
  * Daftar percakapan mode Alice: "Chat baru" + terbaru (judul = pesan pertama). Dipakai di sidebar app desktop
@@ -76,6 +77,15 @@ export default function ConvList({ rail = false, onPick }: { rail?: boolean; onP
                 );
               })}
             </ul>
+          )}
+          {claudeBridge() && (
+            <button
+              type="button"
+              onClick={() => alice.setEngine("claude")}
+              className="mt-auto shrink-0 cursor-pointer rounded-[8px] px-2.5 py-2 text-left text-[12px] text-fg-3 transition-colors hover:bg-fg/[0.05] hover:text-fg-2"
+            >
+              {a.claude.useClaude}
+            </button>
           )}
         </>
       )}

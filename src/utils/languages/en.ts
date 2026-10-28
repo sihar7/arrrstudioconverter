@@ -1231,6 +1231,16 @@ const en: Dictionary = {
       change: "Change photo",
       remove: "Remove",
     },
+    claude: {
+      accounts: "Claude accounts",
+      rename: "Rename",
+      hint: "Each account signs in once and stays signed in. Click to switch, double-click to rename. Add the ARRR STUDIO connector on each account.",
+      reload: "Reload",
+      signOut: "Sign out of {name}",
+      signOutConfirm: "Sign out of {name}? This account's login data in the app is removed.",
+      useApi: "Use API chat (credits) →",
+      useClaude: "← Use Claude.ai (subscription)",
+    },
     aiOff: {
       title: "Alice chat in the app isn't on yet",
       key: "Chat in this app uses the Claude API: set ANTHROPIC_API_KEY on Railway (Anthropic Console → API Keys). Billed per use, separate from your Pro plan.",

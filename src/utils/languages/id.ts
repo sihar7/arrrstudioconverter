@@ -1230,6 +1230,16 @@ const id = {
       change: "Ganti foto",
       remove: "Hapus",
     },
+    claude: {
+      accounts: "Akun Claude",
+      rename: "Ganti nama",
+      hint: "Tiap akun login sekali & tersimpan. Klik untuk pindah akun, klik dua kali untuk ganti nama. Pasang konektor ARRR STUDIO di tiap akun.",
+      reload: "Muat ulang",
+      signOut: "Keluar dari {name}",
+      signOutConfirm: "Keluar dari {name}? Data login akun ini di app dihapus.",
+      useApi: "Pakai chat API (kredit) →",
+      useClaude: "← Pakai Claude.ai (langganan)",
+    },
     aiOff: {
       title: "Chat Alice di app belum aktif",
       key: "Chat di app ini memakai Claude API: isi ANTHROPIC_API_KEY di Railway (Console Anthropic → API Keys). Biaya per pemakaian, terpisah dari langganan Pro.",

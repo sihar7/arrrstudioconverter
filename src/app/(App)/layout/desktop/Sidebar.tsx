@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChatBubble, Search, SidebarCollapse, SidebarExpand, ViewGrid } from "iconoir-react";
 import ConvList from "../../alice/_components/ConvList";
+import ClaudeSidebar from "../../alice/_components/ClaudeSidebar";
+import { useAlice } from "../../alice/_lib/store";
+import { claudeBridge } from "../../alice/_lib/claudeView";
 import { LogoMark } from "@/components/shared/Logo";
 import UserMenu, { useQuotaText } from "@/components/shared/UserMenu";
 import { useAppSelector } from "@/store/hooks";
@@ -34,6 +37,9 @@ export default function Sidebar({ rail, onToggleRail, onOpenPalette }: Props) {
   // Admin: dua mode sidebar — Studio (menu app) & Alice (daftar chat, acuan Claude Desktop)
   const isAdmin = Boolean(me?.user?.isAdmin);
   const aliceMode = isAdmin && pathname.startsWith(ALICE_HREF);
+  // Mode Alice memakai Claude.ai asli (langganan) bila app desktop mendukung, selain itu chat API
+  const engine = useAlice((s) => s.engine);
+  const claudeOn = engine === "claude" && Boolean(claudeBridge());
   useEffect(() => {
     if (!pathname.startsWith(ALICE_HREF)) sessionStorage.setItem(LAST_STUDIO_KEY, pathname);
   }, [pathname]);
@@ -106,7 +112,7 @@ export default function Sidebar({ rail, onToggleRail, onOpenPalette }: Props) {
 
       {aliceMode && (
         <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1.5 rail:px-2.5">
-          <ConvList rail={rail} />
+          {claudeOn ? <ClaudeSidebar rail={rail} /> : <ConvList rail={rail} />}
         </div>
       )}
 

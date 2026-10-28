@@ -67,11 +67,15 @@ interface State {
   studio: boolean;
   /** foto profil Alice (data URL persegi 256px, hanya di perangkat ini) */
   avatar: string | null;
+  /** mesin mode Alice: Claude.ai asli (langganan, app desktop 1.3+) atau chat lewat API (kredit) */
+  engine: "claude" | "api";
+  /** nama 3 profil akun Claude.ai */
+  profileNames: string[];
 }
 
 const KEY = "arrc:alice:v1";
 const MAX_CONVS = 100;
-const EMPTY: State = { convs: [], activeId: null, model: "claude-opus-5-5", effort: "medium", studio: false, avatar: null };
+const EMPTY: State = { convs: [], activeId: null, model: "claude-opus-5-5", effort: "medium", studio: false, avatar: null, engine: "claude", profileNames: ["Akun 1", "Akun 2", "Akun 3"] };
 
 let state: State = EMPTY;
 let loaded = false;
@@ -92,6 +96,8 @@ function load() {
         model: ALICE_MODELS.includes(raw.model as AliceModel) ? (raw.model as AliceModel) : EMPTY.model,
         effort: ALICE_EFFORTS.includes(raw.effort as AliceEffort) ? (raw.effort as AliceEffort) : EMPTY.effort,
         studio: raw.studio === true,
+        engine: raw.engine === "api" ? "api" : "claude",
+        profileNames: Array.isArray(raw.profileNames) && raw.profileNames.length === 3 ? raw.profileNames.map((n, i) => String(n || `Akun ${i + 1}`).slice(0, 24)) : EMPTY.profileNames,
         avatar: typeof raw.avatar === "string" && raw.avatar.startsWith("data:image/") ? raw.avatar : null,
       };
     }
@@ -162,6 +168,9 @@ export const alice = {
   setEffort: (effort: AliceEffort) => set({ ...state, effort, convs: patchActive((c) => ({ ...c, effort })) }),
   setStudio: (studio: boolean) => set({ ...state, studio }),
   setAvatar: (avatar: string | null) => set({ ...state, avatar }),
+  setEngine: (engine: "claude" | "api") => set({ ...state, engine }),
+  renameProfile: (i: number, name: string) =>
+    set({ ...state, profileNames: state.profileNames.map((n, j) => (j === i ? name.trim().slice(0, 24) || `Akun ${i + 1}` : n)) }),
   setUsage: (convId: string, usage: Usage) => set({ ...state, convs: state.convs.map((c) => (c.id === convId ? { ...c, usage } : c)) }),
   open: (id: string | null) => {
     const c = state.convs.find((x) => x.id === id);

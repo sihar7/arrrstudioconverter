@@ -12,6 +12,7 @@ const downloads = require("./downloads");
 const updater = require("./updater");
 const { readClaudeMemory } = require("./claudeMemory");
 const studio = require("./studio");
+require("./claudeView"); // mode Alice: Claude.ai asli (3 profil akun) di dalam app — IPC claude:*
 const chrome = require("./chrome");
 const { attachContextMenu, buildAppMenu } = require("./menu");
 const { createTunnel } = require("./tunnel");

@@ -50,6 +50,23 @@ if (origin && location.origin === origin && (!base || location.pathname === base
     installUpdate: () => ipcRenderer.invoke("update:install"),
     /** Mode Alice (admin): isi memori Claude Code di PC ini → [{ path, text }] */
     readClaudeMemory: () => ipcRenderer.invoke("memory:readClaude"),
+    /** Mode Alice (admin): Claude.ai asli di atas area kerja, 3 profil akun (langganan user sendiri) */
+    claude: {
+      show: (rect) => ipcRenderer.send("claude:show", rect),
+      setBounds: (rect) => ipcRenderer.send("claude:bounds", rect),
+      hide: () => ipcRenderer.send("claude:hide"),
+      setProfile: (n) => ipcRenderer.send("claude:profile", n),
+      nav: (action) => ipcRenderer.send("claude:nav", action),
+      freeze: () => ipcRenderer.invoke("claude:freeze"),
+      unfreeze: () => ipcRenderer.send("claude:unfreeze"),
+      getState: () => ipcRenderer.invoke("claude:state"),
+      signOut: (n) => ipcRenderer.invoke("claude:signOut", n),
+      onState(cb) {
+        const listener = (_e, s) => cb(s);
+        ipcRenderer.on("claude:state", listener);
+        return () => ipcRenderer.removeListener("claude:state", listener);
+      },
+    },
     /** Mode Alice (admin): Roblox Studio lewat StudioMCP lokal */
     studio: {
       status: () => ipcRenderer.invoke("studio:status"),

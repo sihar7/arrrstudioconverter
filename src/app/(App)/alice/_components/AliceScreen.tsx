@@ -13,6 +13,8 @@ import { getDesktop } from "@/type/desktop";
 import { autoSyncClaudeMemory } from "../_lib/memorySync";
 import Thread from "./Thread";
 import UsageBanner from "./UsageBanner";
+import ClaudeArea from "./ClaudeArea";
+import { claudeBridge } from "../_lib/claudeView";
 
 /**
  * Mode Alice (khusus admin) — acuan Claude Desktop: kosong = sapaan + kotak tulis di tengah layar;
@@ -26,6 +28,7 @@ export default function AliceScreen() {
   const { data: me, isLoading } = useMeQuery();
   const conv = useAlice((s) => s.convs.find((c) => c.id === s.activeId) ?? null);
   const busy = Boolean(conv?.msgs.at(-1)?.live);
+  const engine = useAlice((s) => s.engine);
 
   // Memori Claude Code di PC ini → memori Alice (sekali per sesi app)
   const isAdmin = Boolean(me?.user?.isAdmin);
@@ -65,6 +68,9 @@ export default function AliceScreen() {
       </div>
     );
   }
+
+  // Claude.ai asli (langganan Pro, app desktop 1.3+) — chat API tetap tersedia sebagai pilihan
+  if (engine === "claude" && claudeBridge()) return <ClaudeArea />;
 
   return (
     <div className="flex">

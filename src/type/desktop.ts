@@ -26,6 +26,37 @@ export type DesktopUpdateEvent =
 /** Isi hasil alat MCP (Roblox Studio) */
 export type StudioContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string } | { type: string; [k: string]: unknown };
 
+export interface ClaudeViewState {
+  profile: number;
+  profiles: number;
+  url: string;
+  title: string;
+  loading: boolean;
+  canGoBack: boolean;
+  canGoForward: boolean;
+}
+
+/** Area dalam px CSS (getBoundingClientRect) */
+export interface ViewRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface DesktopClaude {
+  show: (rect: ViewRect) => void;
+  setBounds: (rect: ViewRect) => void;
+  hide: () => void;
+  setProfile: (n: number) => void;
+  nav: (action: "back" | "forward" | "reload" | "new") => void;
+  freeze: () => Promise<string | null>;
+  unfreeze: () => void;
+  getState: () => Promise<ClaudeViewState | null>;
+  signOut: (n: number) => Promise<ClaudeViewState | null>;
+  onState: (cb: (s: ClaudeViewState) => void) => () => void;
+}
+
 export interface ArrDesktop {
   isDesktop: true;
   version: string;
@@ -54,6 +85,8 @@ export interface ArrDesktop {
   openUpdatePage?: () => Promise<void>;
   /** Mode Alice (admin): isi memori Claude Code di PC ini (CLAUDE.md + memory/ tiap proyek) */
   readClaudeMemory?: () => Promise<{ path: string; text: string }[]>;
+  /** Mode Alice (admin): Claude.ai asli di atas area kerja, 3 profil akun — v1.3+ */
+  claude?: DesktopClaude;
   /** Mode Alice (admin): Roblox Studio lewat StudioMCP lokal */
   studio?: {
     status: () => Promise<{ installed: boolean; running: boolean; tools: number }>;
