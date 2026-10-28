@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils";
 import { alice, useAlice } from "../_lib/store";
 import { stop } from "../_lib/chat";
 import { claudeBridge } from "../_lib/claudeView";
+import { getDesktop } from "@/type/desktop";
 
 /**
  * Daftar percakapan mode Alice: "Chat baru" + terbaru (judul = pesan pertama). Dipakai di sidebar app desktop
  * dan panel kiri halaman versi web. rail = sidebar diciutkan → hanya tombol chat baru.
  */
 export default function ConvList({ rail = false, onPick }: { rail?: boolean; onPick?: () => void }) {
-  const { t } = useT();
+  const { t, f } = useT();
   const a = t.alice;
   const convs = useAlice((s) => s.convs);
   const activeId = useAlice((s) => s.activeId);
@@ -77,6 +78,12 @@ export default function ConvList({ rail = false, onPick }: { rail?: boolean; onP
                 );
               })}
             </ul>
+          )}
+          {!claudeBridge() && getDesktop() && (
+            // App desktop lama: belum bisa menampilkan Claude.ai (langganan) → arahkan ke update
+            <p className="mt-auto shrink-0 rounded-[10px] border border-[var(--hairline)] bg-fg/[0.04] px-3 py-2.5 text-[12px] leading-snug text-fg-2">
+              {f(a.claude.needUpdate, { v: getDesktop()?.version || "?" })}
+            </p>
           )}
           {claudeBridge() && (
             <button

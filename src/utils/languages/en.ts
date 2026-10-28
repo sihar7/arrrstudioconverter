@@ -1240,6 +1240,7 @@ const en: Dictionary = {
       signOutConfirm: "Sign out of {name}? This account's login data in the app is removed.",
       useApi: "Use API chat (credits) →",
       useClaude: "← Use Claude.ai (subscription)",
+      needUpdate: "Claude.ai sign-in (uses your Pro plan, no credits) comes with desktop app 1.3.0. This app is still v{v} — update the app first.",
     },
     aiOff: {
       title: "Alice chat in the app isn't on yet",

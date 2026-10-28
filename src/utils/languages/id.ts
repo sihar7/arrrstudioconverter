@@ -1239,6 +1239,7 @@ const id = {
       signOutConfirm: "Keluar dari {name}? Data login akun ini di app dihapus.",
       useApi: "Pakai chat API (kredit) →",
       useClaude: "← Pakai Claude.ai (langganan)",
+      needUpdate: "Login Claude.ai (pakai langganan Pro, tanpa kredit) ada di app desktop versi 1.3.0. App ini masih v{v} — perbarui aplikasinya dulu.",
     },
     aiOff: {
       title: "Chat Alice di app belum aktif",
