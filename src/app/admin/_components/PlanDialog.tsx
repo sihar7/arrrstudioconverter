@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Segmented from "@/components/ui/Segmented";
 import Field, { Input } from "@/components/ui/Field";
 import { useToast } from "@/hooks/useToast";
-import { PLAN_IDS, type PlanId } from "@/lib/schemas/plans";
+import { PLAN_IDS, type PlanId, type PublicPlanId } from "@/lib/schemas/plans";
 import { usePlans } from "@/hooks/usePlans";
 import type { AdminUser } from "@/type/admin";
 import { setUserPlan } from "../_service/admin.service";
@@ -24,7 +24,9 @@ const DURATIONS = [
 ] as const;
 type Duration = (typeof DURATIONS)[number]["value"];
 
-const PLAN_LABEL: Record<PlanId, string> = { free: "Free", pro: "Pro", studio: "Studio" };
+// Label semua plan (untuk "Plan sekarang"); pilihan yang bisa diberikan hanya PLAN_IDS publik —
+// plan "admin" otomatis untuk admin aplikasi
+const PLAN_LABEL: Record<PlanId, string> = { free: "Free", pro: "Pro", studio: "Studio", admin: "Admin" };
 
 /** Atur plan user secara manual (hadiah, kompensasi, kerja sama) — tercatat di log audit */
 export default function PlanDialog({ user, onClose, onSaved }: { user: AdminUser | null; onClose: () => void; onSaved: () => void }) {
@@ -47,7 +49,7 @@ function PlanForm({ user, onClose, onSaved }: { user: AdminUser; onClose: () => 
   const guard = useAuthGuard();
   const { plans, tokens } = usePlans();
   const freeTokens = plans.free.tokens;
-  const [plan, setPlan] = useState<PlanId>(user.plan === "free" ? "pro" : user.plan);
+  const [plan, setPlan] = useState<PublicPlanId>(user.plan === "free" || user.plan === "admin" ? "pro" : user.plan);
   const [duration, setDuration] = useState<Duration>("30");
   const [date, setDate] = useState(() => new Date(Date.now() + 30 * DAY).toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);

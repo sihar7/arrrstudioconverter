@@ -74,7 +74,7 @@ const id = {
     m: "{m} m",
   },
   plan: {
-    names: { free: "Free", pro: "Pro", studio: "Studio" },
+    names: { free: "Free", pro: "Pro", studio: "Studio", admin: "Admin" },
     taglines: {
       free: "Untuk coba-coba & kebutuhan ringan",
       pro: "Untuk kreator yang rutin convert",
@@ -388,7 +388,7 @@ const id = {
   login: {
     eyebrow: "YouTube → Roblox",
     items: [
-      { title: "Convert tanpa batas", desc: "Guest dapat 3×, member Discord tidak dibatasi." },
+      { title: "Token terisi ulang", desc: "Guest dapat 3 token, member Discord dapat jatah token yang terisi penuh lagi tiap beberapa jam." },
       { title: "Upload ke Roblox", desc: "Kirim audio ke akun atau grup Roblox-mu langsung dari web." },
       { title: "Riwayat tersimpan", desc: "Unduh ulang dan pantau status review Roblox." },
     ],
@@ -858,7 +858,7 @@ const id = {
   },
   gate: {
     title: "Token gratis habis",
-    sub: "Kamu sudah memakai {max} token gratis. Masuk dengan Discord untuk convert tanpa batas, upload ke Roblox, dan menyimpan riwayat.",
+    sub: "Kamu sudah memakai {max} token gratis. Masuk dengan Discord untuk token yang terisi ulang otomatis, upload ke Roblox, dan menyimpan riwayat.",
     login: "Masuk dengan Discord",
     later: "Nanti saja",
   },

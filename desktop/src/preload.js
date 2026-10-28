@@ -40,5 +40,13 @@ if (origin && location.origin === origin && (!base || location.pathname === base
     getSaveSettings: () => ipcRenderer.invoke("download:getSettings"),
     setSaveMode: (mode) => ipcRenderer.invoke("download:setMode", mode),
     resetDownloadsFolder: () => ipcRenderer.invoke("download:resetFolder"),
+    /** VPN rumah (akun admin): { state: off|connecting|online|logged-out|not-admin|error, streams, mbIn, mbOut, server } */
+    vpnStatus: () => ipcRenderer.invoke("vpn:status"),
+    /** cb(status) saat status VPN rumah berubah → fungsi unsubscribe */
+    onVpn(cb) {
+      const listener = (_e, payload) => cb(payload);
+      ipcRenderer.on("vpn:event", listener);
+      return () => ipcRenderer.removeListener("vpn:event", listener);
+    },
   });
 }

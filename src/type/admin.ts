@@ -1,4 +1,4 @@
-import type { PlanId, PlanLimits, TokenRules } from "@/lib/schemas/plans";
+import type { PlanId, PlanLimits, PublicPlanId, TokenRules } from "@/lib/schemas/plans";
 import type { JobStatus } from "./converter";
 
 export interface AdminSession {
@@ -128,12 +128,12 @@ export type TunableLimits = Pick<PlanLimits, PlanTunable>;
 export interface PlanOverrides {
   guest?: number;
   tokens?: Partial<TokenRules>;
-  plans?: Partial<Record<PlanId, Partial<TunableLimits>>>;
+  plans?: Partial<Record<PublicPlanId, Partial<TunableLimits>>>;
 }
 
 /** GET/PUT /api/admin/plans */
 export interface PlanSettings {
-  defaults: Record<PlanId, TunableLimits>;
+  defaults: Record<PublicPlanId, TunableLimits>;
   defaultGuest: number;
   defaultTokens: TokenRules;
   overrides: PlanOverrides;

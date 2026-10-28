@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Download, Xmark } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { usePlans } from "@/hooks/usePlans";
+import { isTopPlan } from "@/lib/schemas/plans";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { useAiModel } from "@/hooks/useAiModel";
@@ -101,7 +102,7 @@ export default function UpscaleScreen() {
               <p className="text-[14px] font-medium">{g.output}</p>
               <p className="text-[13px] tabular-nums text-fg-2">{outSize ? f(g.outputSize, outSize) : "—"}</p>
             </div>
-            <PlanCap plan={planId} planName={t.plan.names[planId]} max={plan.imageMaxSide} scaledFrom={scaledFrom} top={planId === "studio"} />
+            <PlanCap plan={planId} planName={t.plan.names[planId]} max={plan.imageMaxSide} scaledFrom={scaledFrom} top={isTopPlan(planId)} />
 
             <div className="flex flex-col gap-2">
               {busy ? (

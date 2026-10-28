@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/utils";
 import { withBase } from "@/Url/Url";
-import type { PlanId } from "@/lib/schemas/plans";
+import type { PublicPlanId } from "@/lib/schemas/plans";
 import type { UserPlan } from "@/type/auth";
 import type { Order, OrderStatus } from "@/type/billing";
 import type { AdminAuditEntry, AdminFile, AdminJob, AdminMe, AdminStats, AdminUser, JanitorReport, PlanOverrides, PlanSettings, SystemReport } from "@/type/admin";
@@ -24,7 +24,7 @@ export const revokeUser = (id: string, purge: boolean) =>
   apiFetch<{ sessions: number; rows: number }>(`/api/admin/users/${id}${purge ? "?purge=1" : ""}`, { method: "DELETE" });
 
 /** Atur plan manual; expiresAt null = permanen, plan "free" = cabut plan */
-export const setUserPlan = (id: string, plan: PlanId, expiresAt: number | null) =>
+export const setUserPlan = (id: string, plan: PublicPlanId, expiresAt: number | null) =>
   apiFetch<{ plan: UserPlan }>(`/api/admin/users/${id}`, { method: "PATCH", json: { plan, expiresAt } });
 
 export type OrderFilter = OrderStatus | "open" | "all";

@@ -3,8 +3,16 @@ import { DEFAULT_OPTIONS, type AudioFormat, type AudioOptions } from "./convert.
 // Definisi plan — dipakai bersama oleh UI (halaman harga, kunci opsi) dan API (penegakan batas).
 // File ini identik di repo web & backend; ubah keduanya bersamaan.
 
+/** Plan publik: Free (bawaan) + Pro & Studio (dijual) — tampil di halaman Harga & bisa diberikan admin ke user */
 export const PLAN_IDS = ["free", "pro", "studio"] as const;
-export type PlanId = (typeof PLAN_IDS)[number];
+export type PublicPlanId = (typeof PLAN_IDS)[number];
+/**
+ * Plan internal khusus admin aplikasi (otomatis, batas paling longgar). Tidak dijual, tidak tampil di halaman
+ * Harga, dan tidak bisa diberikan ke user.
+ */
+export const ADMIN_PLAN = "admin" as const;
+export const ALL_PLAN_IDS = [...PLAN_IDS, ADMIN_PLAN] as const;
+export type PlanId = (typeof ALL_PLAN_IDS)[number];
 
 /**
  * Efek dasar (speed, pitch, volume, fade) ada di semua plan tapi RENTANGNYA bertingkat (lihat `ranges`).
@@ -66,51 +74,75 @@ export interface PlanLimits {
   imageBg: "basic" | "full";
 }
 
+// Free < Pro < Studio tetap terasa beda tiap baris; Admin JAUH di atas Studio (±2–4× tiap batas, token &
+// upload massal tanpa batas) — khusus admin aplikasi, tidak dijual.
+// Preset populer tetap di plan yang sama: Nightcore & Slowed (Free), Sped Up / Slowed + Reverb / Bass Boost (Pro), 8D (Studio).
 export const PLANS: Record<PlanId, PlanLimits> = {
   free: {
     id: "free",
-    tokens: 5,
-    maxDurationSec: 10 * 60,
-    playlistMax: 10,
+    tokens: 4,
+    maxDurationSec: 8 * 60,
+    playlistMax: 5,
     parallel: 1,
-    maxBitrate: 192,
+    maxBitrate: 128,
     formats: ["mp3", "ogg"],
     effects: [],
-    ranges: { speed: [0.8, 1.25], pitch: 3, volume: 6, fade: 3, bass: [0, 0], treble: [0, 0], reverb: 0 },
+    ranges: { speed: [0.8, 1.25], pitch: 2, volume: 4, fade: 2, bass: [0, 0], treble: [0, 0], reverb: 0 },
     smartCompress: "off",
     fileTtlHours: 1,
-    historyMax: 50,
+    historyMax: 30,
     bulkRoblox: 0,
     library: "off",
     priority: false,
-    imageMaxSide: 1024,
+    imageMaxSide: 768,
     upscaleScales: [2],
     imageBg: "basic",
   },
   pro: {
     id: "pro",
-    tokens: 50,
-    maxDurationSec: 30 * 60,
-    playlistMax: 50,
-    parallel: 3,
-    maxBitrate: 256,
+    tokens: 25,
+    maxDurationSec: 15 * 60,
+    playlistMax: 20,
+    parallel: 2,
+    maxBitrate: 192,
     formats: ["mp3", "ogg", "m4a"],
     effects: ["eq", "reverb"],
-    ranges: { speed: [0.5, 1.5], pitch: 7, volume: 12, fade: 8, bass: [-5, 10], treble: [-5, 8], reverb: 50 },
+    ranges: { speed: [0.6, 1.4], pitch: 6, volume: 9, fade: 6, bass: [-4, 10], treble: [-4, 6], reverb: 45 },
     smartCompress: "standard",
-    fileTtlHours: 24,
-    historyMax: 300,
-    bulkRoblox: 10,
+    fileTtlHours: 12,
+    historyMax: 150,
+    bulkRoblox: 5,
     library: "basic",
     priority: false,
-    imageMaxSide: 2560,
+    imageMaxSide: 2048,
     upscaleScales: [2, 4],
     imageBg: "full",
   },
   studio: {
     id: "studio",
+    tokens: 60,
+    maxDurationSec: 30 * 60,
+    playlistMax: 50,
+    parallel: 3,
+    maxBitrate: 320,
+    formats: ["mp3", "ogg", "m4a", "wav", "flac"],
+    effects: ["eq", "reverb", "spatial8d"],
+    ranges: { speed: [0.6, 1.6], pitch: 8, volume: 12, fade: 10, bass: [-6, 12], treble: [-6, 10], reverb: 60 },
+    smartCompress: "max",
+    fileTtlHours: 24,
+    historyMax: 300,
+    bulkRoblox: 15,
+    library: "full",
+    priority: true,
+    imageMaxSide: 2560,
+    upscaleScales: [2, 4],
+    imageBg: "full",
+  },
+  // Semua fitur terbuka; durasi = batas keras server (MAX_DURATION_SEC tetap jadi plafon, lihat planCap)
+  admin: {
+    id: "admin",
     tokens: null,
-    maxDurationSec: 60 * 60,
+    maxDurationSec: 4 * 60 * 60,
     playlistMax: 200,
     parallel: 5,
     maxBitrate: 320,
@@ -145,21 +177,24 @@ export const TOKEN_RULES: TokenRules = { windowHours: 5, minutesPerToken: 5 };
 export const tokenCost = (durationSec: number | null | undefined, rules: TokenRules = TOKEN_RULES): number =>
   Math.max(1, Math.ceil((durationSec ?? 0) / (rules.minutesPerToken * 60)));
 
-/** Batas teratas semua plan — dipakai untuk batas keras download / baca riwayat */
+/** Batas teratas semua plan (termasuk admin) — dipakai untuk batas keras download / baca riwayat */
 export const PLAN_CAP = {
-  maxDurationSec: Math.max(...PLAN_IDS.map((p) => PLANS[p].maxDurationSec)),
-  playlistMax: Math.max(...PLAN_IDS.map((p) => PLANS[p].playlistMax)),
-  historyMax: Math.max(...PLAN_IDS.map((p) => PLANS[p].historyMax)),
+  maxDurationSec: Math.max(...ALL_PLAN_IDS.map((p) => PLANS[p].maxDurationSec)),
+  playlistMax: Math.max(...ALL_PLAN_IDS.map((p) => PLANS[p].playlistMax)),
+  historyMax: Math.max(...ALL_PLAN_IDS.map((p) => PLANS[p].historyMax)),
 };
 
-/** Plan termurah yang memenuhi syarat (untuk label kunci "Pro" / "Studio") */
-export const cheapestPlan = (test: (p: PlanLimits) => boolean): PlanId => PLAN_IDS.find((id) => test(PLANS[id])) ?? "studio";
+/** Plan publik termurah yang memenuhi syarat (untuk label kunci "Pro" / "Studio") */
+export const cheapestPlan = (test: (p: PlanLimits) => boolean): PublicPlanId => PLAN_IDS.find((id) => test(PLANS[id])) ?? "studio";
+
+/** Plan tanpa tingkat di atasnya untuk user (Studio) atau admin — tidak perlu ajakan upgrade */
+export const isTopPlan = (id: PlanId) => id === "studio" || id === ADMIN_PLAN;
 
 // ---------- Harga (Rupiah, dibayar via QRIS) ----------
 
 /** Harga per bulan; free = 0 (tidak bisa dibeli) */
-export const PLAN_PRICE: Record<PlanId, number> = { free: 0, pro: 15_000, studio: 35_000 };
-export const PAID_PLANS = ["pro", "studio"] as const satisfies readonly PlanId[];
+export const PLAN_PRICE: Record<PublicPlanId, number> = { free: 0, pro: 15_000, studio: 35_000 };
+export const PAID_PLANS = ["pro", "studio"] as const satisfies readonly PublicPlanId[];
 export type PaidPlanId = (typeof PAID_PLANS)[number];
 
 /** Pilihan durasi berlangganan + diskon */
@@ -176,7 +211,8 @@ export function planTotal(plan: PaidPlanId, months: BillingMonths): number {
   return Math.round((PLAN_PRICE[plan] * months * (1 - period.discount)) / 100) * 100;
 }
 
-export const isPlanId = (v: unknown): v is PlanId => typeof v === "string" && (PLAN_IDS as readonly string[]).includes(v);
+/** Plan publik yang sah (plan admin tidak termasuk — tidak bisa disimpan untuk user) */
+export const isPlanId = (v: unknown): v is PublicPlanId => typeof v === "string" && (PLAN_IDS as readonly string[]).includes(v);
 
 /** Efek berbayar yang dipakai sekumpulan opsi (mis. untuk mengunci preset Bass Boost / 8D) */
 export function effectsUsed(o: Partial<AudioOptions>): EffectId[] {

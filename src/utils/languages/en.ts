@@ -75,7 +75,7 @@ const en: Dictionary = {
     m: "{m}m",
   },
   plan: {
-    names: { free: "Free", pro: "Pro", studio: "Studio" },
+    names: { free: "Free", pro: "Pro", studio: "Studio", admin: "Admin" },
     taglines: {
       free: "For trying things out & light use",
       pro: "For creators who convert regularly",
@@ -389,7 +389,7 @@ const en: Dictionary = {
   login: {
     eyebrow: "YouTube → Roblox",
     items: [
-      { title: "Unlimited converts", desc: "Guests get 3×, Discord members are not limited." },
+      { title: "Refilling tokens", desc: "Guests get 3 tokens; Discord members get a token allowance that refills every few hours." },
       { title: "Upload to Roblox", desc: "Send audio to your Roblox account or group right from the web." },
       { title: "Saved history", desc: "Re-download and track Roblox review status." },
     ],
@@ -859,7 +859,7 @@ const en: Dictionary = {
   },
   gate: {
     title: "Free tokens used up",
-    sub: "You've used your {max} free tokens. Sign in with Discord for unlimited converts, Roblox uploads, and saved history.",
+    sub: "You've used your {max} free tokens. Sign in with Discord for tokens that refill automatically, Roblox uploads, and saved history.",
     login: "Sign in with Discord",
     later: "Maybe later",
   },

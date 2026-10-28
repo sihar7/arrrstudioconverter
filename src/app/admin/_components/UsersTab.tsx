@@ -18,7 +18,7 @@ import PlanDialog from "./PlanDialog";
 const COLS = "md:grid-cols-[minmax(0,1.5fr)_150px_80px_90px_120px_auto]";
 
 type PlanFilter = "all" | "paid" | "free";
-const PLAN_LABEL = { free: "Free", pro: "Pro", studio: "Studio" } as const;
+const PLAN_LABEL = { free: "Free", pro: "Pro", studio: "Studio", admin: "Admin" } as const;
 
 export default function UsersTab() {
   const [input, setInput] = useState("");

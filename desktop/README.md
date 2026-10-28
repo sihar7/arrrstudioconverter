@@ -9,6 +9,11 @@ App desktop (Electron) untuk **Windows** & **macOS**. Membuka web produksi
 - Login Discord di dalam app; tautan lain dibuka di browser default
 - Update otomatis dari GitHub Releases (Windows: pasang di latar · macOS tanpa sertifikat: diberi tahu lalu buka halaman download)
 - Halaman offline dengan tombol coba lagi
+- **VPN rumah** (akun admin): app jadi pintu keluar YouTube untuk server saat IP server ditolak YouTube
+  ("Sign in to confirm you're not a bot") → convert web & desktop tetap jalan. Server membuka koneksi ke YouTube
+  lewat PC ini (WebSocket keluar, tanpa port forwarding), hanya host YouTube port 443, alamat LAN ditolak.
+  Selama aktif: menutup jendela = sembunyi ke tray, dan app mulai otomatis (tersembunyi) saat komputer menyala —
+  keduanya bisa dimatikan dari menu tray. Akun non-admin ditolak server, app berjalan seperti biasa.
 
 ## Struktur
 
@@ -20,6 +25,8 @@ desktop/
   src/updater.js        electron-updater (GitHub Releases)
   src/menu.js           menu aplikasi & klik kanan
   src/preload.js        window.arrDesktop (hanya untuk origin web ARRR)
+  src/tunnel.js         VPN rumah (Node murni, protokol sama dengan BE media/tunnel.ts)
+  src/tray.js           ikon tray, jalan di latar, mulai otomatis (--hidden)
   src/offline.html      layar tidak ada koneksi
   electron-builder.yml  target NSIS (Windows) & DMG+ZIP universal (macOS)
 ```

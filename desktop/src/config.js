@@ -27,6 +27,8 @@ module.exports = {
   IN_APP_HOSTS: new Set([new URL(APP_URL).host, "discord.com", "www.discord.com"]),
   // Penanda UA → web tahu dibuka dari app desktop (sembunyikan ajakan download, dsb.)
   UA_TOKEN: `ARRRStudioDesktop/${app.getVersion()}`,
+  // Cookie sesi login web (BE config.cookies.session) — token VPN rumah (lihat tunnel.js)
+  SESSION_COOKIE: "arrc_sid",
   // macOS tanpa sertifikat Apple tidak bisa auto-install update → cukup beri tahu & buka halaman download
   MAC_AUTO_INSTALL: false,
   UPDATE_INTERVAL_MS: 6 * 60 * 60 * 1000,

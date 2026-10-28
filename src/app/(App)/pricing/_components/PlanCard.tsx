@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { planFeatures } from "@/lib/planFeatures";
 import { usePlans } from "@/hooks/usePlans";
-import type { PlanId } from "@/lib/schemas/plans";
+import type { PublicPlanId } from "@/lib/schemas/plans";
 
 interface Props {
-  id: PlanId;
+  id: PublicPlanId;
   price: ReactNode;
   billed?: string;
   highlight?: boolean;
