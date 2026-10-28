@@ -3,19 +3,24 @@
 import { Undo } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
+import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Slider from "@/components/ui/Slider";
 import Switch from "@/components/ui/Switch";
 import type { SkyAtmosphere } from "../_lib/atmosphere";
 
 type Rgb = SkyAtmosphere["color"];
-type NumKey = "density" | "offset" | "glare" | "haze";
+type NumKey = "density" | "offset" | "glare" | "haze" | "clockTime" | "latitude" | "ccBrightness" | "ccContrast" | "ccSaturation";
+type ColorKey = "color" | "decay" | "ccTint";
 
 const toHex = (c: Rgb) => `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 const fromHex = (h: string): Rgb => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as Rgb;
 const fixed = (v: number) => v.toFixed(2);
+const signed = (v: number) => `${v > 0 ? "+" : ""}${v.toFixed(2)}`;
+const clock = (v: number) => `${String(Math.floor(v)).padStart(2, "0")}:${String(Math.round((v % 1) * 60) % 60).padStart(2, "0")}`;
+const deg = (v: number) => `${v.toFixed(1)}°`;
 
-/** Atmosphere yang menyertai skybox: nilai awal otomatis dari warna langit, semua bisa diatur */
+/** Paket pencahayaan skybox: nilai awal otomatis dari tema langit (siang/senja/malam), semua bisa diatur */
 export default function AtmospherePanel({
   value,
   auto,
@@ -33,11 +38,11 @@ export default function AtmospherePanel({
   const s = t.skybox;
   const dirty = JSON.stringify(value) !== JSON.stringify(auto);
 
-  const slider = (k: NumKey, label: string, max: number, step: number) => (
-    <Slider label={label} value={value[k]} min={0} max={max} step={step} defaultValue={auto[k]} onChange={(v) => onChange({ ...value, [k]: v })} format={fixed} disabled={!on} />
+  const slider = (k: NumKey, label: string, min: number, max: number, step: number, format = fixed) => (
+    <Slider label={label} value={value[k]} min={min} max={max} step={step} defaultValue={auto[k]} onChange={(v) => onChange({ ...value, [k]: v })} format={format} disabled={!on} />
   );
-  const swatch = (k: "color" | "decay", label: string) => (
-    <label className="flex flex-1 cursor-pointer items-center gap-3 rounded-s bg-fg/[0.05] px-3 py-2.5 transition-colors hover:bg-fg/[0.08] has-[:disabled]:cursor-default has-[:disabled]:opacity-45">
+  const swatch = (k: ColorKey, label: string) => (
+    <label className="flex min-w-[140px] flex-1 cursor-pointer items-center gap-3 rounded-s bg-fg/[0.05] px-3 py-2.5 transition-colors hover:bg-fg/[0.08] has-[:disabled]:cursor-default has-[:disabled]:opacity-45">
       <input
         type="color"
         value={toHex(value[k])}
@@ -47,10 +52,11 @@ export default function AtmospherePanel({
       />
       <span className="min-w-0">
         <span className="block text-[14px] font-medium">{label}</span>
-        <span className="block font-mono text-[12px] uppercase text-fg-3">{toHex(value[k])}</span>
+        <span className="block font-mono text-[12px] text-fg-3">{value[k].join(", ")}</span>
       </span>
     </label>
   );
+  const section = (title: string) => <p className="caps border-t border-[var(--hairline)] px-5 pb-1 pt-5 text-fg-3">{title}</p>;
 
   return (
     <CardBox>
@@ -62,16 +68,37 @@ export default function AtmospherePanel({
           </Button>
         }
       />
-      <div className="flex flex-col gap-5 px-5 py-5">
-        <Switch label={s.atmoInclude} hint={s.atmoHint} checked={on} onChange={onToggle} />
-        <div className="flex flex-wrap gap-2">
-          {swatch("color", s.atmoColor)}
-          {swatch("decay", s.atmoDecay)}
+      <div className="flex flex-col gap-4 px-5 py-5">
+        <div className="flex items-center gap-2 text-[13px] text-fg-2">
+          {s.atmoTheme} <Badge tone="neutral">{s.atmoThemes[auto.theme]}</Badge>
         </div>
-        {slider("density", s.atmoDensity, 1, 0.01)}
-        {slider("offset", s.atmoOffset, 1, 0.01)}
-        {slider("haze", s.atmoHaze, 10, 0.1)}
-        {slider("glare", s.atmoGlare, 10, 0.05)}
+        <Switch label={s.atmoInclude} hint={s.atmoHint} checked={on} onChange={onToggle} />
+      </div>
+
+      {section("Atmosphere")}
+      <div className="flex flex-col gap-5 px-5 pb-5 pt-3">
+        <div className="flex flex-wrap gap-2">
+          {swatch("color", "Color")}
+          {swatch("decay", "Decay")}
+        </div>
+        {slider("density", "Density", 0, 1, 0.001)}
+        {slider("offset", "Offset", 0, 1, 0.01)}
+        {slider("haze", "Haze", 0, 10, 0.1)}
+        {slider("glare", "Glare", 0, 10, 0.01)}
+      </div>
+
+      {section("Lighting")}
+      <div className="flex flex-col gap-5 px-5 pb-5 pt-3">
+        {slider("clockTime", "ClockTime", 0, 24, 0.1, clock)}
+        {slider("latitude", "GeographicLatitude", -90, 90, 0.1, deg)}
+      </div>
+
+      {section("ColorCorrection")}
+      <div className="flex flex-col gap-5 px-5 pb-5 pt-3">
+        {swatch("ccTint", "TintColor")}
+        {slider("ccBrightness", "Brightness", -0.5, 0.5, 0.01, signed)}
+        {slider("ccContrast", "Contrast", -0.5, 0.5, 0.01, signed)}
+        {slider("ccSaturation", "Saturation", -1, 1, 0.01, signed)}
       </div>
     </CardBox>
   );

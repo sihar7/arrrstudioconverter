@@ -181,8 +181,8 @@ export default function SkyboxScreen() {
       ...FACES.map((face) => ({ name: `${FACE_PROP[face]}.png`, blob: result.faces[face].blob })),
       ...(atmosphere
         ? [
-            { name: "Atmosphere.rbxmx", blob: text(atmosphereRbxmx(atmosphere)) },
-            { name: "Atmosphere.lua", blob: text(atmosphereScript(atmosphere)) },
+            { name: "Lighting.rbxmx", blob: text(atmosphereRbxmx(atmosphere, baseName(source?.name ?? "Lighting"))) },
+            { name: "Lighting.lua", blob: text(atmosphereScript(atmosphere)) },
           ]
         : []),
     ]);

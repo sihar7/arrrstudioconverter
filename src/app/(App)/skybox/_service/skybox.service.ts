@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/utils";
 import { FACE_PROP, type FaceId } from "../_lib/skyMath";
-import { atmosphereItem, type SkyAtmosphere } from "../_lib/atmosphere";
+import { lightingFolder, RBXMX_HEAD, type SkyAtmosphere } from "../_lib/atmosphere";
 
 interface UploadResult {
   assetId: string | null;
@@ -48,20 +48,22 @@ export async function faceDataUrl(png: Blob): Promise<string> {
 
 const xml = (s: string) => s.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
 
-/** File model Sky (.rbxmx) berisi 6 ID (+ Atmosphere bila ada) — seret ke Studio lalu pindahkan ke Lighting */
+/**
+ * File .rbxmx: Sky berisi 6 ID. Dengan pencahayaan → satu Folder bernama Sky (Sky, Atmosphere, ColorCorrection,
+ * ClockTime, GeographicLatitude). Seret ke Studio lalu pindahkan isinya ke Lighting.
+ */
 export function skyRbxmx(ids: Partial<Record<FaceId, string>>, name: string, atmosphere?: SkyAtmosphere | null) {
+  const title = xml(name.trim() || "ARRR_Skybox");
   const faces = (["bk", "dn", "ft", "lf", "rt", "up"] as const)
     .map((f) => `      <Content name="${FACE_PROP[f]}"><url>rbxassetid://${ids[f] || 0}</url></Content>`)
     .join("\n");
-  return `<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
-  <Item class="Sky" referent="RBX0">
+  const sky = `  <Item class="Sky" referent="SKY0">
     <Properties>
       <bool name="CelestialBodiesShown">true</bool>
-      <string name="Name">${xml(name.trim() || "ARRR_Skybox")}</string>
+      <string name="Name">${title}</string>
 ${faces}
       <int name="StarCount">3000</int>
     </Properties>
-  </Item>
-${atmosphere ? atmosphereItem(atmosphere) : ""}</roblox>
-`;
+  </Item>`;
+  return `${RBXMX_HEAD}${atmosphere ? lightingFolder(atmosphere, title, sky) : sky}\n</roblox>\n`;
 }

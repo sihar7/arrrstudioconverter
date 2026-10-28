@@ -6,7 +6,7 @@
  * Semua proses di GPU klien: tanpa upload ke server, cepat walau panorama 8K.
  */
 import { FACE_BASIS, FACES, type FaceId } from "./skyMath";
-import type { SkyAtmosphere } from "./atmosphere";
+import { daylight, type SkyAtmosphere } from "./atmosphere";
 
 export interface SkyAdjust {
   yaw: number; // derajat, putar arah depan
@@ -60,6 +60,8 @@ uniform int uScene, uEdges;
 uniform int uAtmo;
 uniform vec3 uAtmoColor, uAtmoDecay;
 uniform float uDensity, uOffset, uHaze, uGlare;
+uniform float uLight;       // terang cahaya menurut ClockTime (1 = siang)
+uniform vec3 uCc, uTint;    // ColorCorrection: (brightness, contrast, saturation) + TintColor
 const vec3 SUN = vec3(0.4319, 0.7678, 0.3359); // normalize(0.45, 0.8, 0.35) — sama dengan cahaya adegan
 float gDist = 1e9;          // jarak permukaan yang kena (1e9 = langit)
 
@@ -160,6 +162,10 @@ vec3 atmosphere(vec3 c, vec3 rd) {
   // Decay = warna di arah menjauhi matahari
   vec3 fog = mix(uAtmoDecay, uAtmoColor, 0.35 + 0.65 * sunAmt);
   fog = mix(fog, vec3(1.0), clamp(uHaze * 0.04, 0.0, 0.35) * (1.0 - smoothstep(0.0, 0.35, e)));
+  // Seperti Roblox: warna kabut digelapkan cahaya waktu (ClockTime) — malam tidak jadi putih
+  fog *= uLight;
+  // Baseplate & karakter ikut gelap saat malam (langit skybox tetap terang sendiri)
+  if (gDist < 1e8) c *= mix(0.3, 1.0, uLight);
   float amt;
   if (gDist > 1e8) {
     float top = mix(0.08, 0.7, uOffset);
@@ -169,8 +175,12 @@ vec3 atmosphere(vec3 c, vec3 rd) {
   }
   c = mix(c, fog, clamp(amt, 0.0, 1.0));
   // Glare: pendar di sekitar arah matahari
-  c += uAtmoColor * pow(sunAmt, 12.0) * uGlare * 0.06;
-  return c;
+  c += uAtmoColor * pow(sunAmt, 12.0) * uGlare * 0.06 * uLight;
+  // ColorCorrection (Brightness, Contrast, Saturation, TintColor)
+  c += uCc.x;
+  c = (c - 0.5) * (1.0 + uCc.y) + 0.5;
+  c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, 1.0 + uCc.z);
+  return clamp(c * uTint, 0.0, 1.0);
 }
 
 float edges(vec3 d) {
@@ -386,6 +396,9 @@ export class SkyRenderer {
       gl.uniform1f(this.u(p, "uOffset"), atmo.offset);
       gl.uniform1f(this.u(p, "uHaze"), atmo.haze);
       gl.uniform1f(this.u(p, "uGlare"), atmo.glare);
+      gl.uniform1f(this.u(p, "uLight"), daylight(atmo.clockTime));
+      gl.uniform3fv(this.u(p, "uCc"), [atmo.ccBrightness, atmo.ccContrast, atmo.ccSaturation]);
+      gl.uniform3fv(this.u(p, "uTint"), atmo.ccTint.map((v) => v / 255));
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, width, height);
