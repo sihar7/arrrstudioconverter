@@ -1055,3 +1055,94 @@ html[data-theme="light"] .lcd:hover {
     box-shadow: none;
   }
 }
+
+/* ============================================================
+   Mode Alice (chat admin di app desktop) — tipografi jawaban Markdown & teks "berpikir" berkilau
+   ============================================================ */
+.alice-md {
+  font-size: 14.5px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.alice-md > :first-child {
+  margin-top: 0;
+}
+.alice-md > :last-child {
+  margin-bottom: 0;
+}
+.alice-md p,
+.alice-md ul,
+.alice-md ol,
+.alice-md blockquote {
+  margin: 0.7em 0;
+}
+.alice-md ul,
+.alice-md ol {
+  padding-left: 1.4em;
+}
+.alice-md ul {
+  list-style: disc;
+}
+.alice-md ol {
+  list-style: decimal;
+}
+.alice-md li + li {
+  margin-top: 0.25em;
+}
+.alice-md li::marker {
+  color: var(--fg-3);
+}
+.alice-md h1,
+.alice-md h2,
+.alice-md h3,
+.alice-md h4 {
+  margin: 1.2em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.alice-md h1 {
+  font-size: 1.35em;
+}
+.alice-md h2 {
+  font-size: 1.2em;
+}
+.alice-md h3,
+.alice-md h4 {
+  font-size: 1.05em;
+}
+.alice-md strong {
+  font-weight: 600;
+}
+.alice-md blockquote {
+  border-left: 2px solid var(--hairline);
+  padding-left: 0.9em;
+  color: var(--fg-2);
+}
+.alice-md hr {
+  margin: 1.4em 0;
+  border-color: var(--hairline);
+}
+.alice-shimmer {
+  background: linear-gradient(90deg, var(--fg-3) 0%, var(--fg-3) 40%, var(--fg) 50%, var(--fg-3) 60%, var(--fg-3) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: alice-shimmer 1.8s linear infinite;
+}
+@keyframes alice-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alice-shimmer {
+    animation: none;
+    color: var(--fg-3);
+    background: none;
+  }
+}

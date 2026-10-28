@@ -48,6 +48,15 @@ if (origin && location.origin === origin && (!base || location.pathname === base
       return () => ipcRenderer.removeListener("update:event", listener);
     },
     installUpdate: () => ipcRenderer.invoke("update:install"),
+    /** Mode Alice (admin): isi memori Claude Code di PC ini → [{ path, text }] */
+    readClaudeMemory: () => ipcRenderer.invoke("memory:readClaude"),
+    /** Mode Alice (admin): Roblox Studio lewat StudioMCP lokal */
+    studio: {
+      status: () => ipcRenderer.invoke("studio:status"),
+      listTools: () => ipcRenderer.invoke("studio:listTools"),
+      call: (name, args) => ipcRenderer.invoke("studio:call", name, args),
+      stop: () => ipcRenderer.invoke("studio:stop"),
+    },
     openUpdatePage: () => ipcRenderer.invoke("update:openPage"),
     /** VPN rumah (akun admin): { state: off|connecting|online|logged-out|not-admin|error, streams, mbIn, mbOut, server } */
     vpnStatus: () => ipcRenderer.invoke("vpn:status"),

@@ -1,9 +1,10 @@
 "use client";
 
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Search, SidebarCollapse, SidebarExpand } from "iconoir-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChatBubble, Search, SidebarCollapse, SidebarExpand, ViewGrid } from "iconoir-react";
+import ConvList from "../../alice/_components/ConvList";
 import { LogoMark } from "@/components/shared/Logo";
 import UserMenu, { useQuotaText } from "@/components/shared/UserMenu";
 import { useAppSelector } from "@/store/hooks";
@@ -30,6 +31,12 @@ export default function Sidebar({ rail, onToggleRail, onOpenPalette }: Props) {
   const { t, lang } = useT();
   const { data: me } = useMeQuery();
   const member = Boolean(me?.user);
+  // Admin: dua mode sidebar — Studio (menu app) & Alice (daftar chat, acuan Claude Desktop)
+  const isAdmin = Boolean(me?.user?.isAdmin);
+  const aliceMode = isAdmin && pathname.startsWith(ALICE_HREF);
+  useEffect(() => {
+    if (!pathname.startsWith(ALICE_HREF)) sessionStorage.setItem(LAST_STUDIO_KEY, pathname);
+  }, [pathname]);
   const sections = navSections(member);
   const all = [...sections.flatMap((s) => s.items), D_SETTINGS];
   const activeHref = all.find((n) => pathname.startsWith(n.href))?.href;
@@ -95,7 +102,15 @@ export default function Sidebar({ rail, onToggleRail, onOpenPalette }: Props) {
         </button>
       </div>
 
-      <nav ref={navRef} className="thin-scroll relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 rail:px-2.5">
+      {isAdmin && <ModeSwitch alice={aliceMode} rail={rail} />}
+
+      {aliceMode && (
+        <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1.5 rail:px-2.5">
+          <ConvList rail={rail} />
+        </div>
+      )}
+
+      <nav ref={navRef} hidden={aliceMode} className="thin-scroll relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 rail:px-2.5">
         <span
           ref={pillRef}
           aria-hidden="true"
@@ -124,6 +139,67 @@ export default function Sidebar({ rail, onToggleRail, onOpenPalette }: Props) {
         </div>
       </div>
     </aside>
+  );
+}
+
+const ALICE_HREF = "/alice";
+const LAST_STUDIO_KEY = "arrc:last-studio";
+
+/**
+ * Pengalih mode (admin): kapsul Studio | Alice dengan thumb yang meluncur. Studio → halaman terakhir sebelum masuk
+ * Alice. Rail: satu tombol ikon yang berganti mode.
+ */
+function ModeSwitch({ alice, rail }: { alice: boolean; rail: boolean }) {
+  const { t } = useT();
+  const router = useRouter();
+  const go = (toAlice: boolean) => {
+    if (toAlice === alice) return;
+    router.push(toAlice ? ALICE_HREF : sessionStorage.getItem(LAST_STUDIO_KEY) || D_CONVERTER.href);
+  };
+  if (rail) {
+    const label = alice ? t.alice.modeStudio : t.alice.modeAlice;
+    return (
+      <div className="px-2.5 pb-1">
+        <button
+          type="button"
+          onClick={() => go(!alice)}
+          aria-label={label}
+          title={label}
+          className="grid h-9 w-full cursor-pointer place-items-center rounded-[9px] text-fg-2 transition-colors hover:bg-fg/[0.06] hover:text-fg"
+        >
+          {alice ? <ViewGrid width={18} height={18} /> : <ChatBubble width={18} height={18} />}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="px-3 pb-1">
+      <div role="tablist" aria-label="Mode" className="relative grid h-8 grid-cols-2 rounded-[9px] bg-fg/[0.06] p-0.5 ring-1 ring-inset ring-[var(--hairline)]">
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-[7px] bg-[var(--seg-thumb)] shadow-[0_1px_2px_rgb(0_0_0/0.25)] transition-transform duration-[var(--spring-dur)] ease-[var(--spring)]",
+            alice && "translate-x-full",
+          )}
+        />
+        {([false, true] as const).map((isAlice) => (
+          <button
+            key={String(isAlice)}
+            type="button"
+            role="tab"
+            aria-selected={alice === isAlice}
+            onClick={() => go(isAlice)}
+            className={cn(
+              "relative z-10 flex cursor-pointer items-center justify-center gap-1.5 text-[12.5px] font-semibold transition-colors",
+              alice === isAlice ? "text-fg" : "text-fg-3 hover:text-fg-2",
+            )}
+          >
+            {isAlice ? <ChatBubble width={14} height={14} /> : <ViewGrid width={14} height={14} />}
+            {isAlice ? t.alice.modeAlice : t.alice.modeStudio}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

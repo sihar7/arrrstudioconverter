@@ -23,6 +23,9 @@ export type DesktopUpdateEvent =
   | { type: "manual"; version: string }
   | { type: "none" | "error" };
 
+/** Isi hasil alat MCP (Roblox Studio) */
+export type StudioContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string } | { type: string; [k: string]: unknown };
+
 export interface ArrDesktop {
   isDesktop: true;
   version: string;
@@ -49,6 +52,15 @@ export interface ArrDesktop {
   installUpdate?: () => Promise<void>;
   /** Buka halaman download (macOS tanpa auto-install) */
   openUpdatePage?: () => Promise<void>;
+  /** Mode Alice (admin): isi memori Claude Code di PC ini (CLAUDE.md + memory/ tiap proyek) */
+  readClaudeMemory?: () => Promise<{ path: string; text: string }[]>;
+  /** Mode Alice (admin): Roblox Studio lewat StudioMCP lokal */
+  studio?: {
+    status: () => Promise<{ installed: boolean; running: boolean; tools: number }>;
+    listTools: () => Promise<{ name: string; description: string; inputSchema: Record<string, unknown> }[]>;
+    call: (name: string, args: unknown) => Promise<{ ok: boolean; content: StudioContent[] }>;
+    stop: () => Promise<void>;
+  };
 }
 
 declare global {
