@@ -727,7 +727,7 @@ const id = {
     scopeSelected: "Terpilih",
     exportFields: "Isi",
     fieldsBoth: "Nama + ID",
-    fieldsFull: "Nama + ID + Cover",
+    fieldsFull: "Nama + Artis + ID + Cover",
     fieldsId: "ID saja",
     exportFormat: "Format",
     exportPreview: "Pratinjau",

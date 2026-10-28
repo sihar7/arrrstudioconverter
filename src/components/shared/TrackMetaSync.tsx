@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/store/hooks";
 import { metaResolved } from "@/store/slices/converterSlice";
 import { trackMeta } from "@/lib/trackMeta";
-import { saveHistoryCover } from "@/lib/coverDecal";
+import { saveHistoryMeta } from "@/lib/coverDecal";
 
 // Riwayat yang cover albumnya sudah dikirim (per tab) → tidak dikirim ulang
 const savedCovers = new Set<string>();
@@ -12,7 +12,7 @@ const savedCovers = new Set<string>();
 /**
  * Lengkapi item antrean dengan artis, album & cover album — dipasang global supaya jalan dari halaman mana pun
  * (YouTube, Converter). Item yang judulnya belum diketahui (masih videoId) ditunggu sampai info job masuk.
- * Begitu convert selesai (ada historyId), cover album ikut disimpan ke riwayat.
+ * Begitu convert selesai (ada historyId), cover album & artis (hasil katalog) ikut disimpan ke riwayat.
  */
 export default function TrackMetaSync() {
   const dispatch = useAppDispatch();
@@ -25,7 +25,7 @@ export default function TrackMetaSync() {
   const toSave = useAppSelector((s) =>
     s.converter.items
       .filter((i) => i.metaReady && i.cover && i.result?.historyId && !savedCovers.has(i.result.historyId))
-      .map((i) => `${i.result!.historyId}|${i.cover}`)
+      .map((i) => `${i.result!.historyId}\t${i.cover}\t${i.artist ?? ""}`)
       .join("\n"),
   );
 
@@ -50,9 +50,9 @@ export default function TrackMetaSync() {
   useEffect(() => {
     if (!toSave) return;
     for (const line of toSave.split("\n")) {
-      const [historyId, url] = line.split("|");
+      const [historyId, url, artist] = line.split("\t");
       savedCovers.add(historyId);
-      void saveHistoryCover(historyId, { url }).catch(() => savedCovers.delete(historyId));
+      void saveHistoryMeta(historyId, { cover: { url }, artist: artist || null }).catch(() => savedCovers.delete(historyId));
     }
   }, [toSave]);
 

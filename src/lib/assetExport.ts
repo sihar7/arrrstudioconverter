@@ -1,7 +1,7 @@
 // Ekspor daftar asset ID (Audio saya & Riwayat): TXT / CSV / JSON / Lua.
 
 export type ExportFormat = "txt" | "csv" | "json" | "lua";
-/** full = nama + ID + ID cover (Riwayat) */
+/** full = nama + artis + ID + ID cover (Riwayat) */
 export type ExportFields = "full" | "both" | "id";
 export const EXPORT_FORMATS: ExportFormat[] = ["txt", "csv", "json", "lua"];
 
@@ -10,6 +10,8 @@ export interface ExportRow {
   name: string | null;
   /** ID gambar cover (Decal); null = tidak ada cover */
   coverId?: string | null;
+  /** Nama artis (Riwayat); null = tidak diketahui */
+  artist?: string | null;
 }
 
 const MIME: Record<ExportFormat, string> = {
@@ -25,17 +27,22 @@ const luaStr = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').
 
 /** Susun isi file ekspor dari daftar aset (nama kosong → fallback) */
 export function buildExport(assets: ExportRow[], format: ExportFormat, fields: ExportFields, untitled: string) {
-  const rows = assets.map((a) => ({ id: a.assetId, name: a.name ?? untitled, cover: a.coverId ?? null }));
+  const rows = assets.map((a) => ({ id: a.assetId, name: a.name ?? untitled, cover: a.coverId ?? null, artist: a.artist ?? null }));
   if (fields === "full") {
     switch (format) {
       case "csv":
-        return ["name,asset_id,cover_id", ...rows.map((r) => `${csvCell(r.name)},${r.id},${r.cover ?? ""}`)].join("\r\n");
+        return [
+          "name,artist,asset_id,cover_id",
+          ...rows.map((r) => `${csvCell(r.name)},${r.artist ? csvCell(r.artist) : ""},${r.id},${r.cover ?? ""}`),
+        ].join("\r\n");
       case "json":
-        return JSON.stringify(rows.map((r) => ({ name: r.name, assetId: r.id, coverId: r.cover })), null, 2);
+        return JSON.stringify(rows.map((r) => ({ name: r.name, artist: r.artist, assetId: r.id, coverId: r.cover })), null, 2);
       case "lua":
-        return `return {\n${rows.map((r) => `\t{ Name = ${luaStr(r.name)}, Id = ${r.id}, Cover = ${r.cover ?? "nil"} },`).join("\n")}\n}`;
+        return `return {\n${rows
+          .map((r) => `\t{ Name = ${luaStr(r.name)}, Artist = ${r.artist ? luaStr(r.artist) : "nil"}, Id = ${r.id}, Cover = ${r.cover ?? "nil"} },`)
+          .join("\n")}\n}`;
       default:
-        return rows.map((r) => [r.name, r.id, r.cover].filter(Boolean).join(" - ")).join("\n");
+        return rows.map((r) => [r.name, r.artist, r.id, r.cover].filter(Boolean).join(" - ")).join("\n");
     }
   }
   const both = fields === "both";

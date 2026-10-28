@@ -85,11 +85,16 @@ async function lookup(artist: string | null, song: string, author: string, count
 
 const countryOf = (lang: string) => (lang === "id" ? "ID" : "US");
 
-/** Cover album dari judul saja (Riwayat): null = tidak ketemu, undefined = katalog gagal dihubungi (coba lagi nanti) */
-export async function findCover(title: string, lang: string): Promise<string | null | undefined> {
+/**
+ * Artis & cover album dari judul saja (Riwayat). Urutan "Judul - Artis" juga dicoba.
+ * null = tidak ketemu, undefined = katalog gagal dihubungi (coba lagi nanti)
+ */
+export async function findMeta(title: string, lang: string): Promise<TrackMeta | null | undefined> {
   const guess = guessTrack(title, "");
   try {
-    return (await lookup(guess.artist, guess.song, "", countryOf(lang)))?.cover ?? null;
+    const hit = await lookup(guess.artist, guess.song, "", countryOf(lang));
+    if (hit || !guess.artist) return hit;
+    return await lookup(guess.song, guess.artist, "", countryOf(lang));
   } catch {
     return undefined;
   }

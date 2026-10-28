@@ -57,9 +57,11 @@ export async function uploadCoverDecal(
   return { decalId, imageId: null };
 }
 
-/** Simpan sebagian data cover ke entri riwayat (merge di server) */
-export const saveHistoryCover = (historyId: string, cover: Partial<HistoryCover>) =>
-  apiFetch<{ cover: HistoryCover }>(`/api/history/${historyId}`, { method: "PATCH", json: { cover } });
+/** Simpan sebagian data cover / artis ke entri riwayat (merge di server) */
+export const saveHistoryMeta = (historyId: string, meta: { cover?: Partial<HistoryCover>; artist?: string | null }) =>
+  apiFetch<{ cover: HistoryCover | null; artist: string | null }>(`/api/history/${historyId}`, { method: "PATCH", json: meta });
+
+export const saveHistoryCover = (historyId: string, cover: Partial<HistoryCover>) => saveHistoryMeta(historyId, { cover });
 
 /** ID yang dipakai di Roblox: ID gambar (ImageLabel), atau ID decal bila belum terbaca */
 export const coverAssetId = (c: HistoryCover | null | undefined) => c?.imageId ?? c?.decalId ?? null;

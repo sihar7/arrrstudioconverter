@@ -728,7 +728,7 @@ const en: Dictionary = {
     scopeSelected: "Selected",
     exportFields: "Content",
     fieldsBoth: "Name + ID",
-    fieldsFull: "Name + ID + Cover",
+    fieldsFull: "Name + Artist + ID + Cover",
     fieldsId: "ID only",
     exportFormat: "Format",
     exportPreview: "Preview",

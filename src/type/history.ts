@@ -48,6 +48,8 @@ export interface HistoryEntry {
   fileExpiresAt: number;
   roblox: RobloxRecord | null;
   cover?: HistoryCover | null;
+  /** Nama artis dari katalog musik; null = sudah dicari tapi tidak ketemu, tidak ada = belum dicari */
+  artist?: string | null;
   /** "file" = diupload dari perangkat user (videoId & thumbnail kosong); tidak ada = hasil convert YouTube */
   source?: "file";
 }

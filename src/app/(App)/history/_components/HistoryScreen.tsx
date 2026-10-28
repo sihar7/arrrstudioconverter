@@ -22,7 +22,7 @@ import { inputClass } from "@/components/ui/Field";
 import HistoryRow from "./HistoryRow";
 import DeleteDialog from "./DeleteDialog";
 import { useHistoryActions } from "../_hooks/useHistoryActions";
-import { coverUrlOf, useHistoryCovers } from "../_hooks/useHistoryCovers";
+import { artistOf, coverUrlOf, useHistoryCovers } from "../_hooks/useHistoryCovers";
 import { coverAssetId } from "@/lib/coverDecal";
 import type { ExportRow } from "@/lib/assetExport";
 import { canGoPublic, dayLabel, filterHistory, groupByDay, needsCheck, quickMatch, type HistoryFilter, type QuickSelect } from "../_utils/helpers";
@@ -35,9 +35,13 @@ const RobloxUploadDialog = dynamic(() => import("@/components/roblox/RobloxUploa
 const PermissionDialog = dynamic(() => import("./PermissionDialog"), { ssr: false });
 const ExportDialog = dynamic(() => import("@/components/shared/ExportDialog"), { ssr: false });
 
-/** Baris ekspor: hanya yang sudah punya asset ID di Roblox */
-const exportRows = (list: HistoryItem[]): ExportRow[] =>
-  list.flatMap((i) => (i.roblox?.assetId ? [{ assetId: i.roblox.assetId, name: i.roblox.displayName || i.title, coverId: coverAssetId(i.cover) }] : []));
+/** Baris ekspor: hanya yang sudah punya asset ID di Roblox; artis dari katalog musik */
+const exportRows = (list: HistoryItem[], artists: Record<string, string | null>): ExportRow[] =>
+  list.flatMap((i) =>
+    i.roblox?.assetId
+      ? [{ assetId: i.roblox.assetId, name: i.roblox.displayName || i.title, artist: artistOf(i, artists), coverId: coverAssetId(i.cover) }]
+      : [],
+  );
 
 function ListSkeleton() {
   return (
@@ -88,7 +92,7 @@ export default function HistoryScreen() {
   const pendingCount = useMemo(() => items.filter(needsCheck).length, [items]);
   const hasRoblox = items.some((i) => i.roblox);
   const hasAsset = items.some((i) => i.roblox?.assetId);
-  const covers = useHistoryCovers(items);
+  const { covers, artists } = useHistoryCovers(items);
   // Mode pilih (tanpa checkbox): klik kartu = pilih, Shift+klik = rentang, tekan lama di HP = masuk mode
   const shownIds = useMemo(() => shown.map((i) => i.id), [shown]);
   const sel = useSelectMode(shownIds, undefined, Boolean(toDelete));
@@ -304,8 +308,8 @@ export default function HistoryScreen() {
         <ExportDialog
           open
           onClose={() => setExportOpen(false)}
-          shown={exportRows(shown)}
-          selected={exportRows(selected)}
+          shown={exportRows(shown, artists)}
+          selected={exportRows(selected, artists)}
           withCover
           fileBase="riwayat-roblox"
         />
