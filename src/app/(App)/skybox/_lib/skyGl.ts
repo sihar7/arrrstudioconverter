@@ -6,6 +6,7 @@
  * Semua proses di GPU klien: tanpa upload ke server, cepat walau panorama 8K.
  */
 import { FACE_BASIS, FACES, type FaceId } from "./skyMath";
+import type { SkyAtmosphere } from "./atmosphere";
 
 export interface SkyAdjust {
   yaw: number; // derajat, putar arah depan
@@ -55,6 +56,12 @@ uniform float uTexel;       // 1 / ukuran sisi (untuk supersampling)
 uniform vec3 uCamPos, uCamF, uCamR, uCamU;
 uniform float uTan, uAspect;
 uniform int uScene, uEdges;
+// Atmosphere Roblox (perkiraan, hanya preview — tidak ikut dipanggang ke 6 sisi)
+uniform int uAtmo;
+uniform vec3 uAtmoColor, uAtmoDecay;
+uniform float uDensity, uOffset, uHaze, uGlare;
+const vec3 SUN = vec3(0.4319, 0.7678, 0.3359); // normalize(0.45, 0.8, 0.35) — sama dengan cahaya adegan
+float gDist = 1e9;          // jarak permukaan yang kena (1e9 = langit)
 
 vec3 adjust(vec3 c) {
   c *= uBright;
@@ -118,9 +125,10 @@ vec3 scene(vec3 ro, vec3 rd) {
   part(ro, rd, vec3(0.0, 4.6, 0.0), vec3(0.6, 0.6, 0.6), skin, best, n, col);
 
   vec3 horizon = sky(vec3(rd.x, 0.0, rd.z) + vec3(0.0, 0.02, 0.0));
-  vec3 sun = normalize(vec3(0.45, 0.8, 0.35));
+  vec3 sun = SUN;
   vec3 ambient = mix(vec3(0.62), sky(vec3(0.0, 1.0, 0.0)), 0.18);
 
+  if (best < 1e8) gDist = best;
   if (best < 1e8) return col * (ambient * 0.8 + 0.5 * max(dot(n, sun), 0.0) + 0.06 * n.y);
 
   if (rd.y < -1e-4) {
@@ -137,10 +145,32 @@ vec3 scene(vec3 ro, vec3 rd) {
       base *= mix(0.72, 1.0, sh);
       base *= ambient * 0.5 + 0.62;
       float fog = smoothstep(40.0, 240.0, t);
+      gDist = t;
       return mix(base, horizon, fog);
     }
   }
   return sky(rd);
+}
+
+// Kabut atmosphere: langit tertutup dari horizon ke atas (Offset = setinggi apa), benda memudar sesuai jarak
+vec3 atmosphere(vec3 c, vec3 rd) {
+  if (uAtmo == 0) return c;
+  float e = rd.y;
+  float sunAmt = max(dot(rd, SUN), 0.0);
+  // Decay = warna di arah menjauhi matahari
+  vec3 fog = mix(uAtmoDecay, uAtmoColor, 0.35 + 0.65 * sunAmt);
+  fog = mix(fog, vec3(1.0), clamp(uHaze * 0.04, 0.0, 0.35) * (1.0 - smoothstep(0.0, 0.35, e)));
+  float amt;
+  if (gDist > 1e8) {
+    float top = mix(0.08, 0.7, uOffset);
+    amt = uDensity * (1.0 - smoothstep(-0.05, top, e)) * (1.4 + uHaze * 0.12);
+  } else {
+    amt = 1.0 - exp(-gDist * uDensity * 0.012);
+  }
+  c = mix(c, fog, clamp(amt, 0.0, 1.0));
+  // Glare: pendar di sekitar arah matahari
+  c += uAtmoColor * pow(sunAmt, 12.0) * uGlare * 0.06;
+  return c;
 }
 
 float edges(vec3 d) {
@@ -165,6 +195,7 @@ void main() {
   vec2 p = (vUv * 2.0 - 1.0) * vec2(uTan * uAspect, uTan);
   vec3 rd = normalize(uCamF + uCamR * p.x + uCamU * p.y);
   vec3 c = uScene == 1 ? scene(uCamPos, rd) : sky(rd);
+  c = atmosphere(c, rd);
   if (uEdges == 1) c = mix(c, vec3(1.0), edges(rd) * 0.5);
   outColor = vec4(c, 1.0);
 }`;
@@ -318,7 +349,7 @@ export class SkyRenderer {
   }
 
   /** Satu frame preview ke canvas (ukuran canvas diatur pemanggil sesuai DPR) */
-  renderPreview(a: SkyAdjust, cam: SkyCamera, opts: { scene: boolean; edges: boolean; fov?: number }) {
+  renderPreview(a: SkyAdjust, cam: SkyCamera, opts: { scene: boolean; edges: boolean; fov?: number; atmosphere?: SkyAtmosphere | null }) {
     if (!this.src) return;
     const gl = this.gl;
     const { width, height } = this.canvas;
@@ -346,6 +377,16 @@ export class SkyRenderer {
     gl.uniform1f(this.u(p, "uAspect"), width / height);
     gl.uniform1i(this.u(p, "uScene"), opts.scene ? 1 : 0);
     gl.uniform1i(this.u(p, "uEdges"), opts.edges ? 1 : 0);
+    const atmo = opts.atmosphere;
+    gl.uniform1i(this.u(p, "uAtmo"), atmo ? 1 : 0);
+    if (atmo) {
+      gl.uniform3fv(this.u(p, "uAtmoColor"), atmo.color.map((v) => v / 255));
+      gl.uniform3fv(this.u(p, "uAtmoDecay"), atmo.decay.map((v) => v / 255));
+      gl.uniform1f(this.u(p, "uDensity"), atmo.density);
+      gl.uniform1f(this.u(p, "uOffset"), atmo.offset);
+      gl.uniform1f(this.u(p, "uHaze"), atmo.haze);
+      gl.uniform1f(this.u(p, "uGlare"), atmo.glare);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, width, height);
     this.draw();

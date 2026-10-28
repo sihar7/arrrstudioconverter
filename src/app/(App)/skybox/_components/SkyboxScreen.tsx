@@ -357,6 +357,7 @@ export default function SkyboxScreen() {
                 canvasRef={canvasRef}
                 renderer={renderer}
                 adjust={mode === "convert" ? adjust : DEFAULT_ADJUST}
+                atmosphere={mode === "convert" ? atmosphere : null}
                 version={version}
                 hasSource={hasSource && !errorText}
                 overlay={overlay}

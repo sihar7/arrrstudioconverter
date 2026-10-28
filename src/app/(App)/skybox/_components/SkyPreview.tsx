@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import IconButton from "@/components/ui/IconButton";
 import { DEFAULT_CAMERA, type SkyAdjust, type SkyCamera, type SkyRenderer } from "../_lib/skyGl";
+import type { SkyAtmosphere } from "../_lib/atmosphere";
 
 interface Props {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -14,6 +15,8 @@ interface Props {
   /** naik setiap sumber panorama diganti → paksa render ulang */
   version: number;
   hasSource: boolean;
+  /** Atmosphere yang ditampilkan di preview (null = tanpa) */
+  atmosphere?: SkyAtmosphere | null;
   /** lapisan saat belum ada sumber (drop zone / pesan error) */
   overlay?: ReactNode;
 }
@@ -24,7 +27,7 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
  * Viewport 3D: render hanya saat ada perubahan (bukan loop per frame) → idle = 0% GPU.
  * Drag = putar kamera, scroll = zoom, panah keyboard saat canvas fokus.
  */
-export default function SkyPreview({ canvasRef, renderer, adjust, version, hasSource, overlay }: Props) {
+export default function SkyPreview({ canvasRef, renderer, adjust, atmosphere = null, version, hasSource, overlay }: Props) {
   const { t } = useT();
   const s = t.skybox;
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -54,9 +57,9 @@ export default function SkyPreview({ canvasRef, renderer, adjust, version, hasSo
 
   useEffect(() => {
     if (!renderer || !hasSource || !size.w) return;
-    const raf = requestAnimationFrame(() => renderer.renderPreview(adjust, cam, { scene, edges, fov }));
+    const raf = requestAnimationFrame(() => renderer.renderPreview(adjust, cam, { scene, edges, fov, atmosphere }));
     return () => cancelAnimationFrame(raf);
-  }, [renderer, hasSource, adjust, cam, fov, scene, edges, size, version]);
+  }, [renderer, hasSource, adjust, atmosphere, cam, fov, scene, edges, size, version]);
 
   // Zoom via wheel: listener non-pasif supaya halaman tidak ikut tergulir
   useEffect(() => {
