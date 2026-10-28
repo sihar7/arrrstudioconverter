@@ -76,7 +76,7 @@ export default function Composer({ busy, convId, autoFocus }: { busy: boolean; c
       }}
       data-alice-composer=""
       className={cn(
-        "rounded-[18px] border border-[var(--hairline)] bg-surface shadow-[0_10px_40px_-18px_rgb(0_0_0/0.55)] transition-[border-color,box-shadow] focus-within:border-fg/20 light:bg-white light:shadow-[0_8px_30px_-16px_rgb(0_0_0/0.18)]",
+        "rounded-[18px] border border-[var(--hairline)] bg-surface shadow-[0_10px_40px_-18px_rgb(0_0_0/0.55)] transition-[border-color,box-shadow] focus-within:border-fg/25 focus-within:shadow-[0_10px_40px_-18px_rgb(0_0_0/0.55),0_0_0_3px_color-mix(in_srgb,var(--fg)_6%,transparent)] light:bg-white light:shadow-[0_8px_30px_-16px_rgb(0_0_0/0.18)]",
         drag && "border-accent/60 ring-2 ring-accent/25",
       )}
     >
@@ -140,7 +140,8 @@ export default function Composer({ busy, convId, autoFocus }: { busy: boolean; c
           options={ALICE_EFFORTS.map((e) => ({ value: e, name: a.efforts[e][0], desc: a.efforts[e][1] }))}
           onChange={(v) => alice.setEffort(v as AliceEffort)}
         />
-        <span className="ml-auto hidden pr-2 text-[11.5px] text-fg-3 sm:block">{a.hint}</span>
+        <span className="ml-auto hidden pr-1 text-[11.5px] text-fg-3 xl:block">{a.hint}</span>
+        <UsageMeter convId={convId} />
         {busy && convId ? (
           <RoundButton label={a.stop} onClick={() => stop(convId)}>
             <span className="size-3 rounded-[3px] bg-current" />
@@ -152,6 +153,51 @@ export default function Composer({ busy, convId, autoFocus }: { busy: boolean; c
         )}
       </div>
     </div>
+  );
+}
+
+const fmtTokens = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}K` : String(n));
+
+/**
+ * Meter pemakaian (acuan Claude): cincin kecil = konteks percakapan terpakai; hover = rincian token & sisa batas API.
+ * Chat baru = 0%. Warna naik ke kuning (≥60%) lalu merah (≥85%) / batas API < 20%.
+ */
+function UsageMeter({ convId }: { convId: string | null }) {
+  const { t, f } = useT();
+  const u = t.alice.usage;
+  const usage = useAlice((s) => (convId ? s.convs.find((c) => c.id === convId)?.usage : undefined));
+  const ctx = usage ? Math.min(1, usage.context / usage.window) : 0;
+  const rate = usage?.rate ?? null;
+  const tone = ctx >= 0.85 || (rate != null && rate < 0.2) ? "text-err" : ctx >= 0.6 ? "text-warn" : "text-fg-2";
+  const R = 7;
+  const C = 2 * Math.PI * R;
+  const detail = [
+    f(u.meterContext, { p: Math.round(ctx * 100), used: fmtTokens(usage?.context ?? 0), total: fmtTokens(usage?.window ?? 1_000_000) }),
+    rate != null ? f(u.meterRate, { p: Math.round(rate * 100) }) : u.meterRateUnknown,
+  ].join("\n");
+  return (
+    <span
+      title={detail}
+      aria-label={detail}
+      className="flex h-8 shrink-0 cursor-default items-center gap-1.5 rounded-[8px] px-2 text-[12px] font-medium tabular-nums text-fg-3 transition-colors hover:bg-fg/[0.06]"
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className={cn("-rotate-90", tone)}>
+        <circle cx="9" cy="9" r={R} fill="none" stroke="currentColor" strokeOpacity="0.18" strokeWidth="2.2" />
+        <circle
+          cx="9"
+          cy="9"
+          r={R}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={C * (1 - Math.max(ctx, 0.001))}
+          className="transition-[stroke-dashoffset] duration-500"
+        />
+      </svg>
+      {Math.round(ctx * 100)}%
+    </span>
   );
 }
 

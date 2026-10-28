@@ -66,7 +66,16 @@ const Reply = memo(function Reply({ msg, convId, last }: { msg: Msg; convId: str
       {parts.map((p, i) => (
         <PartView key={p.k === "tool" ? p.id : `${p.k}-${i}`} part={p} live={Boolean(msg.live) && i === parts.length - 1} />
       ))}
-      {msg.error && (
+      {msg.errorCode === "AI_OFF" ? (
+        // API key belum diisi: jelaskan dua jalan (API key untuk chat di app, atau konektor di Claude Desktop)
+        <div role="status" className="rounded-[12px] border border-[var(--hairline)] bg-fg/[0.04] p-4 text-[13.5px] leading-relaxed">
+          <p className="font-semibold text-fg">{a.aiOff.title}</p>
+          <ul className="mt-2 flex flex-col gap-1.5 text-fg-2">
+            <li>{a.aiOff.key}</li>
+            <li>{a.aiOff.connector}</li>
+          </ul>
+        </div>
+      ) : msg.error && (
         <p role="alert" className="flex items-start gap-2 rounded-[10px] bg-err/[0.1] px-3 py-2 text-[13.5px] text-err">
           <WarningTriangle width={16} height={16} className="mt-0.5 shrink-0" />
           {msg.error}

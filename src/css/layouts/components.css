@@ -1146,3 +1146,7 @@ html[data-theme="light"] .lcd:hover {
     background: none;
   }
 }
+/* Kotak tulis Alice: fokus ditandai bingkai composer (focus-within), bukan outline kotak di textarea */
+[data-alice-composer] textarea:focus-visible {
+  outline: none;
+}

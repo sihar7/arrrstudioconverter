@@ -35,6 +35,8 @@ export interface Msg {
   /** jawaban sedang di-stream */
   live?: boolean;
   error?: string;
+  /** kode error server (mis. AI_OFF = API key belum diisi) → tampilan khusus */
+  errorCode?: string;
   note?: "truncated" | "stopped";
   at: number;
 }

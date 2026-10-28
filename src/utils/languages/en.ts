@@ -1231,11 +1231,19 @@ const en: Dictionary = {
       change: "Change photo",
       remove: "Remove",
     },
+    aiOff: {
+      title: "Alice chat in the app isn't on yet",
+      key: "Chat in this app uses the Claude API: set ANTHROPIC_API_KEY on Railway (Anthropic Console → API Keys). Billed per use, separate from your Pro plan.",
+      connector: "No API key: use Alice in Claude Desktop / Claude.ai — the ARRR STUDIO connector works there (app tools + Alice memory), covered by your Pro plan.",
+    },
     usage: {
       context: "This chat has used {p}% of its context — replies get slower & costlier.",
       contextDanger: "This chat is nearly full ({p}% of context). Alice may lose early details.",
       rate: "You are close to the Anthropic API usage limit ({p}% left). Wait a bit before continuing.",
       newChat: "Start a new chat",
+      meterContext: "Chat context: {p}% ({used} of {total} tokens)",
+      meterRate: "API usage limit left: {p}%",
+      meterRateUnknown: "API limit shows after the first reply",
     },
     models: {
       "claude-opus-5-5": ["Opus 5.5", "Best for everyday tasks"],

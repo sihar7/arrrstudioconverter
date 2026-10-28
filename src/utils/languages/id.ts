@@ -1230,11 +1230,19 @@ const id = {
       change: "Ganti foto",
       remove: "Hapus",
     },
+    aiOff: {
+      title: "Chat Alice di app belum aktif",
+      key: "Chat di app ini memakai Claude API: isi ANTHROPIC_API_KEY di Railway (Console Anthropic → API Keys). Biaya per pemakaian, terpisah dari langganan Pro.",
+      connector: "Tanpa API key: pakai Alice di Claude Desktop / Claude.ai — konektor ARRR STUDIO sudah bisa dipakai di sana (alat app + memori Alice), ikut langganan Pro.",
+    },
     usage: {
       context: "Percakapan ini sudah memakai {p}% memori konteks — jawaban makin lambat & mahal.",
       contextDanger: "Percakapan ini hampir penuh ({p}% konteks). Alice bisa melupakan detail awal.",
       rate: "Batas pemakaian API Anthropic hampir habis (sisa {p}%). Tunggu sebentar sebelum lanjut.",
       newChat: "Mulai chat baru",
+      meterContext: "Konteks percakapan: {p}% ({used} dari {total} token)",
+      meterRate: "Sisa batas pemakaian API: {p}%",
+      meterRateUnknown: "Sisa batas API muncul setelah balasan pertama",
     },
     models: {
       "claude-opus-5-5": ["Opus 5.5", "Paling pas untuk tugas sehari-hari"],

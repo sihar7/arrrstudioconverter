@@ -163,8 +163,8 @@ export async function send(text: string, images: string[] = []) {
       signal: ctrl.signal,
     });
     if (!res.ok || !res.body) {
-      const err = (await res.json().catch(() => null)) as { error?: string } | null;
-      return finish({ error: err?.error ?? `Gagal (${res.status})` });
+      const err = (await res.json().catch(() => null)) as { error?: string; code?: string } | null;
+      return finish({ error: err?.error ?? `Gagal (${res.status})`, errorCode: err?.code });
     }
 
     const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
