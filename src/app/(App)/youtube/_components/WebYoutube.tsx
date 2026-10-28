@@ -77,6 +77,12 @@ export default function WebYoutube() {
     void search(input);
   };
 
+  // Chip pencarian cepat / genre → cari kata kuncinya, kolom input dikosongkan
+  const pick = (q: string) => {
+    setInput("");
+    void search(q);
+  };
+
   return (
     <div className="flex flex-col gap-8 desk:gap-5">
       <PageHeader eyebrow={y.eyebrow} title={y.title} sub={y.sub} />
@@ -99,26 +105,15 @@ export default function WebYoutube() {
           </Button>
         </form>
         <div className="flex flex-wrap gap-2">
-          {y.chips.map((c) => {
-            const on = c === query;
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => {
-                  setInput("");
-                  void search(c);
-                }}
-                aria-pressed={on}
-                className={cn(
-                  "ios-press h-9 cursor-pointer rounded-full px-4 text-[13.5px] font-medium transition-colors desk:h-7 desk:rounded-[7px] desk:px-3 desk:text-[12.5px]",
-                  on ? "bg-fg text-bg" : "bg-fg/[0.07] text-fg-2 hover:bg-fg/[0.12] hover:text-fg",
-                )}
-              >
-                {c}
-              </button>
-            );
-          })}
+          {y.chips.map((c) => (
+            <Chip key={c} label={c} on={c === query} onClick={() => pick(c)} />
+          ))}
+        </div>
+        <div role="group" aria-label={y.genre} className="flex flex-wrap items-center gap-2">
+          <span className="caps mr-1 text-[10.5px] text-fg-3">{y.genre}</span>
+          {y.genres.map(([label, q]) => (
+            <Chip key={label} label={label} on={q === query} onClick={() => pick(q)} />
+          ))}
         </div>
       </div>
 
@@ -202,6 +197,22 @@ export default function WebYoutube() {
         )}
       </section>
     </div>
+  );
+}
+
+function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={cn(
+        "ios-press h-9 cursor-pointer rounded-full px-4 text-[13.5px] font-medium transition-colors desk:h-7 desk:rounded-[7px] desk:px-3 desk:text-[12.5px]",
+        on ? "bg-fg text-bg" : "bg-fg/[0.07] text-fg-2 hover:bg-fg/[0.12] hover:text-fg",
+      )}
+    >
+      {label}
+    </button>
   );
 }
 
