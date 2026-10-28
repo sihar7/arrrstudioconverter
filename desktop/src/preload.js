@@ -61,6 +61,8 @@ if (origin && location.origin === origin && (!base || location.pathname === base
       unfreeze: () => ipcRenderer.send("claude:unfreeze"),
       getState: () => ipcRenderer.invoke("claude:state"),
       signOut: (n) => ipcRenderer.invoke("claude:signOut", n),
+      /** buka link login dari email Claude (magic link) di profil aktif → true bila valid */
+      open: (url) => ipcRenderer.invoke("claude:open", url),
       onState(cb) {
         const listener = (_e, s) => cb(s);
         ipcRenderer.on("claude:state", listener);

@@ -19,6 +19,26 @@ let host = null;
 let bounds = null;
 let shown = false;
 
+/** Halaman login pihak ketiga yang dibuka Claude.ai sebagai popup (Google / Apple) */
+const isAuthPopup = (url) => {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && /(^|\.)(accounts\.google\.com|appleid\.apple\.com)$/i.test(u.hostname);
+  } catch {
+    return false;
+  }
+};
+
+/** Link login dari email Claude (magic link) — hanya domain Claude */
+const isClaudeLink = (url) => {
+  try {
+    const u = new URL(String(url).trim());
+    return u.protocol === "https:" && /(^|\.)(claude\.ai|claude\.com)$/i.test(u.hostname);
+  } catch {
+    return false;
+  }
+};
+
 const isInView = (url) => {
   try {
     const u = new URL(url);
@@ -73,10 +93,32 @@ function createView(profile) {
   const wc = view.webContents;
 
   wc.setWindowOpenHandler(({ url }) => {
-    // Popup login (Google) tetap di dalam view; tautan lain (artefak publik, dokumen) → browser default
+    // Login Google/Apple = POPUP yang mengirim hasil ke jendela pembukanya lalu menutup diri → harus jadi popup
+    // sungguhan (sesi profil ini ikut otomatis). Dimuat di view yang sama → hasil login hilang, balik ke halaman login.
+    if (isAuthPopup(url)) {
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          width: 520,
+          height: 720,
+          parent: host && !host.isDestroyed() ? host : undefined,
+          autoHideMenuBar: true,
+          title: "Masuk ke Claude",
+          backgroundColor: "#ffffff",
+          webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
+        },
+      };
+    }
     if (isInView(url)) wc.loadURL(url);
     else if (/^https?:/.test(url)) shell.openExternal(url);
     return { action: "deny" };
+  });
+  // Popup login: tautan di dalamnya tetap di popup; selesai → popup ditutup oleh halaman login sendiri
+  wc.on("did-create-window", (popup) => {
+    popup.webContents.setWindowOpenHandler(({ url }) => {
+      if (/^https?:/.test(url) && !isInView(url)) shell.openExternal(url);
+      return { action: "deny" };
+    });
   });
   wc.on("will-navigate", (e, url) => {
     if (isInView(url)) return;
@@ -232,6 +274,14 @@ on("claude:nav", (_win, action) => {
   else if (action === "forward") wc.navigationHistory.goForward();
   else if (action === "reload") wc.reload();
   else if (action === "new") wc.loadURL(HOME);
+});
+// Link login dari email (diklik di Gmail = login di browser biasa, bukan di app) → tempel di app, dibuka di profil aktif
+handle("claude:open", (_win, url) => {
+  if (!isClaudeLink(url)) return false;
+  const v = current();
+  if (!v) return false;
+  v.webContents.loadURL(String(url).trim());
+  return true;
 });
 // Popover/dialog web terbuka di atas area Claude → view disembunyikan sementara, diganti cuplikan gambar
 handle("claude:freeze", async () => {

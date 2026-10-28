@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, EditPencil, LogOut, Refresh } from "iconoir-react";
+import { Check, EditPencil, LogOut, Mail, Refresh } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/lib/utils";
 import { alice, useAlice } from "../_lib/store";
@@ -102,6 +102,7 @@ export default function ClaudeSidebar({ rail = false }: { rail?: boolean }) {
         <>
           <p className="mt-3 px-2.5 text-[12px] leading-snug text-fg-3">{c.hint}</p>
           <div className="mt-3 flex flex-col gap-px">
+            {bridge.open && <LoginLink open={bridge.open} />}
             <SideAction icon={<Refresh width={15} height={15} />} label={c.reload} onClick={() => bridge.nav("reload")} />
             <SideAction
               icon={<LogOut width={15} height={15} />}
@@ -119,6 +120,52 @@ export default function ClaudeSidebar({ rail = false }: { rail?: boolean }) {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Login lewat email: Claude mengirim link ke email; diklik di Gmail = yang login browser biasa, bukan app.
+ * Salin link dari email → tempel di sini → dibuka di profil akun yang aktif.
+ */
+function LoginLink({ open }: { open: (url: string) => Promise<boolean> }) {
+  const { t } = useT();
+  const c = t.alice.claude;
+  const [editing, setEditing] = useState(false);
+  const [bad, setBad] = useState(false);
+
+  if (!editing) {
+    return <SideAction icon={<Mail width={15} height={15} />} label={c.loginLink} onClick={() => setEditing(true)} />;
+  }
+  return (
+    <form
+      className="flex flex-col gap-1.5 rounded-[9px] bg-fg/[0.05] p-2"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const url = String(new FormData(e.currentTarget).get("url") ?? "");
+        const ok = await open(url);
+        setBad(!ok);
+        if (ok) setEditing(false);
+      }}
+    >
+      <input
+        name="url"
+        autoFocus
+        placeholder="https://claude.ai/magic-link#…"
+        aria-label={c.loginLink}
+        onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+        className="h-8 w-full rounded-[7px] bg-bg/60 px-2 font-mono text-[11.5px] text-fg outline-none ring-1 ring-[var(--hairline)] focus:ring-accent/50"
+      />
+      {bad && <p className="text-[11.5px] text-err">{c.loginLinkBad}</p>}
+      <p className="text-[11.5px] leading-snug text-fg-3">{c.loginLinkHint}</p>
+      <div className="flex gap-1.5">
+        <button type="submit" className="h-7 flex-1 cursor-pointer rounded-[7px] bg-accent text-[12px] font-semibold text-on-accent hover:bg-accent-strong">
+          {c.loginLinkOpen}
+        </button>
+        <button type="button" onClick={() => setEditing(false)} className="h-7 cursor-pointer rounded-[7px] px-2.5 text-[12px] text-fg-3 hover:bg-fg/[0.07] hover:text-fg">
+          {t.common.cancel}
+        </button>
+      </div>
+    </form>
   );
 }
 

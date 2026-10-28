@@ -54,6 +54,8 @@ export interface DesktopClaude {
   unfreeze: () => void;
   getState: () => Promise<ClaudeViewState | null>;
   signOut: (n: number) => Promise<ClaudeViewState | null>;
+  /** v1.3.2+: buka link login dari email Claude di profil aktif */
+  open?: (url: string) => Promise<boolean>;
   onState: (cb: (s: ClaudeViewState) => void) => () => void;
 }
 
