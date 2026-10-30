@@ -112,10 +112,16 @@ export const spoofSchema = z.object({
   kind: z.enum(["audio", "animation"]),
   sourceId: z.string().regex(/^\d{1,20}$/),
   name: z.string().trim().max(50).default(""),
+  // false = hanya siapkan file untuk diimpor manual di Studio (tanpa upload ulang)
+  autoUpload: z.boolean().default(true),
   creatorType: z.enum(["user", "group"]),
   creatorId: z.string().regex(/^\d{1,20}$/),
   permission: z.enum(["none", "place", "public"]).default("none"),
   placeId: z.string().regex(/^\d{1,20}$/).optional(),
+});
+
+export const spoofRefreshSchema = z.object({
+  apiKey: z.string().min(20).max(4000),
 });
 
 export const robloxPermissionSchema = z.object({

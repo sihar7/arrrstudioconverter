@@ -1,10 +1,11 @@
-import { SfArrowUpDoc, SfClock, SfCube, SfCutout, SfEnlarge, SfGear, SfPlayRect, SfStack, SfWaveform } from "@/components/icons/SfIcons";
+import { SfArrowUpDoc, SfClock, SfCube, SfCutout, SfEnlarge, SfGear, SfPlayRect, SfSpoof, SfStack, SfWaveform } from "@/components/icons/SfIcons";
 import type { NavItem } from "../header/Header";
 
 // Menu app desktop (sidebar & command palette). Harga sengaja tidak ada di desktop (upgrade lewat kartu paket di akun).
 export const D_CONVERTER: NavItem = { href: "/converter", key: "converter", icon: SfWaveform, tone: "pink" };
 export const D_YOUTUBE: NavItem = { href: "/youtube", key: "youtube", icon: SfPlayRect, tone: "red" };
 export const D_UPLOAD: NavItem = { href: "/upload", key: "upload", icon: SfArrowUpDoc, tone: "green" };
+export const D_SPOOF: NavItem = { href: "/spoof", key: "spoof", icon: SfSpoof, tone: "orange" };
 export const D_SKYBOX: NavItem = { href: "/skybox", key: "skybox", icon: SfCube, tone: "teal" };
 export const D_REMOVE_BG: NavItem = { href: "/remove-bg", key: "removeBg", icon: SfCutout, tone: "indigo" };
 export const D_UPSCALE: NavItem = { href: "/upscale", key: "upscale", icon: SfEnlarge, tone: "yellow" };
@@ -24,10 +25,10 @@ export interface NavSection {
   items: NavItem[];
 }
 
-/** Bagian sidebar; Upload audio, Skybox & alat gambar khusus member */
+/** Bagian sidebar; Upload audio, Spoof, Skybox & alat gambar khusus member */
 export function navSections(member: boolean): NavSection[] {
   return [
-    { id: "studio", items: [D_CONVERTER, D_YOUTUBE, ...(member ? [D_UPLOAD, D_SKYBOX] : [])] },
+    { id: "studio", items: [D_CONVERTER, D_YOUTUBE, ...(member ? [D_UPLOAD, D_SPOOF, D_SKYBOX] : [])] },
     ...(member ? [{ id: "images" as const, items: [D_REMOVE_BG, D_UPSCALE] }] : []),
     { id: "shelf", items: [D_LIBRARY, D_HISTORY] },
   ];

@@ -85,6 +85,16 @@ export function SfArrowUpDoc(p: SfIconProps) {
   );
 }
 
+/** arrow.triangle.2.circlepath — Spoof (unduh lalu upload ulang jadi ID baru) */
+export function SfSpoof(p: SfIconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="7.5" fill={p.filled ? "currentColor" : "none"} fillOpacity={p.filled ? 0.22 : 0} stroke="none" />
+      <path d="M4.6 11a7.5 7.5 0 0 1 13.1-4.1L19.4 9M19.4 4.6V9H15M19.4 13a7.5 7.5 0 0 1-13.1 4.1L4.6 15M4.6 19.4V15H9" />
+    </Svg>
+  );
+}
+
 /** cube.transparent — Skybox (kubus 6 sisi) */
 export function SfCube(p: SfIconProps) {
   return (

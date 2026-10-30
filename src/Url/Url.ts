@@ -2,6 +2,7 @@
 const Url = {
   robloxCreatorDashboard: "https://create.roblox.com/dashboard/credentials",
   robloxCreations: "https://create.roblox.com/dashboard/creations",
+  robloxSite: "https://www.roblox.com",
 
   // Backend API (ARRSTUDIOCONVERTERBE di Railway) — /api/* web di-proxy ke sini (next.config.ts)
   backendApi: "https://arrrstudioconverterbe.up.railway.app",
@@ -24,6 +25,10 @@ const Url = {
 
 /** Halaman konfigurasi aset di Creator Dashboard (distribusi publik / Creator Store) */
 export const robloxAssetConfigureUrl = (assetId: string) => `${Url.robloxCreations}/store/${assetId}/configure`;
+
+/** Profil publik pembuat aset (user / grup) */
+export const robloxCreatorUrl = (type: "user" | "group", id: string) =>
+  type === "group" ? `${Url.robloxSite}/communities/${id}` : `${Url.robloxSite}/users/${id}/profile`;
 
 /** Path internal ("/api/…", "/brand/…") → dengan awalan basePath */
 export const withBase = (path: string) => `${Url.basePath}${path}`;

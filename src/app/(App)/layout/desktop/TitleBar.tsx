@@ -14,6 +14,7 @@ const TITLES: Record<string, string> = {
   "/library": "library",
   "/history": "history",
   "/upload": "upload",
+  "/spoof": "spoof",
   "/skybox": "skybox",
   "/youtube": "youtube",
   "/remove-bg": "removeBg",

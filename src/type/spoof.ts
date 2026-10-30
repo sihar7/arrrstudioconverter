@@ -7,18 +7,32 @@ export interface SpoofPermission {
   message: string | null;
 }
 
+/** Pembuat aset sumber (user / grup) — null kalau Roblox tidak memberi info */
+export interface SpoofSourceCreator {
+  type: "user" | "group";
+  id: string;
+  name: string | null;
+}
+
 export interface SpoofRecord {
   id: string;
   createdAt: number;
   kind: SpoofKind;
   sourceId: string;
   name: string;
+  /** pembuat aset sumber (catatan lama: tidak ada) */
+  sourceCreator?: SpoofSourceCreator | null;
+  /** ukuran file sumber dalam byte */
+  sizeBytes?: number;
+  /** lama proses download (+ upload) dalam ms */
+  durationMs?: number;
+  /** tujuan upload ulang (akun / grup pemilik API key) */
   creatorType: "user" | "group";
   creatorId: string;
-  /** asset ID baru (null selama Roblox masih memproses) */
+  /** asset ID baru (null selama Roblox masih memproses / tidak di-upload otomatis) */
   assetId: string | null;
   operationId: string | null;
-  /** fallback .rbxm kalau upload animasi ditolak Roblox */
+  /** file .rbxm / audio sumber untuk import manual di Studio */
   fileId: string | null;
   error: string | null;
   permission: SpoofPermission | null;

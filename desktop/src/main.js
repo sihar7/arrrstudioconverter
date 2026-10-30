@@ -10,9 +10,6 @@ const { APP_BASE, APP_ORIGIN, APP_URL, IN_APP_HOSTS, SESSION_COOKIE, UA_TOKEN, i
 const store = require("./store");
 const downloads = require("./downloads");
 const updater = require("./updater");
-const { readClaudeMemory } = require("./claudeMemory");
-const studio = require("./studio");
-require("./claudeView"); // mode Alice: Claude.ai asli (3 profil akun) di dalam app — IPC claude:*
 const chrome = require("./chrome");
 const { attachContextMenu, buildAppMenu } = require("./menu");
 const { createTunnel } = require("./tunnel");
@@ -212,13 +209,6 @@ app.on("second-instance", showWindow);
 
 app.whenReady().then(async () => {
   hardenSession(session.defaultSession);
-  // Mode Alice (admin): baca memori Claude Code lokal untuk disinkron web ke memori Alice
-  ipcMain.handle("memory:readClaude", () => readClaudeMemory());
-  // Mode Alice (admin): Roblox Studio lewat StudioMCP lokal
-  ipcMain.handle("studio:status", () => studio.status());
-  ipcMain.handle("studio:listTools", () => studio.listTools());
-  ipcMain.handle("studio:call", (_e, name, args) => studio.callTool(String(name), args));
-  ipcMain.handle("studio:stop", () => studio.stop());
   buildAppMenu(getWindow);
   startVpn();
   // Mulai otomatis saat komputer menyala → tanpa jendela (cukup VPN + tray); belum login → tampilkan jendela login
