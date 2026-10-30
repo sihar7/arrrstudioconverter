@@ -5,7 +5,7 @@ import { useReveal } from "./_hooks/useReveal";
 import LandingNav from "./_components/LandingNav";
 import Hero from "./_components/Hero";
 import DesktopSection from "./_components/DesktopSection";
-import { Compare, CtaBand, Faq, Features, Numbers, Philosophy, Showcase, Steps } from "./_components/Sections";
+import { Compare, CtaBand, Faq, Features, Numbers, Philosophy, Steps } from "./_components/Sections";
 
 export default function LandingPage() {
   useReveal();
@@ -15,7 +15,6 @@ export default function LandingPage() {
       <main id="main">
         <Hero />
         <Numbers />
-        <Showcase />
         <Features />
         <Philosophy />
         <Steps />

@@ -8,7 +8,10 @@ import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, cn, formatDate } from "@/lib/utils";
 import { rupiah } from "@/lib/planFeatures";
-import { BILLING_PERIODS, PLAN_PRICE, planTotal, type BillingMonths, type PaidPlanId } from "@/lib/schemas/plans";
+import { BILLING_PERIODS, PAID_PLANS, PLAN_PRICE, planTotal, type BillingMonths, type PaidPlanId } from "@/lib/schemas/plans";
+
+/** Plan yang ditandai "Paling populer" */
+const POPULAR: PaidPlanId = "pro";
 import PageHeader from "@/components/shared/PageHeader";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import Button, { ButtonLink } from "@/components/ui/Button";
@@ -88,7 +91,7 @@ export default function PricingScreen() {
   const paidAction = (id: PaidPlanId) => {
     if (!loggedIn) {
       return (
-        <ButtonLink href="/login?next=/pricing" variant={id === "pro" ? "primary" : "tonal"} className="w-full">
+        <ButtonLink href="/login?next=/pricing" variant={id === POPULAR ? "primary" : "tonal"} className="w-full">
           {t.pricing.loginToBuy}
         </ButtonLink>
       );
@@ -103,7 +106,7 @@ export default function PricingScreen() {
     const label = plan.id === id ? t.pricing.extend : plan.id !== "free" ? f(t.pricing.switchTo, { plan: t.plan.names[id] }) : t.pricing.pay;
     return (
       <Button
-        variant={id === "pro" ? "primary" : "tonal"}
+        variant={id === POPULAR ? "primary" : "tonal"}
         className="w-full"
         loading={buying === id}
         disabled={buying != null || (plan.expiresAt === null && plan.id === id)}
@@ -130,8 +133,6 @@ export default function PricingScreen() {
     };
   };
 
-  const pro = price("pro");
-  const studio = price("studio");
 
   return (
     <div className="flex flex-col gap-10">
@@ -160,7 +161,7 @@ export default function PricingScreen() {
         />
       </div>
 
-      <section aria-label={t.pricing.title} className="grid gap-4 lg:grid-cols-3 lg:items-start">
+      <section aria-label={t.pricing.title} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:items-start 2xl:grid-cols-5">
         <PlanCard
           id="free"
           current={plan.id === "free"}
@@ -172,8 +173,10 @@ export default function PricingScreen() {
             </ButtonLink>
           }
         />
-        <PlanCard id="pro" highlight current={plan.id === "pro"} price={pro.node} billed={pro.billed} action={paidAction("pro")} />
-        <PlanCard id="studio" current={plan.id === "studio"} price={studio.node} billed={studio.billed} action={paidAction("studio")} />
+        {PAID_PLANS.map((id) => {
+          const p = price(id);
+          return <PlanCard key={id} id={id} highlight={id === POPULAR} current={plan.id === id} price={p.node} billed={p.billed} action={paidAction(id)} />;
+        })}
       </section>
 
       <p className={cn("max-w-2xl text-[13px] leading-relaxed text-fg-3", billing && !billing.info.enabled && "text-warn")}>

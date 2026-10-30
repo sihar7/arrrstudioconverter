@@ -1,6 +1,6 @@
 "use client";
 
-import { AppleMac, ArrowUpRight, Download, Folder, InfoCircle, Windows } from "iconoir-react";
+import { AppleMac, ArrowUpRight, Download, Folder, InfoCircle, SmartphoneDevice, Windows } from "iconoir-react";
 import { withBase } from "@/Url/Url";
 import Url from "@/Url/Url";
 import { cn } from "@/lib/utils";
@@ -13,12 +13,13 @@ import Badge from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import Button from "@/components/ui/Button";
 
-type Os = "windows" | "mac" | "other";
+type Os = "windows" | "mac" | "android" | "ios" | "other";
 
 function detectOs(): Os {
   const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
   const p = `${nav.userAgentData?.platform ?? ""} ${navigator.userAgent}`.toLowerCase();
-  if (/iphone|ipad|android/.test(p)) return "other";
+  if (p.includes("android")) return "android";
+  if (/iphone|ipad|ipod/.test(p)) return "ios";
   if (p.includes("win")) return "windows";
   if (p.includes("mac")) return "mac";
   return "other";
@@ -31,12 +32,20 @@ export default function DownloadScreen() {
   const os: Os | null = hydrated ? detectOs() : null;
   const desktop = hydrated ? getDesktop() : undefined;
 
+  // App mobile baru tampil bila versi rilisnya diketahui saat build (mobile/pubspec.yaml)
+  const mobile = Boolean(process.env.NEXT_PUBLIC_MOBILE_VERSION);
   const platforms = [
     { id: "windows" as const, name: d.windows, req: d.windowsReq, file: d.windowsFile, href: Url.desktopWindows, Icon: Windows },
     { id: "mac" as const, name: d.mac, req: d.macReq, file: d.macFile, href: Url.desktopMac, Icon: AppleMac },
+    ...(mobile
+      ? [
+          { id: "android" as const, name: d.android, req: d.androidReq, file: d.androidFile, href: Url.mobileFile("ARRR-Converter-android-arm64.apk"), Icon: SmartphoneDevice },
+          { id: "ios" as const, name: d.ios, req: d.iosReq, file: d.iosFile, href: Url.mobileFile("ARRR-Converter-ios-unsigned.ipa"), Icon: SmartphoneDevice },
+        ]
+      : []),
   ];
   // Perangkat terdeteksi tampil duluan
-  const ordered = os === "mac" ? [...platforms].reverse() : platforms;
+  const ordered = [...platforms].sort((a, b) => Number(b.id === os) - Number(a.id === os));
 
   return (
     <div className="flex flex-col gap-10">
@@ -59,7 +68,7 @@ export default function DownloadScreen() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={withBase("/brand/arrr-desktop-icon.webp")} alt="" width={160} height={160} className="size-40 drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]" />
           <p className="mt-6 font-display text-[20px] font-bold tracking-[-0.02em]">ARRR Studio Converter</p>
-          <p className="mt-1 text-[13.5px] text-fg-3">Windows · macOS</p>
+          <p className="mt-1 text-[13.5px] text-fg-3">{mobile ? "Windows · macOS · Android · iOS" : "Windows · macOS"}</p>
         </CardBox>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -78,7 +87,7 @@ export default function DownloadScreen() {
                   <p className="mt-1 text-[14px] text-fg-2">{req}</p>
                   <p className="text-[13px] text-fg-3">{file}</p>
                 </div>
-                <a href={href} className={buttonClass(mine || os === "other" ? "primary" : "tonal", "md", "shrink-0")}>
+                <a href={href} className={buttonClass(mine || (os === "other" && (id === "windows" || id === "mac")) ? "primary" : "tonal", "md", "shrink-0")}>
                   <Download width={18} height={18} /> {f(d.download, { os: name })}
                 </a>
               </CardBox>
@@ -104,6 +113,12 @@ export default function DownloadScreen() {
         {[
           { title: d.winNoteTitle, body: d.winNote, Icon: Windows },
           { title: d.macNoteTitle, body: d.macNote, Icon: AppleMac },
+          ...(mobile
+            ? [
+                { title: d.androidNoteTitle, body: d.androidNote, Icon: SmartphoneDevice },
+                { title: d.iosNoteTitle, body: d.iosNote, Icon: SmartphoneDevice },
+              ]
+            : []),
         ].map(({ title, body, Icon }) => (
           <CardBox key={title} className="flex gap-4 p-5">
             <Icon width={20} height={20} className="mt-0.5 shrink-0 text-fg-2" />

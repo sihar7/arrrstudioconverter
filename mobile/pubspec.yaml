@@ -1,0 +1,56 @@
+name: arrr_converter
+description: "ARRR Studio Converter — app mobile (Android & iOS)."
+publish_to: 'none'
+
+# versi = versionName (Android) / CFBundleShortVersionString (iOS); +N = build number
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  url_launcher: ^6.3.3
+  path_provider: ^2.1.6
+  share_plus: ^13.3.1
+  webview_flutter: ^4.14.1
+  webview_flutter_android: ^4.14.1
+  webview_flutter_wkwebview: ^3.27.2
+  file_picker: ^13.3.0
+  http: ^1.6.0
+  flutter_secure_storage: ^11.2.0
+  flutter_web_auth_2: ^5.1.0
+  just_audio: ^0.10.6
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.6
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/
+  fonts:
+    - family: Sora
+      fonts:
+        - asset: assets/fonts/Sora.ttf
+    - family: InterTight
+      fonts:
+        - asset: assets/fonts/InterTight.ttf
+    - family: IBMPlexMono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500
+
+# Jalankan: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/brand/icon.png
+  remove_alpha_ios: true
+  adaptive_icon_background: "#141416"
+  adaptive_icon_foreground: assets/brand/icon_fg.png

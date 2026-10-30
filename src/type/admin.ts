@@ -1,3 +1,4 @@
+import type { PaidPlanId } from "@/lib/schemas/plans";
 import type { PlanId, PlanLimits, PublicPlanId, TokenRules } from "@/lib/schemas/plans";
 import type { JobStatus } from "./converter";
 
@@ -31,7 +32,7 @@ export interface AdminStats {
     awaiting: number;
     confirming: number;
     /** user dengan plan berbayar aktif */
-    subscribers: { pro: number; studio: number };
+    subscribers: Partial<Record<PaidPlanId, number>>;
   };
   server: { uptimeSec: number; rssBytes: number; node: string; concurrent: number; guestLimit: number; userTokens: number; tokenWindowHours: number };
 }

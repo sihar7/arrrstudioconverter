@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 export type Variant = "primary" | "tonal" | "ghost" | "subtle" | "danger" | "inverse";
 export type Size = "sm" | "md" | "lg";
 
-// Gaya iOS: kapsul, teks kalimat biasa (bukan kapital), isi tonal alih-alih garis tepi.
-// App desktop (desk:): kontrol app pro — persegi membulat 8px, lebih rapat, teks 13px.
-// primary = isi aksen · tonal = isi abu sistem · ghost = abu tipis · subtle = teks · danger = merah tonal · inverse
+// Gaya referensi (agensi AI gelap, biru → silver): kapsul, label IBM Plex Mono, primer = kilau silver + pendar.
+// App desktop (desk:): kontrol app pro — persegi membulat 8px, lebih rapat, teks sans 13px.
+// primary = kilau silver · tonal = isi abu · ghost = abu tipis · subtle = teks · danger = merah tonal · inverse
 const base =
-  "state-layer ios-press relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent font-semibold tracking-[-0.01em] disabled:pointer-events-none disabled:opacity-40 cursor-pointer [&_svg]:transition-transform [&_svg:last-child]:duration-300 hover:[&_svg:last-child:not(:first-child)]:translate-x-0.5 desk:rounded-[8px] desk:tracking-[-0.005em]";
+  "state-layer ios-press relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent font-mono font-medium tracking-[-0.02em] disabled:pointer-events-none disabled:opacity-40 cursor-pointer [&_svg]:transition-transform [&_svg:last-child]:duration-300 hover:[&_svg:last-child:not(:first-child)]:translate-x-0.5 desk:rounded-[8px] desk:font-sans desk:font-semibold desk:tracking-[-0.005em]";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-accent text-on-accent hover:bg-accent-strong",
+  primary: "bg-accent bg-[image:var(--sheen)] text-on-accent shadow-[var(--glow)] hover:shadow-[var(--glow-strong)] desk:bg-none desk:shadow-none desk:hover:bg-accent-strong",
   tonal: "bg-fg/[0.12] text-fg hover:bg-fg/[0.17]",
   inverse: "bg-fg text-bg hover:bg-accent-strong",
   ghost: "bg-fg/[0.07] text-fg hover:bg-fg/[0.12]",

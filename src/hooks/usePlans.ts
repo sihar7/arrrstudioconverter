@@ -14,5 +14,10 @@ const GUEST_DEFAULT = 3;
 export function usePlans() {
   const hydrated = useHydrated();
   const { data } = baseApi.usePlansQuery();
-  return hydrated && data ? { ...data, tokens: data.tokens ?? TOKEN_RULES } : { guest: GUEST_DEFAULT, tokens: TOKEN_RULES, plans: PLANS };
+  // Backend masih skema 3 plan (belum ada "lite") → id "pro"-nya = Pro lama (sekarang Lite), jadi batasnya
+  // tidak bisa dipakai: tampilkan bawaan saja sampai backend ter-deploy. Plan yang tak dikirim server → bawaan.
+  const fresh = data && "lite" in data.plans;
+  return hydrated && data
+    ? { ...data, tokens: data.tokens ?? TOKEN_RULES, plans: fresh ? { ...PLANS, ...data.plans } : PLANS }
+    : { guest: GUEST_DEFAULT, tokens: TOKEN_RULES, plans: PLANS };
 }

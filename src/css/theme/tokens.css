@@ -1,32 +1,33 @@
 /* ============================================================
    css/theme/tokens.css — DESIGN TOKENS (primitive → semantic)
-   Bahasa desain: editorial otomotif (acuan ferrari.com) — sudut tajam,
-   label kapital ber-tracking lebar, judul lebar, ruang lega.
-   Palet DARK SILVER — permukaan grafit netral + aksen silver (tidak diubah).
-   Material: logam bubut (lihat css/layouts/components.css › MATERIAL).
+   Bahasa desain (2026-10-31, permintaan user): gaya agensi AI gelap (acuan
+   ai-agency-op-tailwind) dengan BIRU DIGANTI SILVER — kanvas hitam netral,
+   judul display dua nada, tombol pill silver + label mono + glow lembut.
+   Sama dengan app mobile (mobile/lib/theme/tokens.dart) & app desktop.
    Komponen hanya memakai token semantik — jangan hardcode warna.
    ============================================================ */
 
 :root {
-  /* Primitive — grafit netral (sedikit dingin) */
-  --p-n-4: #08090a;
-  --p-n-6: #0d0e10;
-  --p-n-10: #141517;
-  --p-n-12: #18191c;
-  --p-n-17: #222428;
-  --p-n-22: #2c2e33;
-  --p-n-30: #3a3d43;
-  --p-n-50: #6b6f77;
-  --p-n-60: #8b9098;
-  --p-n-80: #bfc3c9;
-  --p-n-90: #e3e5e8;
+  /* Primitive — hitam netral (tanpa rona biru) */
+  --p-n-4: #08080a;
+  --p-n-6: #0c0c0e;
+  --p-n-10: #111113;
+  --p-n-12: #141416;
+  --p-n-17: #1b1b1e;
+  --p-n-22: #26262a;
+  --p-n-30: #34343a;
+  --p-n-50: #6f6f78;
+  --p-n-60: #8e8e97; /* teks tersier — kontras 5.9:1 di --bg */
+  --p-n-80: #b4b4bc;
+  --p-n-90: #f4f4f5;
   --p-n-94: #eceef0;
   --p-n-96: #f2f3f5;
-  /* Primitive — silver (aksen) */
-  --p-silver-30: #44484f;
+  /* Primitive — silver metalik (aksen) */
+  --p-silver-30: #3a3d43;
   --p-silver-40: #2b2e33;
-  --p-silver-80: #c9cdd2;
-  --p-silver-90: #e6e8eb;
+  --p-silver-60: #9ea2aa;
+  --p-silver-80: #d5d8dd;
+  --p-silver-90: #f3f4f6;
 
   /* Semantic — tema gelap (default) */
   --bg: var(--p-n-6); /* surface */
@@ -49,7 +50,11 @@
   --warn: #f2c063;
   --err: #ffb4ab;
   --scrim: rgba(0, 0, 0, 0.62);
-  --glass: rgba(13, 14, 16, 0.86);
+  --glass: rgba(12, 12, 14, 0.82);
+  /* Kilau silver (isi tombol primer / elemen unggulan) & pendar lembut — pengganti glow biru referensi */
+  --sheen: linear-gradient(135deg, var(--p-silver-90) 0%, var(--p-silver-80) 55%, var(--p-silver-60) 100%);
+  --glow: 0 0 0 1px rgb(255 255 255 / 0.06), 0 8px 28px -6px rgb(243 244 246 / 0.28);
+  --glow-strong: 0 0 0 1px rgb(255 255 255 / 0.1), 0 10px 40px -4px rgb(243 244 246 / 0.42);
   /* Elevasi M3 (level 1–3) */
   --elev-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
   --elev-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
@@ -61,7 +66,7 @@
   --shape-xs: 6px;
   --shape-s: 10px;
   --shape-m: 12px;
-  --shape-l: 20px;
+  --shape-l: 18px;
   --shape-xl: 28px;
 
   /* Gerak — sinematik: masuk pelan & mantap, tanpa pantulan berlebihan */
@@ -135,6 +140,9 @@ html[data-theme="light"] {
   --elev-2: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
   --elev-3: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 12px 32px -8px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.05);
   --seg-thumb: #ffffff;
+  --sheen: linear-gradient(135deg, #3a3a3e 0%, #1c1c1e 60%, #0c0c0e 100%);
+  --glow: 0 0 0 1px rgb(0 0 0 / 0.04), 0 8px 24px -8px rgb(0 0 0 / 0.35);
+  --glow-strong: 0 0 0 1px rgb(0 0 0 / 0.06), 0 12px 32px -6px rgb(0 0 0 / 0.4);
   /* Warna sistem iOS (terang) */
   --ios-red: #ff3b30;
   --ios-orange: #ff9500;

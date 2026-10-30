@@ -1,10 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import Providers from "@/context/Providers";
 import Url from "@/Url/Url";
+import localFont from "next/font/local";
 import "@/css/globals.css";
 
-// Tanpa web font: pakai font sistem (SF Pro di iPhone/Mac, Segoe UI Variable di Windows, Roboto di Android)
-// → nol request font (sebelumnya ±600 KB) dan rasa native ala iOS. Stack ada di globals.css.
+// Font dibundel sendiri (WOFF2 subset latin, ±105 KB total, tanpa request ke Google) — sama dengan app mobile:
+// Sora = judul display · Inter Tight = isi · IBM Plex Mono = label/tombol (gaya referensi). Dipakai lewat token di globals.css.
+const sora = localFont({ src: "./fonts/Sora.woff2", variable: "--font-sora", weight: "100 800", display: "swap" });
+const interTight = localFont({ src: "./fonts/InterTight.woff2", variable: "--font-inter-tight", weight: "100 900", display: "swap" });
+const plexMono = localFont({
+  src: [
+    { path: "./fonts/IBMPlexMono-400.woff2", weight: "400" },
+    { path: "./fonts/IBMPlexMono-500.woff2", weight: "500" },
+  ],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
 
 // VERCEL_PROJECT_PRODUCTION_URL otomatis = custom domain produksi (bypass.arrrstudio.com) begitu domain itu aktif
 const siteUrl =
@@ -34,7 +45,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0d0e10" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0c0e" },
     { media: "(prefers-color-scheme: light)", color: "#f2f3f5" },
   ],
   width: "device-width",
@@ -47,7 +58,7 @@ const themeScript = `try{var h=document.documentElement,t=localStorage.getItem('
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" data-theme="dark" suppressHydrationWarning>
+    <html lang="id" data-theme="dark" className={`${sora.variable} ${interTight.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

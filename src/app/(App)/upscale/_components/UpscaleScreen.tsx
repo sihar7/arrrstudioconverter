@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Download, Xmark } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { usePlans } from "@/hooks/usePlans";
-import { isTopPlan } from "@/lib/schemas/plans";
+import { isTopPlan, cheapestPlan } from "@/lib/schemas/plans";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { useAiModel } from "@/hooks/useAiModel";
@@ -95,7 +95,7 @@ export default function UpscaleScreen() {
               }}
               options={[
                 { value: 2, label: "2×" },
-                { value: 4, label: plan4 ? "4×" : `4× · ${t.plan.names.pro}`, disabled: !plan4 },
+                { value: 4, label: plan4 ? "4×" : `4× · ${t.plan.names[cheapestPlan((p) => p.upscaleScales.includes(4))]}`, disabled: !plan4 },
               ]}
             />
             <p className="-mt-2 text-[12.5px] leading-relaxed text-fg-3">{s.tip}</p>

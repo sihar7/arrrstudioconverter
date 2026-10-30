@@ -1,0 +1,115 @@
+# Build app mobile (mobile/, Flutter) untuk Android & iOS.
+# Setiap push ke main yang mengubah mobile/ → build keduanya. Bila "version" di mobile/pubspec.yaml belum pernah
+# dirilis (tag mobile-v<versi> belum ada) → terbitkan GitHub Release berisi APK + IPA. Versi sama → hanya artifact.
+# Halaman /download web menautkan releases/download/mobile-v<versi>/<file> (versi dibaca dari pubspec saat build web).
+# iOS TIDAK bisa dibuild di Windows, jadi dibuild di runner macOS ini.
+# IPA belum ditandatangani (--no-codesign): pasang lewat AltStore/Sideloadly, atau tambahkan sertifikat Apple +
+# provisioning profile (secret) untuk TestFlight/App Store.
+name: Mobile Build
+
+on:
+  push:
+    branches: [main]
+    paths: ["mobile/**", ".github/workflows/mobile-build.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-build
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.ver.outputs.tag }}
+      release: ${{ steps.ver.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(grep -E '^version:' pubspec.yaml | sed -E 's/version: *([^+ ]+).*/\1/')
+          tag="mobile-v$v"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  android:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter build apk --release --split-per-abi
+      - run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/ARRR-Converter-android-arm64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/ARRR-Converter-android-arm32.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: mobile/dist/*.apk
+
+  ios:
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+      - run: |
+          mkdir -p dist/Payload
+          cp -R build/ios/iphoneos/Runner.app dist/Payload/
+          (cd dist && zip -qry ARRR-Converter-ios-unsigned.ipa Payload && rm -rf Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: mobile/dist/*.ipa
+
+  release:
+    needs: [check, android, ios]
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.check.outputs.tag }}
+          name: ARRR Converter Mobile ${{ needs.check.outputs.tag }}
+          # JANGAN jadi "latest": link installer desktop di web memakai releases/latest/download/...
+          make_latest: "false"
+          files: dist/*
+          body: |
+            App mobile ARRR Studio Converter.
+            - Android: pasang **ARRR-Converter-android-arm64.apk** (HP lama: arm32).
+            - iOS: IPA belum ditandatangani — pasang lewat AltStore / Sideloadly.

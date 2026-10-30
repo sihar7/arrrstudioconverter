@@ -10,7 +10,10 @@ import Skeleton from "@/components/ui/Skeleton";
 import { useToast } from "@/hooks/useToast";
 import { formatBytes } from "@/lib/utils";
 import { rupiah } from "@/lib/planFeatures";
-import { PLAN_PRICE } from "@/lib/schemas/plans";
+import { PAID_PLANS, PLAN_NAMES, PLAN_PRICE, type PaidPlanId, type PublicPlanId } from "@/lib/schemas/plans";
+
+// Warna legenda distribusi plan (urut Free → Label); tetap disertai nama plan, bukan warna saja
+const PLAN_TONES = ["bg-fg-3/40", "bg-fg-3", "bg-accent/60", "bg-accent", "bg-fg"];
 import { getStats, revokeAdminSessions } from "../_service/admin.service";
 import { errorText, useAdminConfirm, useAdminData, useAuthGuard } from "../_hooks/useAdmin";
 import { ErrorBox, RefreshButton, StatTile, Toolbar, nf } from "./parts";
@@ -66,9 +69,10 @@ export default function OverviewTab({ onOpen }: { onOpen: (tab: "orders" | "user
     );
 
   const b = data.billing;
-  const subs = b.subscribers.pro + b.subscribers.studio;
+  const subOf = (id: PaidPlanId) => b.subscribers[id] ?? 0;
+  const subs = PAID_PLANS.reduce((a, id) => a + subOf(id), 0);
   // Estimasi pendapatan bulanan berulang dari pelanggan aktif (harga per bulan, tanpa diskon periode)
-  const mrr = b.subscribers.pro * PLAN_PRICE.pro + b.subscribers.studio * PLAN_PRICE.studio;
+  const mrr = PAID_PLANS.reduce((a, id) => a + subOf(id) * PLAN_PRICE[id], 0);
   const running = data.jobs.queued + data.jobs.downloading + data.jobs.processing;
   const values = data.daily.map((d) => (series === "count" ? d.count : d.revenue));
   // Batas atas sumbu dibulatkan (1·2·5 × 10ⁿ) supaya label sumbu rapi dan batang tertinggi tidak selalu mentok atas
@@ -78,11 +82,7 @@ export default function OverviewTab({ onOpen }: { onOpen: (tab: "orders" | "user
   const total = values.reduce((a, v) => a + v, 0);
   const fmtTotal = Math.max(1, data.formats.reduce((a, f) => a + f.count, 0));
   const freeUsers = Math.max(0, data.users - subs);
-  const planRows = [
-    { id: "free", n: freeUsers },
-    { id: "pro", n: b.subscribers.pro },
-    { id: "studio", n: b.subscribers.studio },
-  ] as const;
+  const planRows: { id: PublicPlanId; n: number }[] = [{ id: "free", n: freeUsers }, ...PAID_PLANS.map((id) => ({ id, n: subOf(id) }))];
   const planTotal = Math.max(1, planRows.reduce((a, r) => a + r.n, 0));
   const fmtValue = (v: number) => (series === "count" ? nf(v) : compactRp(v));
 
@@ -102,7 +102,7 @@ export default function OverviewTab({ onOpen }: { onOpen: (tab: "orders" | "user
           size="lg"
           label="Pelanggan aktif"
           value={nf(subs)}
-          sub={`Pro ${nf(b.subscribers.pro)} · Studio ${nf(b.subscribers.studio)}`}
+          sub={PAID_PLANS.map((id) => `${PLAN_NAMES[id]} ${nf(subOf(id))}`).join(" · ")}
           icon={<Crown width={16} height={16} />}
           onClick={() => onOpen("users")}
         />
@@ -213,14 +213,14 @@ export default function OverviewTab({ onOpen }: { onOpen: (tab: "orders" | "user
               {/* Bar bertumpuk + legenda berlabel (warna bukan satu-satunya penanda) */}
               <div className="flex h-2 overflow-hidden rounded-full bg-line" aria-hidden="true">
                 {planRows.map((r, i) => (
-                  <span key={r.id} className={["bg-fg-3/60", "bg-accent", "bg-fg"][i]} style={{ width: `${(r.n / planTotal) * 100}%` }} />
+                  <span key={r.id} className={PLAN_TONES[i]} style={{ width: `${(r.n / planTotal) * 100}%` }} />
                 ))}
               </div>
               <ul className="mt-4 flex flex-col gap-2.5">
                 {planRows.map((r, i) => (
                   <li key={r.id} className="flex items-center gap-3 text-[14px]">
-                    <span aria-hidden="true" className={`size-2 rounded-full ${["bg-fg-3/60", "bg-accent", "bg-fg"][i]}`} />
-                    <span className="flex-1 font-semibold capitalize">{r.id}</span>
+                    <span aria-hidden="true" className={`size-2 rounded-full ${PLAN_TONES[i]}`} />
+                    <span className="flex-1 font-semibold">{PLAN_NAMES[r.id]}</span>
                     <span className="font-mono tabular-nums text-fg-2">
                       {nf(r.n)} · {Math.round((r.n / planTotal) * 100)}%
                     </span>

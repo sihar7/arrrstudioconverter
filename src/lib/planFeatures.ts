@@ -48,5 +48,9 @@ export function planFeatures(id: PlanId, t: Dictionary, plans: Record<PlanId, Pl
     { text: fmt(f.imageMax, { n: p.imageMaxSide, label: p.imageMaxSide >= 4096 ? "4K" : p.imageMaxSide >= 2560 ? "2K" : "HD" }), included: true },
     { text: fmt(f.upscale, { list: p.upscaleScales.map((x) => `${x}×`).join(" / ") }), included: true },
     { text: f.imageBgFull, included: p.imageBg === "full" },
+    { text: f.albumSplit, included: p.albumSplit },
+    { text: f.imageAiPro, included: p.imageAi === "pro" },
+    { text: f.skybox4k, included: p.skyboxMaxFace >= 4096 },
+    { text: f.master, included: p.effects.includes("master") },
   ];
 }

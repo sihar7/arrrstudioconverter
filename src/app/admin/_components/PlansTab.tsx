@@ -9,7 +9,7 @@ import Field, { Input, Select } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
 import Skeleton from "@/components/ui/Skeleton";
 import { useToast } from "@/hooks/useToast";
-import { PLAN_IDS, type PublicPlanId as PlanId, type TokenRules } from "@/lib/schemas/plans";
+import { PLAN_IDS, type PublicPlanId as PlanId, type TokenRules, PLAN_NAMES } from "@/lib/schemas/plans";
 import { baseApi } from "@/store/api/baseApi";
 import { useAppDispatch } from "@/store/hooks";
 import { PLAN_TUNABLE, type PlanOverrides, type PlanSettings, type PlanTunable, type TunableLimits } from "@/type/admin";
@@ -18,7 +18,7 @@ import { errorText, useAdminData, useAuthGuard } from "../_hooks/useAdmin";
 import { ErrorBox, nf } from "./parts";
 
 // Hanya plan publik yang bisa diatur — plan "admin" (khusus admin aplikasi) tetap di kode
-const PLAN_LABEL: Record<PlanId, string> = { free: "Free", pro: "Pro", studio: "Studio" };
+const PLAN_LABEL: Record<PlanId, string> = PLAN_NAMES;
 const BITRATES = [96, 128, 192, 256, 320] as const;
 
 interface Spec {

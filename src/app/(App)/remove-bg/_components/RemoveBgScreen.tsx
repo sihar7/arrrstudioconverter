@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Download } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { usePlans } from "@/hooks/usePlans";
-import { isTopPlan } from "@/lib/schemas/plans";
+import { isTopPlan, cheapestPlan } from "@/lib/schemas/plans";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { useAiModel } from "@/hooks/useAiModel";
@@ -82,7 +82,8 @@ export default function RemoveBgScreen() {
 
   const size = source ? fitWithin(source.w, source.h, plan.imageMaxSide) : null;
   const scaledFrom = source && size && size.w < source.w ? `${source.w}×${source.h}` : null;
-  const lock = (label: string) => (fullBg ? label : `${label} · ${t.plan.names.pro}`);
+  const bgPlan = t.plan.names[cheapestPlan((p) => p.imageBg === "full")];
+  const lock = (label: string) => (fullBg ? label : `${label} · ${bgPlan}`);
 
   return (
     <ImageToolFrame
@@ -124,7 +125,7 @@ export default function RemoveBgScreen() {
             )}
             {!fullBg && (
               <p className="-mt-2 text-[12.5px] text-fg-3">
-                {f(g.locked, { plan: t.plan.names.pro })}: {s.bg.color} & {s.bg.blur}
+                {f(g.locked, { plan: bgPlan })}: {s.bg.color} & {s.bg.blur}
               </p>
             )}
 

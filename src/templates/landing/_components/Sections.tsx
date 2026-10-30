@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight, Check, Lock, NavArrowDown } from "iconoir-react";
-import { SfClock, SfCrown, SfGear, SfLock, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
+import { SfClock, SfCrown, SfCube, SfGear, SfLock, SfPlayRect, SfStack, SfWaveform, type SfIcon } from "@/components/icons/SfIcons";
 import AppIcon, { type IosTone } from "@/components/ui/AppIcon";
 import { useT } from "@/hooks/useT";
 import { useMeQuery } from "@/store/api/baseApi";
@@ -215,18 +215,20 @@ export function Steps() {
 }
 
 const NO = "—";
-const COLS = ["guest", "free", "pro", "studio"] as const;
+const COLS = ["guest", "free", "lite", "pro", "studio", "label"] as const;
 type Col = (typeof COLS)[number];
 /** Ubin ikon kepala kolom paket (warna sistem iOS) */
 const COL_ICON: Record<Col, { tone: IosTone; icon: SfIcon }> = {
   guest: { tone: "gray", icon: SfClock },
   free: { tone: "blue", icon: SfWaveform },
+  lite: { tone: "teal", icon: SfPlayRect },
   pro: { tone: "orange", icon: SfCrown },
   studio: { tone: "purple", icon: SfStack },
+  label: { tone: "pink", icon: SfCube },
 };
 
 /**
- * Paket & harga — Tamu · Free · Pro · Studio. Semua angka diturunkan dari PLANS (sama dengan batas server &
+ * Paket & harga — Tamu · Free · Lite · Pro · Studio · Label. Semua angka diturunkan dari PLANS (sama dengan batas server &
  * halaman Harga); kolom Pro ditandai aksen sebagai pilihan utama. Tamu = batas free tanpa login.
  */
 export function Compare() {
@@ -287,9 +289,9 @@ export function Compare() {
       </div>
       {/* Gaya "Bandingkan model" Apple: kepala ber-ubin ikon, kolom Pro tersorot, centang lingkaran hijau */}
       <div className="reveal mat thin-scroll mt-14 overflow-x-auto rounded-[24px] border border-[var(--hairline)] bg-surface [--d:100ms]">
-        <table className="w-full min-w-[720px] table-fixed border-separate border-spacing-0 text-left text-[15px]">
+        <table className="w-full min-w-[960px] table-fixed border-separate border-spacing-0 text-left text-[15px]">
           <colgroup>
-            <col className="w-[26%]" />
+            <col className="w-[22%]" />
             {COLS.map((col) => (
               <col key={col} />
             ))}

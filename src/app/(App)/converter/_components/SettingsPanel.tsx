@@ -330,7 +330,7 @@ export default function SettingsPanel() {
               {presetIds.map((id, n) => (
                 <PresetTile
                   key={id}
-                  name={id === "master" ? `${c.presetNames[id]} · ${p.adminOnly}` : c.presetNames[id]}
+                  name={c.presetNames[id]}
                   desc={c.presetDesc[id]}
                   active={preset === id}
                   locked={presetLock(PRESETS[id])}
@@ -522,7 +522,7 @@ export default function SettingsPanel() {
 
         {tab === "effects" && (
           <>
-            {/* Mode Master — hanya plan dengan efek "master" (admin); plan lain tidak melihatnya sama sekali */}
+            {/* Mode Master — hanya plan dengan efek "master" (Label & admin); plan lain tidak melihatnya sama sekali */}
             {hasFx("master") && (
               <Switch label={`${p.master} · ${p.adminOnly}`} hint={p.masterHint} checked={o.master} onChange={(master) => set({ master })} />
             )}

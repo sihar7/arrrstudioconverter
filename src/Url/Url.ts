@@ -13,6 +13,11 @@ const Url = {
   desktopWindows: "https://github.com/sihar7/arrrstudioconverter/releases/latest/download/ARRR-Studio-Converter-Setup.exe",
   desktopMac: "https://github.com/sihar7/arrrstudioconverter/releases/latest/download/ARRR-Studio-Converter-mac.dmg",
 
+  // App mobile (mobile/ → GitHub Releases tag mobile-v<versi>, TIDAK ditandai "latest" agar link desktop di atas tetap
+  // menunjuk rilis desktop). Versi dari mobile/pubspec.yaml lewat NEXT_PUBLIC_MOBILE_VERSION (next.config.ts).
+  mobileFile: (file: "ARRR-Converter-android-arm64.apk" | "ARRR-Converter-ios-unsigned.ipa") =>
+    `https://github.com/sihar7/arrrstudioconverter/releases/download/mobile-v${process.env.NEXT_PUBLIC_MOBILE_VERSION}/${file}`,
+
   // Domain publik web (custom domain proyek Vercel ini) — dipakai teks gambar share (opengraph-image)
   site: "https://bypass.arrrstudio.com",
   // Web di root subdomain (bypass.arrrstudio.com) → tanpa basePath. Bila suatu saat disajikan di sub-path, isi di sini (mis. "/bypass"):

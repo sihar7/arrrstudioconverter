@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
+import TwoTone from "@/components/ui/TwoTone";
 
 /**
- * Kepala halaman editorial: eyebrow kapital · judul lebar · sub · aksi.
+ * Kepala halaman: eyebrow mono · judul display dua nada (terang + abu) · sub · aksi.
  * App desktop: "large title" ala macOS — tanpa eyebrow, judul 30px, sub satu baris; judul pindah ke toolbar saat discroll.
  */
 export default function PageHeader({ eyebrow, title, sub, actions }: { eyebrow: string; title: string; sub?: string; actions?: ReactNode }) {
@@ -13,8 +14,8 @@ export default function PageHeader({ eyebrow, title, sub, actions }: { eyebrow: 
           <div className="desk:hidden">
             <p className="eyebrow">{eyebrow}</p>
           </div>
-          <h1 className="mt-4 font-display text-[clamp(32px,4.6vw,56px)] font-bold leading-[1] tracking-[-0.035em] [text-wrap:balance] desk:mt-0 desk:text-[26px] desk:leading-tight desk:tracking-[-0.025em]">
-            {title}
+          <h1 className="mt-4 font-display text-[clamp(32px,4.6vw,56px)] font-semibold leading-[1.04] tracking-[-0.04em] [text-wrap:balance] desk:mt-0 desk:text-[26px] desk:leading-tight desk:tracking-[-0.025em]">
+            <TwoTone text={title} />
           </h1>
           {sub && <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-fg-2 desk:mt-1 desk:max-w-2xl desk:truncate desk:text-[13px] desk:text-fg-3">{sub}</p>}
         </div>

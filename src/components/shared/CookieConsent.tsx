@@ -78,7 +78,7 @@ export default function CookieConsent() {
           </dl>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 flex flex-wrap gap-2 [&>*]:min-w-fit [&>*]:flex-1">
           <Button variant="tonal" tabIndex={open ? 0 : -1} onClick={() => choose("essential")}>
             {C.essential}
           </Button>

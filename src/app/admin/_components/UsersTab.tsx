@@ -1,5 +1,6 @@
 "use client";
 
+import { PLAN_NAMES } from "@/lib/schemas/plans";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Crown, Group, LogOut, Search, Trash } from "iconoir-react";
@@ -18,7 +19,7 @@ import PlanDialog from "./PlanDialog";
 const COLS = "md:grid-cols-[minmax(0,1.5fr)_150px_80px_90px_120px_auto]";
 
 type PlanFilter = "all" | "paid" | "free";
-const PLAN_LABEL = { free: "Free", pro: "Pro", studio: "Studio", admin: "Admin" } as const;
+const PLAN_LABEL = PLAN_NAMES;
 
 export default function UsersTab() {
   const [input, setInput] = useState("");

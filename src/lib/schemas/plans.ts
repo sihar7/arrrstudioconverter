@@ -3,8 +3,12 @@ import { DEFAULT_OPTIONS, type AudioFormat, type AudioOptions } from "./convert.
 // Definisi plan — dipakai bersama oleh UI (halaman harga, kunci opsi) dan API (penegakan batas).
 // File ini identik di repo web & backend; ubah keduanya bersamaan.
 
-/** Plan publik: Free (bawaan) + Pro & Studio (dijual) — tampil di halaman Harga & bisa diberikan admin ke user */
-export const PLAN_IDS = ["free", "pro", "studio"] as const;
+/**
+ * Plan publik: Free (bawaan) + Lite, Pro, Studio, Label (dijual) — tampil di halaman Harga & bisa diberikan admin.
+ * Riwayat: sebelum 2026-11 hanya Pro (Rp15rb) & Studio (Rp35rb). Fitur per harga dipertahankan saat jadi 5 tingkat:
+ * Lite = Pro lama, Pro = Studio lama; data user/order lama dipindah sekali oleh migratePlanIds() di backend.
+ */
+export const PLAN_IDS = ["free", "lite", "pro", "studio", "label"] as const;
 export type PublicPlanId = (typeof PLAN_IDS)[number];
 /**
  * Plan internal khusus admin aplikasi (otomatis, batas paling longgar). Tidak dijual, tidak tampil di halaman
@@ -14,13 +18,16 @@ export const ADMIN_PLAN = "admin" as const;
 export const ALL_PLAN_IDS = [...PLAN_IDS, ADMIN_PLAN] as const;
 export type PlanId = (typeof ALL_PLAN_IDS)[number];
 
+/** Nama tampilan plan (admin panel, order, notifikasi) */
+export const PLAN_NAMES: Record<PlanId, string> = { free: "Free", lite: "Lite", pro: "Pro", studio: "Studio", label: "Label", admin: "Admin" };
+
 /**
  * Efek dasar (speed, pitch, volume, fade) ada di semua plan tapi RENTANGNYA bertingkat (lihat `ranges`).
  * Efek tambahan bertingkat:
  *   eq        — bass & treble (Pro)
  *   reverb    — gema ruang, untuk preset Slowed + Reverb (Pro)
  *   spatial8d — audio 8D berputar (Studio)
- *   master    — Mode Master: mastering adaptif per lagu (KHUSUS admin; UI menyembunyikannya dari plan lain)
+ *   master    — Mode Master: mastering adaptif per lagu (Label & admin; UI menyembunyikannya dari plan lain)
  */
 export const EFFECT_IDS = ["eq", "reverb", "spatial8d", "master"] as const;
 export type EffectId = (typeof EFFECT_IDS)[number];
@@ -67,7 +74,7 @@ export interface PlanLimits {
   library: LibraryLevel;
   /** antrean server didahulukan */
   priority: boolean;
-  /** Video album (chapter) otomatis dipecah per lagu saat link ditambahkan — khusus admin (UI tidak menampilkannya ke plan lain) */
+  /** Video album (chapter) otomatis dipecah per lagu saat link ditambahkan — Studio, Label & admin */
   albumSplit: boolean;
   /** Alat gambar (Hapus background & Upscale, diproses di perangkat): sisi terpanjang hasil maksimal (px) */
   imageMaxSide: number;
@@ -77,16 +84,17 @@ export interface PlanLimits {
   imageBg: "basic" | "full";
   /**
    * Kualitas AI gambar: standard = model int8 · pro = model presisi penuh + inferensi ganda (cermin) + guided filter
-   * di tepi (hapus background) & tile ganda (upscale) — khusus admin
+   * di tepi (hapus background) & tile ganda (upscale) — Studio, Label & admin
    */
   imageAi: "standard" | "pro";
   /** Skybox: ukuran sisi maksimal (px) */
   skyboxMaxFace: number;
 }
 
-// Free < Pro < Studio tetap terasa beda tiap baris; Admin JAUH di atas Studio (±2–4× tiap batas, token &
-// upload massal tanpa batas) — khusus admin aplikasi, tidak dijual.
-// Preset populer tetap di plan yang sama: Nightcore & Slowed (Free), Sped Up / Slowed + Reverb / Bass Boost (Pro), 8D (Studio).
+// Free < Lite < Pro < Studio < Label — tiap tingkat terasa beda di token, durasi, playlist & upload massal.
+// Lite: EQ & reverb · Pro: 8D, lossless, prioritas · Studio: pecah album, AI gambar presisi penuh, Skybox 4K ·
+// Label: Mode Master, 2 jam, upload massal tanpa batas. Admin tetap paling atas — tidak dijual.
+// Preset: Nightcore & Slowed (Free), Sped Up / Slowed + Reverb / Bass Boost (Lite), 8D (Pro).
 export const PLANS: Record<PlanId, PlanLimits> = {
   free: {
     id: "free",
@@ -111,8 +119,8 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     imageAi: "standard",
     skyboxMaxFace: 2048,
   },
-  pro: {
-    id: "pro",
+  lite: {
+    id: "lite",
     tokens: 25,
     maxDurationSec: 15 * 60,
     playlistMax: 20,
@@ -134,8 +142,8 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     imageAi: "standard",
     skyboxMaxFace: 2048,
   },
-  studio: {
-    id: "studio",
+  pro: {
+    id: "pro",
     tokens: 60,
     maxDurationSec: 30 * 60,
     playlistMax: 50,
@@ -156,6 +164,52 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     imageBg: "full",
     imageAi: "standard",
     skyboxMaxFace: 2048,
+  },
+  studio: {
+    id: "studio",
+    tokens: 150,
+    maxDurationSec: 60 * 60,
+    playlistMax: 100,
+    parallel: 4,
+    maxBitrate: 320,
+    formats: ["mp3", "ogg", "m4a", "wav", "flac"],
+    effects: ["eq", "reverb", "spatial8d"],
+    ranges: { speed: [0.5, 1.8], pitch: 10, volume: 15, fade: 12, bass: [-8, 16], treble: [-8, 12], reverb: 80 },
+    smartCompress: "max",
+    fileTtlHours: 48,
+    historyMax: 600,
+    bulkRoblox: 40,
+    library: "full",
+    priority: true,
+    albumSplit: true,
+    imageMaxSide: 4096,
+    upscaleScales: [2, 4],
+    imageBg: "full",
+    imageAi: "pro",
+    skyboxMaxFace: 4096,
+  },
+  label: {
+    id: "label",
+    tokens: 400,
+    maxDurationSec: 2 * 60 * 60,
+    playlistMax: 200,
+    parallel: 5,
+    maxBitrate: 320,
+    formats: ["mp3", "ogg", "m4a", "wav", "flac"],
+    effects: ["eq", "reverb", "spatial8d", "master"],
+    ranges: { speed: [0.5, 2], pitch: 12, volume: 20, fade: 15, bass: [-10, 20], treble: [-10, 15], reverb: 100 },
+    smartCompress: "max",
+    fileTtlHours: 72,
+    historyMax: 1000,
+    bulkRoblox: null,
+    library: "full",
+    priority: true,
+    albumSplit: true,
+    imageMaxSide: 6144,
+    upscaleScales: [2, 4],
+    imageBg: "full",
+    imageAi: "pro",
+    skyboxMaxFace: 4096,
   },
   // Semua fitur terbuka; durasi = batas keras server (MAX_DURATION_SEC tetap jadi plafon, lihat planCap)
   admin: {
@@ -207,16 +261,16 @@ export const PLAN_CAP = {
 };
 
 /** Plan publik termurah yang memenuhi syarat (untuk label kunci "Pro" / "Studio") */
-export const cheapestPlan = (test: (p: PlanLimits) => boolean): PublicPlanId => PLAN_IDS.find((id) => test(PLANS[id])) ?? "studio";
+export const cheapestPlan = (test: (p: PlanLimits) => boolean): PublicPlanId => PLAN_IDS.find((id) => test(PLANS[id])) ?? "label";
 
-/** Plan tanpa tingkat di atasnya untuk user (Studio) atau admin — tidak perlu ajakan upgrade */
-export const isTopPlan = (id: PlanId) => id === "studio" || id === ADMIN_PLAN;
+/** Plan tanpa tingkat di atasnya untuk user (Label) atau admin — tidak perlu ajakan upgrade */
+export const isTopPlan = (id: PlanId) => id === "label" || id === ADMIN_PLAN;
 
 // ---------- Harga (Rupiah, dibayar via QRIS) ----------
 
 /** Harga per bulan; free = 0 (tidak bisa dibeli) */
-export const PLAN_PRICE: Record<PublicPlanId, number> = { free: 0, pro: 15_000, studio: 35_000 };
-export const PAID_PLANS = ["pro", "studio"] as const satisfies readonly PublicPlanId[];
+export const PLAN_PRICE: Record<PublicPlanId, number> = { free: 0, lite: 15_000, pro: 35_000, studio: 75_000, label: 150_000 };
+export const PAID_PLANS = ["lite", "pro", "studio", "label"] as const satisfies readonly PublicPlanId[];
 export type PaidPlanId = (typeof PAID_PLANS)[number];
 
 /** Pilihan durasi berlangganan + diskon */

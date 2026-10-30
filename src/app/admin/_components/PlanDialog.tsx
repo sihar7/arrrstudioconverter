@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Segmented from "@/components/ui/Segmented";
 import Field, { Input } from "@/components/ui/Field";
 import { useToast } from "@/hooks/useToast";
-import { PLAN_IDS, type PlanId, type PublicPlanId } from "@/lib/schemas/plans";
+import { PLAN_IDS, type PlanId, type PublicPlanId, PLAN_NAMES } from "@/lib/schemas/plans";
 import { usePlans } from "@/hooks/usePlans";
 import type { AdminUser } from "@/type/admin";
 import { setUserPlan } from "../_service/admin.service";
@@ -26,7 +26,7 @@ type Duration = (typeof DURATIONS)[number]["value"];
 
 // Label semua plan (untuk "Plan sekarang"); pilihan yang bisa diberikan hanya PLAN_IDS publik —
 // plan "admin" otomatis untuk admin aplikasi
-const PLAN_LABEL: Record<PlanId, string> = { free: "Free", pro: "Pro", studio: "Studio", admin: "Admin" };
+const PLAN_LABEL: Record<PlanId, string> = PLAN_NAMES;
 
 /** Atur plan user secara manual (hadiah, kompensasi, kerja sama) — tercatat di log audit */
 export default function PlanDialog({ user, onClose, onSaved }: { user: AdminUser | null; onClose: () => void; onSaved: () => void }) {

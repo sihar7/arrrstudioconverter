@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { Check, Link as LinkIcon } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { SfWaveform } from "@/components/icons/SfIcons";
-import AppIcon, { type IosTone } from "@/components/ui/AppIcon";
+import AppIcon from "@/components/ui/AppIcon";
 // Waveform cermin deterministik (tanpa random → render server & client sama)
 const BARS = Array.from({ length: 132 }, (_, i) => {
   const env = 0.45 + 0.55 * Math.sin((i / 131) * Math.PI);
@@ -28,23 +28,24 @@ function Wave({ className }: { className?: string }) {
   );
 }
 
-const RING_TONES: IosTone[] = ["orange", "blue", "pink", "purple"];
+// Monokrom silver (rombak 2026-10-31): cincin dibedakan label & nilai, bukan warna
+const RING_TONES = ["var(--accent-strong)", "var(--accent)", "var(--p-silver-60)", "var(--accent)"];
 const RR = 26;
 const RC = 2 * Math.PI * RR;
 
 /** Cincin gauge ala Apple Watch (pengganti kenop): arc terisi sesuai nilai, animasi isi saat muncul */
-function Ring({ label, value, turn, tone }: { label: string; value: string; turn: number; tone: IosTone }) {
+function Ring({ label, value, turn, tone }: { label: string; value: string; turn: number; tone: string }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="relative grid size-[68px] place-items-center">
         <svg viewBox="0 0 64 64" className="absolute inset-0 size-full -rotate-90">
-          <circle cx="32" cy="32" r={RR} fill="none" stroke={`var(--ios-${tone})`} strokeOpacity="0.18" strokeWidth="7" />
+          <circle cx="32" cy="32" r={RR} fill="none" stroke={tone} strokeOpacity="0.14" strokeWidth="7" />
           <circle
             cx="32"
             cy="32"
             r={RR}
             fill="none"
-            stroke={`var(--ios-${tone})`}
+            stroke={tone}
             strokeWidth="7"
             strokeLinecap="round"
             strokeDasharray={RC}
@@ -76,7 +77,7 @@ export default function Console() {
           </AppIcon>
           <span className="text-[15px] font-semibold tracking-[-0.01em]">ARRR Converter</span>
         </span>
-        <span className="flex items-center gap-2 rounded-full bg-[var(--ios-green)]/15 px-2.5 py-1 text-[12px] font-semibold text-[var(--ios-green)]">
+        <span className="flex items-center gap-2 rounded-full bg-ok/15 px-2.5 py-1 text-[12px] font-semibold text-ok">
           <span className="relative flex size-1.5">
             <span className="absolute inset-0 animate-ping rounded-full bg-current opacity-60" />
             <span className="size-1.5 rounded-full bg-current" />
@@ -91,7 +92,7 @@ export default function Console() {
           <div className="flex h-12 items-center gap-3 rounded-full bg-fg/[0.06] pl-4 pr-1.5">
             <LinkIcon width={16} height={16} className="shrink-0 text-fg-3" />
             <span className="truncate text-[14px] text-fg-2">{m.url}</span>
-            <span className="ml-auto hidden h-9 items-center rounded-full bg-accent px-4 text-[14px] font-semibold text-on-accent sm:flex">Convert</span>
+            <span className="ml-auto hidden h-9 items-center rounded-full bg-accent bg-[image:var(--sheen)] px-4 font-mono text-[13px] font-medium text-on-accent sm:flex">Convert</span>
           </div>
 
           {/* Trek + waveform */}
@@ -112,7 +113,7 @@ export default function Console() {
                 <Wave className="size-full fill-[var(--fg)]" />
               </div>
               <div className="console-head absolute inset-0">
-                <span className="absolute inset-y-0 left-0 w-0.5 rounded-full bg-[var(--ios-pink)]" />
+                <span className="absolute inset-y-0 left-0 w-0.5 rounded-full bg-accent-strong shadow-[0_0_10px_rgb(243_244_246/0.6)]" />
               </div>
             </div>
           </div>
@@ -130,7 +131,7 @@ export default function Console() {
           <p className="text-[13px] font-semibold text-fg-3">{m.output}</p>
           <div>
             <p className="flex items-center gap-2.5 text-[17px] font-semibold">
-              <span className="grid size-6 place-items-center rounded-full bg-[var(--ios-green)] text-white">
+              <span className="grid size-6 place-items-center rounded-full bg-ok text-bg">
                 <Check width={15} height={15} strokeWidth={2.6} />
               </span>
               {m.uploaded}
@@ -145,7 +146,7 @@ export default function Console() {
             ].map(([k, v], i) => (
               <div key={k} className="flex items-center justify-between gap-3 border-t border-[var(--hairline)] px-3.5 py-2.5 first:border-t-0">
                 <dt className="text-fg-2">{k}</dt>
-                <dd className={i === 1 ? "font-semibold text-[var(--ios-orange)]" : i === 2 ? "font-semibold text-[var(--ios-green)]" : "font-mono text-[13px] text-fg-2"}>{v}</dd>
+                <dd className={i === 1 ? "font-semibold text-warn" : i === 2 ? "font-semibold text-ok" : "font-mono text-[13px] text-fg-2"}>{v}</dd>
               </div>
             ))}
           </dl>

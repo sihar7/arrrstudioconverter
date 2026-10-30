@@ -1,5 +1,15 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "node:fs";
 import Url from "./src/Url/Url";
+
+// Versi app mobile (mobile/pubspec.yaml) → link APK/IPA di halaman Download menunjuk rilis tag mobile-v<versi>
+const mobileVersion = (() => {
+  try {
+    return readFileSync("mobile/pubspec.yaml", "utf8").match(/^version:\s*([^+\s]+)/m)?.[1] ?? "";
+  } catch {
+    return "";
+  }
+})();
 
 const dev = process.env.NODE_ENV !== "production";
 // Semua proses server ada di backend (ARRSTUDIOCONVERTERBE); /api/* di-proxy ke sana → cookie tetap milik domain web
@@ -44,7 +54,10 @@ const nextConfig: NextConfig = {
   ...(Url.basePath ? { basePath: Url.basePath } : {}),
   poweredByHeader: false,
   // Penanda build: dibaked ke bundle klien & ke /build-id → tab yang masih terbuka tahu ada deploy baru (UpdateWatcher)
-  env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()) },
+  env: {
+    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()),
+    NEXT_PUBLIC_MOBILE_VERSION: mobileVersion,
+  },
   async redirects() {
     // Domain lama (*.vercel.app produksi) → domain publik. Server hanya menerima request dari APP_URL
     // (cek lintas situs), jadi pengunjung lama dialihkan supaya tidak kena "Permintaan lintas situs ditolak".

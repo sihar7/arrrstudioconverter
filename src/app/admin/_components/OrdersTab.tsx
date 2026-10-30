@@ -1,5 +1,6 @@
 "use client";
 
+import { PLAN_NAMES } from "@/lib/schemas/plans";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Cart, Check, Copy, MediaImage, OpenNewWindow, Trash, Xmark } from "iconoir-react";
@@ -36,7 +37,7 @@ const FILTERS: { value: OrderFilter; label: string }[] = [
   { value: "all", label: "Semua" },
 ];
 
-const PLAN_NAME = { pro: "Pro", studio: "Studio" } as const;
+const PLAN_NAME = PLAN_NAMES;
 
 /**
  * Konfirmasi pembayaran QRIS: cocokkan nominal (sudah termasuk kode unik) dengan mutasi e-wallet / rekening,
