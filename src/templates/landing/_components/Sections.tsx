@@ -215,7 +215,7 @@ export function Steps() {
 }
 
 const NO = "—";
-const COLS = ["guest", "free", "lite", "pro", "studio", "label"] as const;
+const COLS = ["guest", "free", "lite", "pro", "studio", "ultimate"] as const;
 type Col = (typeof COLS)[number];
 /** Ubin ikon kepala kolom paket (warna sistem iOS) */
 const COL_ICON: Record<Col, { tone: IosTone; icon: SfIcon }> = {
@@ -224,11 +224,11 @@ const COL_ICON: Record<Col, { tone: IosTone; icon: SfIcon }> = {
   lite: { tone: "teal", icon: SfPlayRect },
   pro: { tone: "orange", icon: SfCrown },
   studio: { tone: "purple", icon: SfStack },
-  label: { tone: "pink", icon: SfCube },
+  ultimate: { tone: "pink", icon: SfCube },
 };
 
 /**
- * Paket & harga — Tamu · Free · Lite · Pro · Studio · Label. Semua angka diturunkan dari PLANS (sama dengan batas server &
+ * Paket & harga — Tamu · Free · Lite · Pro · Studio · Ultimate. Semua angka diturunkan dari PLANS (sama dengan batas server &
  * halaman Harga); kolom Pro ditandai aksen sebagai pilihan utama. Tamu = batas free tanpa login.
  */
 export function Compare() {

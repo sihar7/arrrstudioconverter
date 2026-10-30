@@ -53,7 +53,7 @@ const en: Dictionary = {
       history: "Converts & uploads",
       settings: "Roblox API key & preferences",
       obfuscator: "10-layer Luau script protection",
-      pricing: "Plans from Free to Label",
+      pricing: "Plans from Free to Ultimate",
       skybox: "Panorama into Roblox Sky faces",
       spoof: "Download & re-upload animations/audio as new IDs",
       upload: "MP3/OGG/WAV files straight to Roblox",
@@ -77,13 +77,13 @@ const en: Dictionary = {
     m: "{m}m",
   },
   plan: {
-    names: { free: "Free", lite: "Lite", pro: "Pro", studio: "Studio", label: "Label", admin: "Admin" },
+    names: { free: "Free", lite: "Lite", pro: "Pro", studio: "Studio", ultimate: "Ultimate", admin: "Admin" },
     taglines: {
       free: "For trying things out & light use",
       lite: "Essential effects for new creators",
       pro: "For creators who convert regularly",
       studio: "For studios & game developers",
-      label: "For labels, teams & big creators",
+      ultimate: "For teams & big creators",
     },
     badge: "{plan} plan",
     until: "active until {date}",
@@ -317,7 +317,7 @@ const en: Dictionary = {
     faqEyebrow: "FAQ",
     faqTitle: "Frequently asked.",
     faq: [
-      { q: "Is it free?", a: "Yes. It runs on tokens: 1 token = 5 minutes of audio, fully refilled every 5 hours. Guests get 3 tokens; sign in with Discord for the Free plan (5 tokens, Roblox publishing & history). Need more? Upgrade to Lite, Pro, Studio or Label (from Rp15,000/month) via QRIS on the Pricing page." },
+      { q: "Is it free?", a: "Yes. It runs on tokens: 1 token = 5 minutes of audio, fully refilled every 5 hours. Guests get 3 tokens; sign in with Discord for the Free plan (5 tokens, Roblox publishing & history). Need more? Upgrade to Lite, Pro, Studio or Ultimate (from Rp15,000/month) via QRIS on the Pricing page." },
       { q: "Why does it sound so clear?", a: "Audio is processed without back-and-forth resampling and encoded at high quality (up to 320 kbps depending on plan). For lossless, pick WAV or FLAC." },
       { q: "Which formats are supported?", a: "MP3, OGG, WAV, FLAC, and M4A. For Roblox uploads use MP3, OGG, WAV, or FLAC." },
       { q: "Is my Roblox API key safe?", a: "Yes. Your Open Cloud API key is used directly for the upload request and is never stored on our servers." },

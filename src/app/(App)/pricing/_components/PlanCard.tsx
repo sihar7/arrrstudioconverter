@@ -43,7 +43,8 @@ export default function PlanCard({ id, price, billed, highlight, current, action
       </div>
       <p className="mt-2 text-[14px] leading-relaxed text-fg-2">{t.plan.taglines[id]}</p>
 
-      <div className="mt-7 flex items-baseline gap-1.5">{price}</div>
+      {/* flex-wrap: harga coret turun ke baris sendiri & "/bulan" ikut membungkus di kartu sempit (5 kolom) */}
+      <div className="mt-7 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">{price}</div>
       <p className="mt-2 min-h-5 text-[13px] text-fg-3">{billed}</p>
 
       <div className="mt-6">{action}</div>

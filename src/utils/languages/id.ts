@@ -52,7 +52,7 @@ const id = {
       history: "Hasil convert & upload",
       settings: "API key Roblox & preferensi",
       obfuscator: "Proteksi script Luau 10 lapis",
-      pricing: "Plan Free hingga Label",
+      pricing: "Plan Free hingga Ultimate",
       skybox: "Panorama jadi 6 sisi Sky Roblox",
       spoof: "Unduh & upload ulang animasi/audio jadi ID baru",
       upload: "File MP3/OGG/WAV langsung ke Roblox",
@@ -76,13 +76,13 @@ const id = {
     m: "{m} m",
   },
   plan: {
-    names: { free: "Free", lite: "Lite", pro: "Pro", studio: "Studio", label: "Label", admin: "Admin" },
+    names: { free: "Free", lite: "Lite", pro: "Pro", studio: "Studio", ultimate: "Ultimate", admin: "Admin" },
     taglines: {
       free: "Untuk coba-coba & kebutuhan ringan",
       lite: "Efek dasar untuk kreator pemula",
       pro: "Untuk kreator yang rutin convert",
       studio: "Untuk studio & developer game",
-      label: "Untuk label, tim & kreator besar",
+      ultimate: "Untuk tim & kreator besar",
     },
     badge: "Plan {plan}",
     until: "aktif s/d {date}",
@@ -316,7 +316,7 @@ const id = {
     faqEyebrow: "Pertanyaan umum",
     faqTitle: "Yang sering ditanyakan.",
     faq: [
-      { q: "Apakah gratis?", a: "Ya. Pakai token: 1 token = 5 menit audio dan terisi penuh lagi tiap 5 jam. Tamu dapat 3 token; masuk dengan Discord untuk plan Free (5 token, publikasi ke Roblox & riwayat). Butuh lebih? Upgrade ke Lite, Pro, Studio, atau Label (mulai Rp15.000/bulan) via QRIS di halaman Harga." },
+      { q: "Apakah gratis?", a: "Ya. Pakai token: 1 token = 5 menit audio dan terisi penuh lagi tiap 5 jam. Tamu dapat 3 token; masuk dengan Discord untuk plan Free (5 token, publikasi ke Roblox & riwayat). Butuh lebih? Upgrade ke Lite, Pro, Studio, atau Ultimate (mulai Rp15.000/bulan) via QRIS di halaman Harga." },
       { q: "Kenapa hasilnya terdengar jernih?", a: "Audio diproses tanpa resample bolak-balik dan di-encode dengan kualitas tinggi (hingga 320 kbps sesuai plan). Untuk lossless pilih WAV atau FLAC." },
       { q: "Format apa saja yang didukung?", a: "MP3, OGG, WAV, FLAC, dan M4A. Untuk upload ke Roblox gunakan MP3, OGG, WAV, atau FLAC." },
       { q: "Apakah API key Roblox saya aman?", a: "Ya. API key Open Cloud dipakai langsung untuk request upload dan tidak pernah disimpan di server kami." },

@@ -12,7 +12,7 @@ import { formatBytes } from "@/lib/utils";
 import { rupiah } from "@/lib/planFeatures";
 import { PAID_PLANS, PLAN_NAMES, PLAN_PRICE, type PaidPlanId, type PublicPlanId } from "@/lib/schemas/plans";
 
-// Warna legenda distribusi plan (urut Free → Label); tetap disertai nama plan, bukan warna saja
+// Warna legenda distribusi plan (urut Free → Ultimate); tetap disertai nama plan, bukan warna saja
 const PLAN_TONES = ["bg-fg-3/40", "bg-fg-3", "bg-accent/60", "bg-accent", "bg-fg"];
 import { getStats, revokeAdminSessions } from "../_service/admin.service";
 import { errorText, useAdminConfirm, useAdminData, useAuthGuard } from "../_hooks/useAdmin";

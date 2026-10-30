@@ -124,8 +124,8 @@ export default function PricingScreen() {
     return {
       node: (
         <>
-          {period.discount > 0 && <span className="text-[15px] tabular-nums text-fg-3 line-through">{rupiah(PLAN_PRICE[id])}</span>}
-          <span className="font-display text-[38px] font-bold leading-none tabular-nums tracking-[-0.035em]">{rupiah(monthly)}</span>
+          {period.discount > 0 && <span className="basis-full text-[14px] tabular-nums text-fg-3 line-through">{rupiah(PLAN_PRICE[id])}</span>}
+          <span className="font-display text-[38px] font-bold leading-none tabular-nums tracking-[-0.035em] 2xl:text-[27px]">{rupiah(monthly)}</span>
           <span className="text-[14px] text-fg-3">{t.pricing.perMonth}</span>
         </>
       ),
@@ -165,7 +165,7 @@ export default function PricingScreen() {
         <PlanCard
           id="free"
           current={plan.id === "free"}
-          price={<span className="font-display text-[38px] font-bold leading-none tracking-[-0.035em]">Rp0</span>}
+          price={<span className="font-display text-[38px] font-bold leading-none tracking-[-0.035em] 2xl:text-[27px]">Rp0</span>}
           billed={t.pricing.freeForever}
           action={
             <ButtonLink href="/converter" variant="subtle" className="w-full">
