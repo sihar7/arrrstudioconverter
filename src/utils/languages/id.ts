@@ -1175,6 +1175,13 @@ const id = {
     placeholder: "Cari lagu, artis, atau tempel link YouTube…",
     search: "Cari",
     chips: ["Lagu viral", "Phonk", "Lofi", "Slowed reverb", "Nightcore", "Musik Roblox"],
+    filter: "Filter",
+    filterReset: "Reset",
+    filters: {
+      duration: { label: "Durasi", options: { any: "Semua durasi", short: "< 4 mnt", medium: "4–20 mnt", long: "> 20 mnt" } },
+      upload: { label: "Tanggal upload", options: { any: "Kapan saja", hour: "1 jam", today: "Hari ini", week: "Minggu ini", month: "Bulan ini", year: "Tahun ini" } },
+      sort: { label: "Urutan", options: { relevance: "Relevan", views: "Paling populer" } },
+    },
     genre: "Genre",
     // [label, kata kunci pencarian]
     genres: [

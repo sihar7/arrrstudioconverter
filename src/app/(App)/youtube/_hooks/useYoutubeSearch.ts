@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { searchYoutube } from "../_service/youtube.service";
-import type { SearchVideo } from "../_types/youtube.type";
+import { DEFAULT_FILTERS, type SearchFilters, type SearchVideo } from "../_types/youtube.type";
 
 /** Pencarian YouTube + halaman berikutnya; permintaan lama dibatalkan saat kata kunci berganti */
 export function useYoutubeSearch() {
@@ -15,6 +15,9 @@ export function useYoutubeSearch() {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFiltersState] = useState<SearchFilters>(DEFAULT_FILTERS);
+  // Ref → search tetap stabil (dipakai listener palette) walau filter berganti
+  const filtersRef = useRef(filters);
   const ctrl = useRef<AbortController | null>(null);
 
   const fail = useCallback(
@@ -35,7 +38,7 @@ export function useYoutubeSearch() {
       setLoading(true);
       setError(null);
       try {
-        const res = await searchYoutube(term, undefined, c.signal);
+        const res = await searchYoutube(term, filtersRef.current, undefined, c.signal);
         setItems(res.items);
         setNext(res.continuation);
       } catch (e) {
@@ -58,7 +61,7 @@ export function useYoutubeSearch() {
       setLoadingMore(true);
       setError(null);
       try {
-        const res = await searchYoutube("", next, c?.signal);
+        const res = await searchYoutube("", filtersRef.current, next, c?.signal);
         // Kata kunci berganti selama memuat → halaman lama dibuang
         if (ctrl.current !== c) return;
         const seen = new Set(items.map((v) => v.videoId));
@@ -75,5 +78,16 @@ export function useYoutubeSearch() {
     [next, loadingMore, loading, error, items, fail],
   );
 
-  return { query, items, hasMore: Boolean(next), loading, loadingMore, error, search, loadMore };
+  /** Ganti sebagian filter → kata kunci aktif dicari ulang */
+  const setFilters = useCallback(
+    (patch: Partial<SearchFilters>) => {
+      const nextFilters = { ...filtersRef.current, ...patch };
+      filtersRef.current = nextFilters;
+      setFiltersState(nextFilters);
+      if (query) void search(query);
+    },
+    [query, search],
+  );
+
+  return { query, items, hasMore: Boolean(next), loading, loadingMore, error, search, loadMore, filters, setFilters };
 }

@@ -11,7 +11,7 @@ import IconButton from "@/components/ui/IconButton";
 import Skeleton from "@/components/ui/Skeleton";
 import { useQuickAdd } from "../_hooks/useQuickAdd";
 import { useYoutubeSearch } from "../_hooks/useYoutubeSearch";
-import type { SearchVideo } from "../_types/youtube.type";
+import { DEFAULT_FILTERS, type SearchFilters, type SearchVideo } from "../_types/youtube.type";
 import { searchLink } from "../../converter/_utils/helpers";
 import { YT_SEARCH_EVENT } from "../../layout/desktop/nav";
 
@@ -23,7 +23,7 @@ import { YT_SEARCH_EVENT } from "../../layout/desktop/nav";
 export default function WebYoutube() {
   const { t, f } = useT();
   const y = t.youtube;
-  const { query, items, hasMore, loading, loadingMore, error, search, loadMore } = useYoutubeSearch();
+  const { query, items, hasMore, loading, loadingMore, error, search, loadMore, filters, setFilters } = useYoutubeSearch();
   const { add, addVideo, busy } = useQuickAdd();
   const [input, setInput] = useState("");
   const [playing, setPlaying] = useState<SearchVideo | null>(null);
@@ -115,6 +115,7 @@ export default function WebYoutube() {
             <Chip key={label} label={label} on={q === query} onClick={() => pick(q)} />
           ))}
         </div>
+        <FilterBar filters={filters} onChange={setFilters} />
       </div>
 
       {playing && (
@@ -213,6 +214,38 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
     >
       {label}
     </button>
+  );
+}
+
+type FilterKey = keyof SearchFilters;
+const FILTER_KEYS: FilterKey[] = ["duration", "upload", "sort"];
+
+/** Baris filter: durasi · tanggal upload · urutan. Grup dipisah garis tipis; "Reset" muncul bila ada filter aktif */
+function FilterBar({ filters, onChange }: { filters: SearchFilters; onChange: (patch: Partial<SearchFilters>) => void }) {
+  const { t } = useT();
+  const y = t.youtube;
+  const active = FILTER_KEYS.some((k) => filters[k] !== DEFAULT_FILTERS[k]);
+  return (
+    <div role="group" aria-label={y.filter} className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <span className="caps mr-1 text-[10.5px] text-fg-3">{y.filter}</span>
+      {FILTER_KEYS.map((k, i) => (
+        <div key={k} role="group" aria-label={y.filters[k].label} className="flex flex-wrap items-center gap-2">
+          {i > 0 && <span aria-hidden="true" className="mr-1 h-4 w-px bg-line" />}
+          {(Object.entries(y.filters[k].options) as [string, string][]).map(([value, label]) => (
+            <Chip key={value} label={label} on={filters[k] === value} onClick={() => onChange({ [k]: value } as Partial<SearchFilters>)} />
+          ))}
+        </div>
+      ))}
+      {active && (
+        <button
+          type="button"
+          onClick={() => onChange(DEFAULT_FILTERS)}
+          className="ios-press ml-1 cursor-pointer text-[12.5px] font-medium text-fg-3 underline-offset-4 hover:text-fg hover:underline"
+        >
+          {y.filterReset}
+        </button>
+      )}
+    </div>
   );
 }
 
