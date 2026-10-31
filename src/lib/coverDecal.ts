@@ -58,8 +58,8 @@ export async function uploadCoverDecal(
 }
 
 /** Simpan sebagian data cover / artis ke entri riwayat (merge di server) */
-export const saveHistoryMeta = (historyId: string, meta: { cover?: Partial<HistoryCover>; artist?: string | null }) =>
-  apiFetch<{ cover: HistoryCover | null; artist: string | null }>(`/api/history/${historyId}`, { method: "PATCH", json: meta });
+export const saveHistoryMeta = (historyId: string, meta: { cover?: Partial<HistoryCover>; artist?: string | null; genre?: string | null }) =>
+  apiFetch<{ cover: HistoryCover | null; artist: string | null; genre: string | null }>(`/api/history/${historyId}`, { method: "PATCH", json: meta });
 
 export const saveHistoryCover = (historyId: string, cover: Partial<HistoryCover>) => saveHistoryMeta(historyId, { cover });
 

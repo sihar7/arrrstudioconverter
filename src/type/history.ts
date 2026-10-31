@@ -50,6 +50,8 @@ export interface HistoryEntry {
   cover?: HistoryCover | null;
   /** Nama artis dari katalog musik; null = sudah dicari tapi tidak ketemu, tidak ada = belum dicari */
   artist?: string | null;
+  /** Kategori lagu (lib/genre: "Jawa", "RnB", …); null = sudah dicari tapi tidak ketemu, tidak ada = belum dicari */
+  genre?: string | null;
   /** "file" = diupload dari perangkat user (videoId & thumbnail kosong); tidak ada = hasil convert YouTube */
   source?: "file";
 }

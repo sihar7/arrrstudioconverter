@@ -1,7 +1,9 @@
 // Ekspor daftar asset ID (Audio saya & Riwayat): TXT / CSV / JSON / Lua.
 
+import { guessGenre } from "./genre";
+
 export type ExportFormat = "txt" | "csv" | "json" | "lua";
-/** full = nama + artis + ID + ID cover (Riwayat) */
+/** full = nama + artis + kategori + ID + ID cover (Riwayat); both = nama + kategori + ID */
 export type ExportFields = "full" | "both" | "id";
 export const EXPORT_FORMATS: ExportFormat[] = ["txt", "csv", "json", "lua"];
 
@@ -12,6 +14,8 @@ export interface ExportRow {
   coverId?: string | null;
   /** Nama artis (Riwayat); null = tidak diketahui */
   artist?: string | null;
+  /** Kategori lagu ("Jawa", "RnB", …); tidak ada → ditebak dari nama + artis */
+  genre?: string | null;
 }
 
 const MIME: Record<ExportFormat, string> = {
@@ -27,34 +31,42 @@ const luaStr = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').
 
 /** Susun isi file ekspor dari daftar aset (nama kosong → fallback) */
 export function buildExport(assets: ExportRow[], format: ExportFormat, fields: ExportFields, untitled: string) {
-  const rows = assets.map((a) => ({ id: a.assetId, name: a.name ?? untitled, cover: a.coverId ?? null, artist: a.artist ?? null }));
+  const rows = assets.map((a) => ({
+    id: a.assetId,
+    name: a.name ?? untitled,
+    cover: a.coverId ?? null,
+    artist: a.artist ?? null,
+    genre: a.genre !== undefined ? a.genre : guessGenre(a.name, a.artist),
+  }));
+  const cell = (v: string | null) => (v ? csvCell(v) : "");
+  const lua = (v: string | null) => (v ? luaStr(v) : "nil");
   if (fields === "full") {
     switch (format) {
       case "csv":
         return [
-          "name,artist,asset_id,cover_id",
-          ...rows.map((r) => `${csvCell(r.name)},${r.artist ? csvCell(r.artist) : ""},${r.id},${r.cover ?? ""}`),
+          "name,artist,genre,asset_id,cover_id",
+          ...rows.map((r) => `${csvCell(r.name)},${cell(r.artist)},${cell(r.genre)},${r.id},${r.cover ?? ""}`),
         ].join("\r\n");
       case "json":
-        return JSON.stringify(rows.map((r) => ({ name: r.name, artist: r.artist, assetId: r.id, coverId: r.cover })), null, 2);
+        return JSON.stringify(rows.map((r) => ({ name: r.name, artist: r.artist, genre: r.genre, assetId: r.id, coverId: r.cover })), null, 2);
       case "lua":
         return `return {\n${rows
-          .map((r) => `\t{ Name = ${luaStr(r.name)}, Artist = ${r.artist ? luaStr(r.artist) : "nil"}, Id = ${r.id}, Cover = ${r.cover ?? "nil"} },`)
+          .map((r) => `\t{ Name = ${luaStr(r.name)}, Artist = ${lua(r.artist)}, Genre = ${lua(r.genre)}, Id = ${r.id}, Cover = ${r.cover ?? "nil"} },`)
           .join("\n")}\n}`;
       default:
-        return rows.map((r) => [r.name, r.artist, r.id, r.cover].filter(Boolean).join(" - ")).join("\n");
+        return rows.map((r) => [r.name, r.artist, r.genre && `[${r.genre}]`, r.id, r.cover].filter(Boolean).join(" - ")).join("\n");
     }
   }
   const both = fields === "both";
   switch (format) {
     case "csv":
-      return [both ? "name,asset_id" : "asset_id", ...rows.map((r) => (both ? `${csvCell(r.name)},${r.id}` : r.id))].join("\r\n");
+      return [both ? "name,genre,asset_id" : "asset_id", ...rows.map((r) => (both ? `${csvCell(r.name)},${cell(r.genre)},${r.id}` : r.id))].join("\r\n");
     case "json":
-      return JSON.stringify(both ? rows.map((r) => ({ name: r.name, assetId: r.id })) : rows.map((r) => r.id), null, 2);
+      return JSON.stringify(both ? rows.map((r) => ({ name: r.name, genre: r.genre, assetId: r.id })) : rows.map((r) => r.id), null, 2);
     case "lua":
-      return `return {\n${rows.map((r) => (both ? `\t{ Name = ${luaStr(r.name)}, Id = ${r.id} },` : `\t${r.id},`)).join("\n")}\n}`;
+      return `return {\n${rows.map((r) => (both ? `\t{ Name = ${luaStr(r.name)}, Genre = ${lua(r.genre)}, Id = ${r.id} },` : `\t${r.id},`)).join("\n")}\n}`;
     default:
-      return rows.map((r) => (both ? `${r.name} - ${r.id}` : r.id)).join("\n");
+      return rows.map((r) => (both ? [r.name, r.genre && `[${r.genre}]`, r.id].filter(Boolean).join(" - ") : r.id)).join("\n");
   }
 }
 

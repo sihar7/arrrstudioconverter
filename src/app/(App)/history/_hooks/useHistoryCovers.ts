@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { baseApi } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
 import { findMeta } from "@/lib/trackMeta";
+import { guessGenre, resolveGenre } from "@/lib/genre";
 import { saveHistoryCover, saveHistoryMeta } from "@/lib/coverDecal";
 import { fetchTextureId } from "../../skybox/_service/skybox.service";
 import type { HistoryItem } from "@/type/history";
@@ -15,8 +16,9 @@ const LOOKUP_BATCH = 20;
 const tried = new Set<string>();
 
 /**
- * Cover & artis untuk Riwayat. Entri lama (sebelum cover/artis disimpan) dicari sekali di katalog musik lalu disimpan
- * ke server, dan ID gambar decal yang belum terbaca saat upload dilengkapi. Hasil: cover & artis per historyId.
+ * Cover, artis & kategori untuk Riwayat. Entri lama (sebelum cover/artis/kategori disimpan) dicari sekali di katalog
+ * musik lalu disimpan ke server, dan ID gambar decal yang belum terbaca saat upload dilengkapi. Kategori yang sudah
+ * jelas dari judul (mis. "koplo" → Jawa) disimpan tanpa request katalog.
  */
 export function useHistoryCovers(items: HistoryItem[]) {
   const { lang } = useT();
@@ -24,17 +26,39 @@ export function useHistoryCovers(items: HistoryItem[]) {
   const apiKey = useAppSelector((s) => s.roblox.apiKey);
   const [found, setFound] = useState<Record<string, string | null>>({});
   const [artists, setArtists] = useState<Record<string, string | null>>({});
+  const [genres, setGenres] = useState<Record<string, string | null>>({});
+
+  // Kategori dari judul (+ artis tersimpan) → langsung simpan, tanpa katalog. Sisanya ikut pencarian katalog di bawah.
+  const quickGenre = useMemo(
+    () =>
+      items
+        .filter((i) => i.genre === undefined && i.cover && i.artist !== undefined && !tried.has(`g:${i.id}`))
+        .map((i) => `${i.id}\t${guessGenre(i.title, i.artist) ?? ""}`)
+        .filter((l) => !l.endsWith("\t"))
+        .join("\n"),
+    [items],
+  );
 
   // String primitif → efek jalan ulang hanya saat daftar yang perlu dilengkapi berubah
   const missing = useMemo(
     () =>
       items
-        .filter((i) => (!i.cover || i.artist === undefined) && !tried.has(i.id))
+        .filter((i) => (!i.cover || i.artist === undefined || (i.genre === undefined && !guessGenre(i.title, i.artist))) && !tried.has(i.id))
         .slice(0, LOOKUP_BATCH)
-        .map((i) => `${i.id}\t${i.title}\t${i.cover ? 1 : 0}`)
+        .map((i) => `${i.id}\t${i.title}\t${i.cover ? 1 : 0}\t${i.genre === undefined ? 1 : 0}`)
         .join("\n"),
     [items],
   );
+
+  useEffect(() => {
+    if (!quickGenre) return;
+    for (const line of quickGenre.split("\n")) {
+      const [id, genre] = line.split("\t");
+      tried.add(`g:${id}`);
+      setGenres((m) => ({ ...m, [id]: genre }));
+      void saveHistoryMeta(id, { genre }).catch(() => tried.delete(`g:${id}`));
+    }
+  }, [quickGenre]);
   const noImage = useMemo(
     () =>
       apiKey
@@ -52,7 +76,7 @@ export function useHistoryCovers(items: HistoryItem[]) {
     void (async () => {
       // Berurutan supaya tidak membanjiri katalog
       for (const line of missing.split("\n")) {
-        const [id, title, hasCover] = line.split("\t");
+        const [id, title, hasCover, needGenre] = line.split("\t");
         const meta = await findMeta(title, lang);
         if (!alive) return;
         // Katalog gagal dihubungi (mis. kena batas) → berhenti, coba lagi kunjungan berikutnya
@@ -60,13 +84,15 @@ export function useHistoryCovers(items: HistoryItem[]) {
         tried.add(id);
         const artist = meta?.artist ?? null;
         setArtists((m) => ({ ...m, [id]: artist }));
+        const genre = needGenre === "1" ? resolveGenre(title, artist, meta?.genre) : undefined;
+        if (genre !== undefined) setGenres((m) => ({ ...m, [id]: genre }));
         // Cover yang sudah ada (mis. hasil upload) tidak ditimpa
         if (hasCover === "1") {
-          void saveHistoryMeta(id, { artist }).catch(() => tried.delete(id));
+          void saveHistoryMeta(id, { artist, genre }).catch(() => tried.delete(id));
         } else {
           const url = meta?.cover ?? null;
           setFound((m) => ({ ...m, [id]: url }));
-          void saveHistoryMeta(id, { cover: { url }, artist }).catch(() => tried.delete(id));
+          void saveHistoryMeta(id, { cover: { url }, artist, genre }).catch(() => tried.delete(id));
         }
       }
     })();
@@ -94,7 +120,7 @@ export function useHistoryCovers(items: HistoryItem[]) {
     };
   }, [noImage, apiKey, dispatch]);
 
-  return { covers: found, artists };
+  return { covers: found, artists, genres };
 }
 
 /** URL cover album sebuah entri (tersimpan atau baru ditemukan); null = pakai thumbnail video */
@@ -102,3 +128,7 @@ export const coverUrlOf = (item: HistoryItem, found: Record<string, string | nul
 
 /** Artis sebuah entri dari katalog (tersimpan atau baru ditemukan); null = tidak diketahui */
 export const artistOf = (item: HistoryItem, found: Record<string, string | null>) => item.artist ?? found[item.id] ?? null;
+
+/** Kategori sebuah entri (tersimpan / baru ditemukan / tebakan judul); null = tidak diketahui */
+export const genreOf = (item: HistoryItem, found: Record<string, string | null>, artist: string | null) =>
+  item.genre ?? found[item.id] ?? guessGenre(item.title, artist);

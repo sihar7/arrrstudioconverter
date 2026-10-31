@@ -9,6 +9,8 @@ export interface TrackMeta {
   album: string | null;
   /** URL cover kotak (iTunes 600×600); null = pakai thumbnail video */
   cover: string | null;
+  /** Genre mentah katalog (primaryGenreName, mis. "R&B/Soul") — dipetakan ke kategori di lib/genre */
+  genre?: string | null;
 }
 
 const ITUNES = "https://itunes.apple.com/search";
@@ -54,6 +56,7 @@ interface ItunesTrack {
   trackName: string;
   collectionName?: string;
   artworkUrl100?: string;
+  primaryGenreName?: string;
 }
 
 const cache = new Map<string, Promise<TrackMeta>>();
@@ -80,6 +83,7 @@ async function lookup(artist: string | null, song: string, author: string, count
     artist: t.artistName,
     album: t.collectionName?.replace(/\s+-\s+(single|ep)$/i, "") ?? null,
     cover: t.artworkUrl100 ? t.artworkUrl100.replace(/\/\d+x\d+bb\./, "/600x600bb.") : null,
+    genre: t.primaryGenreName ?? null,
   };
 }
 
