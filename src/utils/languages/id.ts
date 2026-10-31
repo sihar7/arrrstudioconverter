@@ -1178,8 +1178,8 @@ const id = {
     filter: "Filter",
     filterReset: "Reset",
     filters: {
-      duration: { label: "Durasi", options: { any: "Semua durasi", short: "< 4 mnt", medium: "4–20 mnt", long: "> 20 mnt" } },
-      upload: { label: "Tanggal upload", options: { any: "Kapan saja", hour: "1 jam", today: "Hari ini", week: "Minggu ini", month: "Bulan ini", year: "Tahun ini" } },
+      duration: { label: "Durasi", options: { any: "Semua", short: "Di bawah 4 menit", medium: "4–20 menit", long: "Di atas 20 menit" } },
+      upload: { label: "Upload", options: { any: "Kapan saja", hour: "1 jam terakhir", today: "Hari ini", week: "Minggu ini", month: "Bulan ini", year: "Tahun ini" } },
       sort: { label: "Urutan", options: { relevance: "Relevan", views: "Paling populer" } },
     },
     genre: "Genre",

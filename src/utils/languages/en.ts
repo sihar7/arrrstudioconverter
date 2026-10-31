@@ -1179,8 +1179,8 @@ const en: Dictionary = {
     filter: "Filter",
     filterReset: "Reset",
     filters: {
-      duration: { label: "Duration", options: { any: "Any length", short: "< 4 min", medium: "4–20 min", long: "> 20 min" } },
-      upload: { label: "Upload date", options: { any: "Any time", hour: "Last hour", today: "Today", week: "This week", month: "This month", year: "This year" } },
+      duration: { label: "Duration", options: { any: "Any", short: "Under 4 minutes", medium: "4–20 minutes", long: "Over 20 minutes" } },
+      upload: { label: "Uploaded", options: { any: "Any time", hour: "Last hour", today: "Today", week: "This week", month: "This month", year: "This year" } },
       sort: { label: "Sort", options: { relevance: "Relevance", views: "Most popular" } },
     },
     genre: "Genre",
