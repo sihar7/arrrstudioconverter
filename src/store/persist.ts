@@ -6,7 +6,7 @@ const KEY = "arrc_state_v1";
 
 export interface PersistedState {
   preferences?: Partial<RootState["preferences"]>;
-  converter?: Partial<Pick<RootState["converter"], "options" | "preset" | "autoUpload" | "autoPermission" | "autoConvert" | "customPresets">>;
+  converter?: Partial<Pick<RootState["converter"], "options" | "preset" | "autoUpload" | "autoPermission" | "autoConvert" | "customPresets" | "robloxMode">>;
   roblox?: Partial<RootState["roblox"]>;
 }
 
@@ -30,6 +30,7 @@ export function saveState(s: RootState) {
       autoPermission: s.converter.autoPermission,
       autoConvert: s.converter.autoConvert,
       customPresets: s.converter.customPresets,
+      robloxMode: s.converter.robloxMode,
     },
     roblox: { ...robloxRest, remember, apiKey: remember ? apiKey : "" },
   };

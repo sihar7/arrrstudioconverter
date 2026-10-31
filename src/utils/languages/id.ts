@@ -534,6 +534,7 @@ const id = {
     },
     presetNames: {
       normal: "Normal",
+      robloxBypass: "Roblox Bypass",
       nightcore: "Nightcore",
       spedUp: "Sped Up",
       slowed: "Slowed",
@@ -555,6 +556,7 @@ const id = {
     tabs: { preset: "Preset", output: "Output", tempo: "Tempo", effects: "Efek", trim: "Trim", roblox: "Roblox" },
     presetDesc: {
       normal: "Tanpa efek",
+      robloxBypass: "1.25× · balik asli di game",
       nightcore: "1.25× · nada naik",
       spedUp: "1.3× · nada asli",
       slowed: "0.85× · nada turun",
@@ -619,6 +621,11 @@ const id = {
     robloxPitchFix: "Nada masih bergeser {pitch}. Tambahkan PitchShiftSoundEffect di dalam Sound dengan Octave = {octave}.",
     robloxPitchFixOut: "Nada bergeser {pitch} — di luar jangkauan PitchShiftSoundEffect (Octave 0.5–2). Matikan “Jaga nada asli” supaya bisa kembali sempurna.",
     robloxPitchTip: "Tips: matikan “Jaga nada asli” bila ingin dibalik sempurna hanya dengan PlaybackSpeed.",
+    robloxScript: "Salin script Command Bar",
+    robloxScriptHint: "Pilih Sound hasil upload di Explorer Studio, tempel script di Command Bar → Enter. PlaybackSpeed terpasang otomatis.",
+    robloxScriptCopied: "Script disalin — tempel di Command Bar Studio",
+    preservePitchRestore: "Mode “Balik ke asli” aktif: nada otomatis ikut tempo, supaya PlaybackSpeed di game mengembalikan lagu persis seperti aslinya. “Jaga nada asli” hanya untuk lagu yang memang mau diputar cepat/lambat.",
+    robloxBypassNote: "Nada & tempo ikut naik di file (resample murni, tanpa time-stretch) supaya di game bisa dibalik persis tanpa artefak. Bitrate makin tinggi makin jernih.",
     robloxPitchOnly: "Hanya nada yang berubah ({pitch}). Untuk mengembalikan: PitchShiftSoundEffect Octave = {octave}.",
     robloxNormal: "Kecepatan asli — tidak ada yang perlu diubah di Roblox.",
     robloxPitchNote: "Nada {pitch} ikut tertanam juga.",

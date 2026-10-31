@@ -41,7 +41,8 @@ export function robloxPlayback(o: Pick<AudioOptions, "speed" | "pitch" | "preser
   return {
     speed,
     filePitch: round(filePitch, 1),
-    restoreSpeed: round(1 / speed, 3),
+    // 4 desimal: 1/1.1 = 0.9091 (3 desimal meleset ±2 sen nada)
+    restoreSpeed: round(1 / speed, 4),
     residual: round(residual, 1),
     octave: round(octave, 3),
     octaveOk: octave >= 0.5 - 1e-9 && octave <= 2 + 1e-9,
@@ -50,4 +51,37 @@ export function robloxPlayback(o: Pick<AudioOptions, "speed" | "pitch" | "preser
   };
 }
 
-export const semis = (v: number) => `${v > 0 ? "+" : ""}${round(v, 1)} st`;
+/**
+ * Script Command Bar Studio: pasang PlaybackSpeed "balik ke asli" ke Sound terpilih (termasuk isi folder terpilih).
+ * Sisa nada (bila ada & masih dalam jangkauan) dikoreksi PitchShiftSoundEffect bernama tetap → dijalankan ulang tidak menumpuk.
+ */
+export function restoreScript(pb: RobloxPlayback): string {
+  const fix = !pb.exact && pb.octaveOk;
+  return `-- ARRR Studio Converter · kembalikan tempo & nada asli (${pb.speed}× → 1×)
+local FX = "ArrrRestorePitch"
+local n = 0
+local function apply(s)
+	if not s:IsA("Sound") then return end
+	s.PlaybackSpeed = ${pb.restoreSpeed}
+	local fx = s:FindFirstChild(FX)
+${
+  fix
+    ? `	if not fx then
+		fx = Instance.new("PitchShiftSoundEffect")
+		fx.Name = FX
+		fx.Parent = s
+	end
+	fx.Octave = ${pb.octave}`
+    : `	if fx then fx:Destroy() end`
+}
+	n += 1
+end
+for _, obj in game:GetService("Selection"):Get() do
+	apply(obj)
+	for _, d in obj:GetDescendants() do apply(d) end
+end
+print(("PlaybackSpeed ${pb.restoreSpeed} dipasang di %d Sound"):format(n))
+`;
+}
+
+export const semis =(v: number) => `${v > 0 ? "+" : ""}${round(v, 1)} st`;

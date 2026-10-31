@@ -174,6 +174,9 @@ export default function SettingsPanel() {
   const customPresets = hydrated ? converter.customPresets : [];
   const autoUpload = hydrated && converter.autoUpload;
   const autoPermission = converter.autoPermission;
+  const robloxMode = hydrated ? converter.robloxMode : "asIs";
+  // Mode "balik ke asli" hanya berarti bila kecepatan diubah
+  const restoreMode = robloxMode === "restore" && o.speed !== 1;
   const { t, f } = useT();
   const c = t.converter;
   const p = c.panel;
@@ -282,7 +285,7 @@ export default function SettingsPanel() {
           className="state-layer inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-xs border border-line px-2 font-mono text-[11.5px] text-fg-2 transition-colors hover:border-line-2 hover:text-fg"
         >
           <span className="caps text-[9.5px] text-fg-3">Roblox</span>
-          {pb.speed === 1 ? c.inRobloxNormal : `${c.inRobloxNormal} · ${pb.speed}×`}
+          {pb.speed === 1 ? c.inRobloxNormal : restoreMode ? `PlaybackSpeed ${pb.restoreSpeed} · 1×` : `${c.inRobloxNormal} · ${pb.speed}×`}
         </button>
       </div>
 
@@ -508,7 +511,12 @@ export default function SettingsPanel() {
                 })}
               </div>
             </Group>
-            <Switch label={p.preservePitch} hint={p.preservePitchHint} checked={o.preservePitch} onChange={(preservePitch) => set({ preservePitch })} />
+            {/* Balik ke asli: nada wajib ikut tempo (resample murni) supaya PlaybackSpeed membalik persis → switch disembunyikan */}
+            {restoreMode ? (
+              <p className="-mt-2 rounded-xs bg-raised px-3 py-2 text-[12.5px] leading-snug text-fg-2">{c.preservePitchRestore}</p>
+            ) : (
+              <Switch label={p.preservePitch} hint={p.preservePitchHint} checked={o.preservePitch} onChange={(preservePitch) => set({ preservePitch })} />
+            )}
             <Slider label={p.pitch} min={-R.pitch} max={R.pitch} step={LIMITS.pitch.step} value={o.pitch} defaultValue={0} format={semiLabel} onChange={(pitch) => set({ pitch })} />
             {tempoUp && (
               <LockNote
@@ -516,7 +524,7 @@ export default function SettingsPanel() {
                 cta={t.plan.upgrade}
               />
             )}
-            <RobloxTempoCard options={o} />
+            <RobloxTempoCard options={o} mode={robloxMode} />
           </>
         )}
 

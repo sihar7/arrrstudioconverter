@@ -77,8 +77,12 @@ export interface ConverterState {
   /** Langsung convert begitu link ditambahkan */
   autoConvert: boolean;
   customPresets: CustomPreset[];
+  /** Cara memutar di Roblox: "asIs" = PlaybackSpeed 1 (terdengar hasil), "restore" = PlaybackSpeed 1/speed (balik ke asli) */
+  robloxMode: RobloxMode;
   items: QueueItem[];
 }
+
+export type RobloxMode = "asIs" | "restore";
 
 const emptyUpload: UploadState = { status: "idle", assetId: null, operationId: null, error: null };
 const emptyDecal: DecalState = { status: "idle", decalId: null, imageId: null, error: null };
@@ -90,6 +94,7 @@ const initialState: ConverterState = {
   autoPermission: "none",
   autoConvert: false,
   customPresets: [],
+  robloxMode: "asIs",
   items: [],
 };
 
@@ -123,6 +128,17 @@ const converterSlice = createSlice({
       }
       state.options = { ...(next as AudioOptions), ...PRESETS[action.payload] };
       state.preset = action.payload;
+      if (action.payload === "robloxBypass") state.robloxMode = "restore";
+      // Preset yang sengaja menjaga nada (Sped Up) memang untuk diputar cepat → bukan "balik ke asli"
+      else if (state.options.preservePitch && state.options.speed !== 1) state.robloxMode = "asIs";
+    },
+    /** "Balik ke asli" hanya sempurna bila nada ikut tempo (resample murni) → jaga nada dimatikan otomatis */
+    setRobloxMode(state, action: PayloadAction<RobloxMode>) {
+      state.robloxMode = action.payload;
+      if (action.payload === "restore" && state.options.preservePitch) {
+        state.options = { ...state.options, preservePitch: false };
+        if (state.preset === "normal") state.preset = "custom";
+      }
     },
     resetOptions(state) {
       state.options = DEFAULT_OPTIONS;
@@ -154,6 +170,7 @@ const converterSlice = createSlice({
       if (!p) return;
       state.options = { ...DEFAULT_OPTIONS, ...p.options };
       state.preset = `u:${p.id}`;
+      if (state.options.preservePitch && state.options.speed !== 1) state.robloxMode = "asIs";
     },
     deletePreset(state, action: PayloadAction<string>) {
       state.customPresets = state.customPresets.filter((p) => p.id !== action.payload);
@@ -161,11 +178,12 @@ const converterSlice = createSlice({
     },
     hydrateConverter(
       state,
-      action: PayloadAction<Partial<Pick<ConverterState, "options" | "preset" | "autoUpload" | "autoPermission" | "autoConvert" | "customPresets">>>,
+      action: PayloadAction<Partial<Pick<ConverterState, "options" | "preset" | "autoUpload" | "autoPermission" | "autoConvert" | "customPresets" | "robloxMode">>>,
     ) {
       Object.assign(state, action.payload);
       state.options = { ...DEFAULT_OPTIONS, ...state.options };
       state.customPresets = Array.isArray(state.customPresets) ? state.customPresets : [];
+      if (state.robloxMode !== "restore") state.robloxMode = "asIs";
     },
 
     addItems(state, action: PayloadAction<QueueInput[]>) {
@@ -286,6 +304,7 @@ export const {
   applyCustomPreset,
   deletePreset,
   hydrateConverter,
+  setRobloxMode,
   addItems,
   enqueue,
   jobUpdated,

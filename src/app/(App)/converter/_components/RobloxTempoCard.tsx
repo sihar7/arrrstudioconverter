@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { CheckCircle, InfoCircle, WarningTriangle } from "iconoir-react";
+import type { ReactNode } from "react";
+import { CheckCircle, Copy, InfoCircle, WarningTriangle } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/lib/utils";
-import { robloxPlayback, round, semis } from "@/lib/robloxPlayback";
+import { useToast } from "@/hooks/useToast";
+import { useAppDispatch } from "@/store/hooks";
+import { setRobloxMode, type RobloxMode } from "@/store/slices/converterSlice";
+import { restoreScript, robloxPlayback, round, semis } from "@/lib/robloxPlayback";
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
 import Segmented from "@/components/ui/Segmented";
+import Button from "@/components/ui/Button";
 
 /** Ubin angka: label · nilai besar · keterangan — dua ubin selalu sejajar & setinggi */
 function Stat({ label, value, caption, tone }: { label: string; value: string; caption: string; tone?: "ok" }) {
@@ -31,17 +35,17 @@ function Note({ icon, className, children }: { icon: ReactNode; className?: stri
   );
 }
 
-type Mode = "asIs" | "restore";
-
 /**
  * Playback di Roblox untuk setelan ini (hitungan di lib/robloxPlayback.ts):
  *  - "Pakai hasil ini": PlaybackSpeed 1 → terdengar persis setelan (kecepatan & nada tertanam di file).
  *  - "Balik ke asli": PlaybackSpeed 1/speed → tempo 1×; sisa nada dikoreksi PitchShiftSoundEffect bila perlu.
  */
-export default function RobloxTempoCard({ options: o }: { options: AudioOptions }) {
+export default function RobloxTempoCard({ options: o, mode }: { options: AudioOptions; mode: RobloxMode }) {
   const { t, f } = useT();
+  const toast = useToast();
+  const dispatch = useAppDispatch();
   const c = t.converter;
-  const [mode, setMode] = useState<Mode>("asIs");
+  const setMode = (m: RobloxMode) => dispatch(setRobloxMode(m));
   const pb = robloxPlayback(o);
   const pitchText = (v: number) => (Math.abs(v) < 0.05 ? c.robloxHeardPitchNone : f(c.robloxHeardPitch, { pitch: semis(v) }));
 
@@ -51,6 +55,16 @@ export default function RobloxTempoCard({ options: o }: { options: AudioOptions 
   const fill = restore ? pb.restoreSpeed : 1;
   const heardTempo = restore ? 1 : pb.speed;
   const heardPitch = restore ? pb.residual : pb.filePitch;
+  const canScript = restore && (pb.exact || pb.octaveOk);
+
+  const copyScript = async () => {
+    try {
+      await navigator.clipboard.writeText(restoreScript(pb));
+      toast(c.robloxScriptCopied, "ok");
+    } catch {
+      /* izin clipboard ditolak — tidak ada yang perlu dibersihkan */
+    }
+  };
 
   return (
     <section aria-label={c.robloxTitle} className="overflow-hidden rounded-s border border-line bg-bg/40">
@@ -110,6 +124,7 @@ export default function RobloxTempoCard({ options: o }: { options: AudioOptions 
             {pb.exact ? (
               <Note icon={<CheckCircle width={14} height={14} />} className="text-ok">
                 {c.robloxRestoreExact}
+                {o.speed > 1 && <span className="mt-1 block text-fg-3">{c.robloxBypassNote}</span>}
               </Note>
             ) : pb.octaveOk ? (
               <Note icon={<WarningTriangle width={14} height={14} />} className="bg-warn/[0.06] text-warn">
@@ -124,6 +139,15 @@ export default function RobloxTempoCard({ options: o }: { options: AudioOptions 
           </>
         )}
       </ul>
+
+      {canScript && (
+        <div className="flex flex-col gap-2 border-t border-line/60 p-3">
+          <Button variant="tonal" size="sm" onClick={copyScript} icon={<Copy width={16} height={16} />}>
+            {c.robloxScript}
+          </Button>
+          <p className="text-[11.5px] leading-snug text-fg-3">{c.robloxScriptHint}</p>
+        </div>
+      )}
     </section>
   );
 }

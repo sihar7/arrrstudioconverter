@@ -11,4 +11,4 @@ export const FORMAT_OPTIONS = AUDIO_FORMATS.map((f) => ({ value: f, label: f.toU
 export const BITRATE_OPTIONS = BITRATES.map((b) => ({ value: b, label: `${b} kbps` }));
 export const SPEED_QUICK = [0.8, 1, 1.25, 1.3, 1.5];
 // "master" khusus plan Ultimate & admin (SettingsPanel menyembunyikannya dari plan lain)
-export const PRESET_ORDER: PresetId[] = ["normal", "nightcore", "spedUp", "slowed", "slowedReverb", "bassBoost", "eightD", "master"];
+export const PRESET_ORDER: PresetId[] = ["normal", "robloxBypass", "nightcore", "spedUp", "slowed", "slowedReverb", "bassBoost", "eightD", "master"];

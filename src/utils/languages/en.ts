@@ -535,6 +535,7 @@ const en: Dictionary = {
     },
     presetNames: {
       normal: "Normal",
+      robloxBypass: "Roblox Bypass",
       nightcore: "Nightcore",
       spedUp: "Sped Up",
       slowed: "Slowed",
@@ -556,6 +557,7 @@ const en: Dictionary = {
     tabs: { preset: "Preset", output: "Output", tempo: "Tempo", effects: "Effects", trim: "Trim", roblox: "Roblox" },
     presetDesc: {
       normal: "No effects",
+      robloxBypass: "1.25× · restores in-game",
       nightcore: "1.25× · higher pitch",
       spedUp: "1.3× · original pitch",
       slowed: "0.85× · lower pitch",
@@ -620,6 +622,11 @@ const en: Dictionary = {
     robloxPitchFix: "Pitch is still off by {pitch}. Add a PitchShiftSoundEffect inside the Sound with Octave = {octave}.",
     robloxPitchFixOut: "Pitch is off by {pitch} — beyond PitchShiftSoundEffect's range (Octave 0.5–2). Turn off “Keep original pitch” to restore it perfectly.",
     robloxPitchTip: "Tip: turn off “Keep original pitch” to restore it perfectly with PlaybackSpeed alone.",
+    robloxScript: "Copy Command Bar script",
+    robloxScriptHint: "Select the uploaded Sound in Studio Explorer, paste the script into the Command Bar → Enter. PlaybackSpeed is set automatically.",
+    robloxScriptCopied: "Script copied — paste it into the Studio Command Bar",
+    preservePitchRestore: "“Restore original” mode is on: pitch follows tempo automatically, so PlaybackSpeed in-game brings the song back exactly. “Keep original pitch” is only for songs meant to play faster/slower.",
+    robloxBypassNote: "Pitch & tempo rise together in the file (pure resample, no time-stretch) so the game can reverse it exactly with no artifacts. Higher bitrate sounds cleaner.",
     robloxPitchOnly: "Only the pitch changed ({pitch}). To restore it: PitchShiftSoundEffect Octave = {octave}.",
     robloxNormal: "Original speed — nothing to change in Roblox.",
     robloxPitchNote: "Pitch {pitch} is baked in as well.",
