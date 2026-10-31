@@ -65,6 +65,17 @@ export function parseLink(raw: string): Omit<ParsedLink, "dup"> {
   return { raw, kind: "invalid", id: null };
 }
 
+/**
+ * Link YouTube SUNGGUHAN pertama di teks pencarian (null = cari). ID polos 11 karakter sengaja tidak dihitung:
+ * kata biasa seperti "christopher" lolos pola ID → dulu kata kunci langsung masuk antrean padahal videonya tidak ada.
+ */
+export function searchLink(text: string): string | null {
+  return extractLinks(text).find((raw) => {
+    const k = parseLink(raw).kind;
+    return k !== "invalid" && k !== "id";
+  }) ?? null;
+}
+
 /** Semua link di teks + tanda duplikat terhadap antrean */
 export function parseLinks(text: string, queued: Set<string>): ParsedLink[] {
   return extractLinks(text).map((raw) => {

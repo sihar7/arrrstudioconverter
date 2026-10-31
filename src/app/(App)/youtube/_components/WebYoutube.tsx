@@ -12,7 +12,7 @@ import Skeleton from "@/components/ui/Skeleton";
 import { useQuickAdd } from "../_hooks/useQuickAdd";
 import { useYoutubeSearch } from "../_hooks/useYoutubeSearch";
 import type { SearchVideo } from "../_types/youtube.type";
-import { extractLinks } from "../../converter/_utils/helpers";
+import { searchLink } from "../../converter/_utils/helpers";
 import { YT_SEARCH_EVENT } from "../../layout/desktop/nav";
 
 /**
@@ -68,10 +68,10 @@ export default function WebYoutube() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const links = extractLinks(input);
-    // Link YouTube → langsung ke antrean; selain itu → cari
-    if (links.length) {
-      void add(links[0]).then(() => setInput(""));
+    const link = searchLink(input);
+    // Link YouTube → langsung ke antrean; selain itu (termasuk kata panjang) → cari
+    if (link) {
+      void add(link).then(() => setInput(""));
       return;
     }
     void search(input);

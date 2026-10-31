@@ -10,7 +10,7 @@ import { useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/lib/utils";
 import { getDesktop } from "@/type/desktop";
-import { extractLinks } from "../../converter/_utils/helpers";
+import { searchLink } from "../../converter/_utils/helpers";
 import { useQuickAdd } from "../../youtube/_hooks/useQuickAdd";
 import { D_SETTINGS, navSections, shortcutOf, YT_SEARCH_EVENT } from "./nav";
 
@@ -57,7 +57,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   const cmds = useMemo<Cmd[]>(() => {
     const go = (href: string) => () => router.push(href);
     const term = q.trim();
-    const link = extractLinks(term)[0];
+    const link = searchLink(term);
     const nav = [...navSections(Boolean(me?.user)).flatMap((s) => s.items), D_SETTINGS].map<Cmd>((n) => {
       const Icon = n.icon;
       const key = shortcutOf(n.href);
