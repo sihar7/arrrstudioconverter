@@ -7,6 +7,7 @@ import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { OPERATION_POLL_MS } from "@/app/(App)/converter/_constants/converter.constants";
 import { clearSpoofs, listSpoofs, refreshSpoof, runSpoof } from "../_service/spoof.service";
+import { grantAccess } from "@/app/(App)/library/_service/library.service";
 import type { PermissionMode } from "@/type/history";
 import type { SpoofRecord, SpoofWant } from "@/type/spoof";
 
@@ -20,6 +21,13 @@ export interface SpoofSettings {
   creatorId: string;
   permission: PermissionMode;
   placeId: string;
+}
+
+/** Hasil "Beri akses": ID tetap, game diberi izin pakai (tidak tersimpan di riwayat) */
+export interface SpoofGrant {
+  assetId: string;
+  placeId: string;
+  error: string | null;
 }
 
 /** Aset yang sedang diproses (belum jadi catatan riwayat) */
@@ -38,7 +46,9 @@ export function useSpoof() {
   const [items, setItems] = useState<SpoofRecord[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [pending, setPending] = useState<SpoofPending[]>([]);
-  const busy = pending.some((p) => !p.error);
+  const [grants, setGrants] = useState<SpoofGrant[]>([]);
+  const [granting, setGranting] = useState(false);
+  const busy = granting || pending.some((p) => !p.error);
   const alive = useRef(true);
   const polls = useRef(new Map<string, number>());
 
@@ -92,6 +102,32 @@ export function useSpoof() {
     [store, upsert, toast, f, S],
   );
 
+  /** Beri izin pakai ke game (Place ID) untuk ID yang sudah ada — tanpa upload ulang, ID tidak berubah */
+  const grant = useCallback(
+    async (ids: string[], placeId: string) => {
+      const apiKey = store.getState().roblox.apiKey;
+      if (!apiKey || !ids.length) return;
+      setGranting(true);
+      let rows: SpoofGrant[];
+      try {
+        const r = await grantAccess(apiKey, ids, "place", placeId);
+        rows = ids.map((assetId) => ({ assetId, placeId, error: r.failed[assetId] ?? null }));
+      } catch (e) {
+        const msg = e instanceof ApiError || e instanceof Error ? e.message : S.failed;
+        rows = ids.map((assetId) => ({ assetId, placeId, error: msg }));
+      }
+      if (!alive.current) return;
+      setGranting(false);
+      const done = new Set(ids);
+      setGrants((g) => [...rows, ...g.filter((x) => !done.has(x.assetId))]);
+      const ok = rows.filter((x) => !x.error).length;
+      toast(f(S.grantToast, { n: ok, total: ids.length }), ok ? "ok" : "err");
+    },
+    [store, toast, f, S],
+  );
+
+  const dismissGrant = useCallback((assetId: string) => setGrants((g) => g.filter((x) => x.assetId !== assetId)), []);
+
   /** Catatan tanpa ID baru → spoof ulang dengan upload otomatis menyala */
   const uploadNow = useCallback(
     (rec: SpoofRecord, settings: SpoofSettings) => start([rec.sourceId], rec.kind, { ...settings, autoUpload: true }),
@@ -139,5 +175,5 @@ export function useSpoof() {
     return () => clearTimeout(timer);
   }, [waitingKey, items, store, upsert]);
 
-  return { items, loaded, pending, busy, start, uploadNow, dismiss, remove };
+  return { items, loaded, pending, grants, busy, start, grant, uploadNow, dismiss, dismissGrant, remove };
 }

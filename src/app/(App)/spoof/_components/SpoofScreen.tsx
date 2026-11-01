@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ListSelect, Trash, WarningTriangle, Xmark } from "iconoir-react";
+import { CheckCircle, ListSelect, ShieldCheck, Trash, WarningTriangle, Xmark } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
 import { useT } from "@/hooks/useT";
@@ -44,11 +44,15 @@ export default function SpoofScreen() {
     placeId: roblox.placeId,
   }));
   const set = (p: Partial<SpoofSettings>) => setSettings((s) => ({ ...s, ...p }));
+  // "access" = ID tetap, game diberi izin pakai; "reupload" = unduh + upload ulang jadi ID baru
+  const [action, setAction] = useState<"reupload" | "access">("reupload");
+  const access = action === "access";
 
   const ids = parseAssetIds(text, MAX_IDS);
   const hasKey = Boolean(roblox.apiKey);
-  const placeOk = !settings.autoUpload || settings.permission !== "place" || /^\d{1,20}$/.test(settings.placeId);
-  const ready = hasKey && /^\d{1,20}$/.test(settings.creatorId) && placeOk;
+  const placeValid = /^\d{1,20}$/.test(settings.placeId);
+  const placeOk = !settings.autoUpload || settings.permission !== "place" || placeValid;
+  const ready = access ? hasKey && placeValid : hasKey && /^\d{1,20}$/.test(settings.creatorId) && placeOk;
   const running = sp.pending.filter((p) => !p.error);
   const failed = sp.pending.filter((p) => p.error);
 
@@ -72,7 +76,8 @@ export default function SpoofScreen() {
 
   const submit = () => {
     if (!ready || !ids.length || sp.busy) return;
-    void sp.start(ids, kind, settings);
+    if (access) void sp.grant(ids, settings.placeId);
+    else void sp.start(ids, kind, settings);
     setText("");
   };
 
@@ -91,7 +96,7 @@ export default function SpoofScreen() {
                 submit();
               }}
             >
-              <KindPicker value={kind} onChange={setKind} />
+              {!access && <KindPicker value={kind} onChange={setKind} />}
               <Field label={S.ids} hint={f(S.idsHint, { n: MAX_IDS })}>
                 {({ id }) => (
                   <Textarea
@@ -117,9 +122,11 @@ export default function SpoofScreen() {
                 className="w-full sm:w-auto sm:self-end"
                 disabled={!ready || !ids.length || sp.busy}
                 loading={sp.busy}
-                icon={<SfSpoof size={18} />}
+                icon={access ? <ShieldCheck width={18} height={18} /> : <SfSpoof size={18} />}
               >
-                {ids.length > 1 ? f(S.startMany, { n: ids.length }) : S.start}
+                {access
+                  ? ids.length > 1 ? f(S.grantMany, { n: ids.length }) : S.grantStart
+                  : ids.length > 1 ? f(S.startMany, { n: ids.length }) : S.start}
               </Button>
             </form>
           </CardBox>
@@ -149,6 +156,26 @@ export default function SpoofScreen() {
                 )
               }
             />
+            {sp.grants.map((g) => (
+              <div key={`grant-${g.assetId}`} className="flex items-start gap-3 border-b border-[var(--hairline)] px-5 py-4 text-[14px] desk:px-4 desk:py-3 desk:text-[13px]">
+                {g.error ? (
+                  <WarningTriangle width={16} height={16} className="mt-0.5 shrink-0 text-err" aria-hidden="true" />
+                ) : (
+                  <CheckCircle width={16} height={16} className="mt-0.5 shrink-0 text-ok" aria-hidden="true" />
+                )}
+                <p className="min-w-0 flex-1 leading-relaxed text-fg-2">
+                  <span className="font-mono text-fg">{g.assetId}</span> — {g.error ?? f(S.grantDone, { place: g.placeId })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => sp.dismissGrant(g.assetId)}
+                  aria-label={S.dismiss}
+                  className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[8px] text-fg-3 transition-colors hover:bg-fg/[0.07] hover:text-fg"
+                >
+                  <Xmark width={16} height={16} aria-hidden="true" />
+                </button>
+              </div>
+            ))}
             {running.map((p) => (
               <div key={`run-${p.sourceId}`} className="flex items-center gap-3 border-b border-[var(--hairline)] px-5 py-4 text-[14px] desk:px-4 desk:py-3 desk:text-[13px]">
                 <Spinner className="size-4 text-fg-3" />
@@ -186,7 +213,7 @@ export default function SpoofScreen() {
                 onLongPress={() => sel.start(rec.id)}
               />
             ))}
-            {sp.loaded && !sp.items.length && !sp.pending.length && <EmptyState icon={<SfSpoof size={24} />} title={S.emptyTitle} sub={S.emptySub} />}
+            {sp.loaded && !sp.items.length && !sp.pending.length && !sp.grants.length && <EmptyState icon={<SfSpoof size={24} />} title={S.emptyTitle} sub={S.emptySub} />}
             {!sp.loaded && (
               <div className="grid place-items-center py-16">
                 <Spinner className="size-5 text-fg-3" />
@@ -197,8 +224,21 @@ export default function SpoofScreen() {
 
         {/* Pengaturan upload ulang */}
         <CardBox as="aside" className="rise lg:sticky lg:top-[calc(var(--nav-h)+24px)] desk:lg:top-4">
-          <CardHeader title={S.settingsTitle} />
+          <CardHeader title={access ? S.accessTitle : S.settingsTitle} />
           <div className="flex flex-col gap-5 p-5 desk:gap-4 desk:p-4">
+            <Field label={S.action} hint={access ? S.accessHint : undefined}>
+              {() => (
+                <Segmented
+                  label={S.action}
+                  value={action}
+                  options={[
+                    { value: "reupload", label: S.actionReupload },
+                    { value: "access", label: S.actionAccess },
+                  ]}
+                  onChange={setAction}
+                />
+              )}
+            </Field>
             {!hasKey && (
               <div className="flex flex-col gap-3 rounded-l bg-warn/10 px-4 py-3 text-[13px] leading-relaxed text-fg-2">
                 <p className="flex gap-2">
@@ -211,68 +251,84 @@ export default function SpoofScreen() {
               </div>
             )}
 
-            <Switch label={S.autoUpload} hint={S.autoUploadHint} checked={settings.autoUpload} onChange={(autoUpload) => set({ autoUpload })} />
-
-            <Field label={u.creator}>
-              {() => (
-                <Segmented
-                  label={u.creator}
-                  value={settings.creatorType}
-                  options={[
-                    { value: "user", label: u.user },
-                    { value: "group", label: u.group },
-                  ]}
-                  onChange={(creatorType) => set({ creatorType })}
-                />
-              )}
-            </Field>
-            <Field
-              label={f(u.creatorId, { type: settings.creatorType === "user" ? u.user : u.group })}
-              hint={settings.creatorType === "group" ? S.groupHint : undefined}
-            >
-              {({ id }) => (
-                <Input
-                  id={id}
-                  inputMode="numeric"
-                  className="font-mono"
-                  value={settings.creatorId}
-                  onChange={(e) => set({ creatorId: e.target.value.replace(/\D/g, "") })}
-                />
-              )}
-            </Field>
-
-            {settings.autoUpload && (
+            {access ? (
+              <Field label={u.placeId} hint={S.accessPlaceHint}>
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    inputMode="numeric"
+                    className="font-mono"
+                    value={settings.placeId}
+                    onChange={(e) => set({ placeId: e.target.value.replace(/\D/g, "") })}
+                  />
+                )}
+              </Field>
+            ) : (
               <>
-                <Field
-                  label={u.permission}
-                  hint={settings.permission === "place" ? u.permPlaceHint : settings.permission === "public" ? u.permPublicHint : undefined}
-                >
-                  {() => (
-                    <Segmented
-                      label={u.permission}
-                      value={settings.permission}
-                      options={[
-                        { value: "none", label: u.permNone },
-                        { value: "place", label: u.permPlace },
-                        { value: "public", label: u.permPublic },
-                      ]}
-                      onChange={(permission) => set({ permission })}
-                    />
-                  )}
-                </Field>
-                {settings.permission === "place" && (
-                  <Field label={u.placeId}>
-                    {({ id }) => (
-                      <Input
-                        id={id}
-                        inputMode="numeric"
-                        className="font-mono"
-                        value={settings.placeId}
-                        onChange={(e) => set({ placeId: e.target.value.replace(/\D/g, "") })}
+              <Switch label={S.autoUpload} hint={S.autoUploadHint} checked={settings.autoUpload} onChange={(autoUpload) => set({ autoUpload })} />
+
+              <Field label={u.creator}>
+                {() => (
+                  <Segmented
+                    label={u.creator}
+                    value={settings.creatorType}
+                    options={[
+                      { value: "user", label: u.user },
+                      { value: "group", label: u.group },
+                    ]}
+                    onChange={(creatorType) => set({ creatorType })}
+                  />
+                )}
+              </Field>
+              <Field
+                label={f(u.creatorId, { type: settings.creatorType === "user" ? u.user : u.group })}
+                hint={settings.creatorType === "group" ? S.groupHint : undefined}
+              >
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    inputMode="numeric"
+                    className="font-mono"
+                    value={settings.creatorId}
+                    onChange={(e) => set({ creatorId: e.target.value.replace(/\D/g, "") })}
+                  />
+                )}
+              </Field>
+
+              {settings.autoUpload && (
+                <>
+                  <Field
+                    label={u.permission}
+                    hint={settings.permission === "place" ? u.permPlaceHint : settings.permission === "public" ? u.permPublicHint : undefined}
+                  >
+                    {() => (
+                      <Segmented
+                        label={u.permission}
+                        value={settings.permission}
+                        options={[
+                          { value: "none", label: u.permNone },
+                          { value: "place", label: u.permPlace },
+                          { value: "public", label: u.permPublic },
+                        ]}
+                        onChange={(permission) => set({ permission })}
                       />
                     )}
                   </Field>
-                )}
+                  {settings.permission === "place" && (
+                    <Field label={u.placeId}>
+                      {({ id }) => (
+                        <Input
+                          id={id}
+                          inputMode="numeric"
+                          className="font-mono"
+                          value={settings.placeId}
+                          onChange={(e) => set({ placeId: e.target.value.replace(/\D/g, "") })}
+                        />
+                      )}
+                    </Field>
+                  )}
+                </>
+              )}
               </>
             )}
 
