@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/useToast";
 import { OPERATION_POLL_MS } from "@/app/(App)/converter/_constants/converter.constants";
 import { clearSpoofs, listSpoofs, refreshSpoof, runSpoof } from "../_service/spoof.service";
 import type { PermissionMode } from "@/type/history";
-import type { SpoofKind, SpoofRecord } from "@/type/spoof";
+import type { SpoofRecord, SpoofWant } from "@/type/spoof";
 
 export const MAX_IDS = 25;
 // Upload Roblox kadang butuh beberapa detik → cek ulang maks ±1 menit per aset
@@ -25,7 +25,7 @@ export interface SpoofSettings {
 /** Aset yang sedang diproses (belum jadi catatan riwayat) */
 export interface SpoofPending {
   sourceId: string;
-  kind: SpoofKind;
+  kind: SpoofWant;
   error: string | null;
 }
 
@@ -59,7 +59,7 @@ export function useSpoof() {
 
   /** Proses ID satu per satu (hemat rate limit Roblox); gagal per ID tidak menghentikan antrean */
   const start = useCallback(
-    async (ids: string[], kind: SpoofKind, settings: SpoofSettings) => {
+    async (ids: string[], kind: SpoofWant, settings: SpoofSettings) => {
       const apiKey = store.getState().roblox.apiKey;
       if (!apiKey || !ids.length) return;
       setPending((p) => [...p.filter((x) => x.error), ...ids.map((sourceId) => ({ sourceId, kind, error: null }))]);
@@ -100,10 +100,25 @@ export function useSpoof() {
 
   const dismiss = useCallback((sourceId: string) => setPending((p) => p.filter((x) => x.sourceId !== sourceId || !x.error)), []);
 
-  const clear = useCallback(async () => {
-    await clearSpoofs();
-    if (alive.current) setItems([]);
-  }, []);
+  /** ids → hapus yang dipilih; tanpa ids → hapus semua. true = berhasil */
+  const remove = useCallback(
+    async (ids?: string[]) => {
+      try {
+        await clearSpoofs(ids);
+      } catch {
+        toast(S.deleteFailed, "err");
+        return false;
+      }
+      if (!alive.current) return true;
+      if (!ids) setItems([]);
+      else {
+        const gone = new Set(ids);
+        setItems((list) => list.filter((r) => !gone.has(r.id)));
+      }
+      return true;
+    },
+    [toast, S],
+  );
 
   // Upload yang masih diproses Roblox → cek berkala sampai asset ID ada (dibatasi MAX_POLLS)
   const waiting = items.filter((r) => !r.assetId && r.operationId && (polls.current.get(r.id) ?? 0) < MAX_POLLS);
@@ -124,5 +139,5 @@ export function useSpoof() {
     return () => clearTimeout(timer);
   }, [waitingKey, items, store, upsert]);
 
-  return { items, loaded, pending, busy, start, uploadNow, dismiss, clear };
+  return { items, loaded, pending, busy, start, uploadNow, dismiss, remove };
 }

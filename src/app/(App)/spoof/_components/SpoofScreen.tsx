@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { WarningTriangle, Xmark } from "iconoir-react";
+import { useMemo, useState } from "react";
+import { ListSelect, Trash, WarningTriangle, Xmark } from "iconoir-react";
+import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
 import { useT } from "@/hooks/useT";
+import { useToast } from "@/hooks/useToast";
+import { useConfirm } from "@/hooks/useConfirm";
+import { useSelectMode } from "@/hooks/useSelectMode";
+import SelectionDock from "@/components/shared/SelectionDock";
 import PageHeader from "@/components/shared/PageHeader";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
@@ -16,17 +21,20 @@ import { SfSpoof } from "@/components/icons/SfIcons";
 import { MAX_IDS, useSpoof, type SpoofSettings } from "../_hooks/useSpoof";
 import { parseAssetIds } from "../_service/spoof.service";
 import SpoofResultCard from "./SpoofResultCard";
-import type { SpoofKind } from "@/type/spoof";
+import KindPicker from "./KindPicker";
+import type { SpoofWant } from "@/type/spoof";
 
-/** Spoof animasi / audio: tempel ID → file untuk Studio + upload ulang otomatis ke akun / grup sendiri */
+/** Spoof aset (animasi, audio, gambar, mesh, model, video): tempel ID → file + upload ulang otomatis ke akun / grup sendiri */
 export default function SpoofScreen() {
   const { t, f } = useT();
   const S = t.spoof;
   const u = t.upload;
   const roblox = useAppSelector((s) => s.roblox);
   const sp = useSpoof();
+  const toast = useToast();
+  const [confirm, confirmDialog] = useConfirm();
 
-  const [kind, setKind] = useState<SpoofKind>("animation");
+  const [kind, setKind] = useState<SpoofWant>("auto");
   const [text, setText] = useState("");
   const [settings, setSettings] = useState<SpoofSettings>(() => ({
     autoUpload: true,
@@ -44,6 +52,24 @@ export default function SpoofScreen() {
   const running = sp.pending.filter((p) => !p.error);
   const failed = sp.pending.filter((p) => p.error);
 
+  const recordIds = useMemo(() => sp.items.map((r) => r.id), [sp.items]);
+  const [asking, setAsking] = useState(false);
+  const sel = useSelectMode(recordIds, undefined, asking);
+  const { selecting, picked } = sel;
+  const selected = recordIds.filter((id) => picked.has(id));
+
+  /** ids → hapus terpilih; tanpa ids → semua. Selalu minta konfirmasi dulu */
+  const removeRecords = async (ids?: string[]) => {
+    const n = ids?.length ?? sp.items.length;
+    if (!n) return;
+    setAsking(true);
+    const yes = await confirm(f(ids ? S.deleteSelConfirm : S.deleteAllConfirm, { n }));
+    setAsking(false);
+    if (!yes || !(await sp.remove(ids))) return;
+    toast(f(S.deleted, { n }), "ok");
+    sel.exit();
+  };
+
   const submit = () => {
     if (!ready || !ids.length || sp.busy) return;
     void sp.start(ids, kind, settings);
@@ -51,7 +77,7 @@ export default function SpoofScreen() {
   };
 
   return (
-    <div className="flex flex-col gap-8 pb-24">
+    <div className={cn("flex flex-col gap-8 pb-24", selecting && "pb-36")}>
       <PageHeader eyebrow={S.eyebrow} title={S.title} sub={S.sub} />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] desk:gap-4">
@@ -65,15 +91,7 @@ export default function SpoofScreen() {
                 submit();
               }}
             >
-              <Segmented
-                label={S.kind}
-                value={kind}
-                options={[
-                  { value: "animation", label: S.kindAnimation },
-                  { value: "audio", label: S.kindAudio },
-                ]}
-                onChange={setKind}
-              />
+              <KindPicker value={kind} onChange={setKind} />
               <Field label={S.ids} hint={f(S.idsHint, { n: MAX_IDS })}>
                 {({ id }) => (
                   <Textarea
@@ -112,9 +130,22 @@ export default function SpoofScreen() {
               title={S.resultsTitle}
               aside={
                 sp.items.length > 0 && (
-                  <Button size="sm" variant="subtle" disabled={sp.busy} onClick={() => void sp.clear()}>
-                    {S.clear}
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Button
+                      size="sm"
+                      variant={selecting ? "primary" : "subtle"}
+                      icon={selecting ? <Xmark width={15} height={15} /> : <ListSelect width={15} height={15} />}
+                      onClick={() => (selecting ? sel.exit() : sel.start())}
+                      aria-pressed={selecting}
+                    >
+                      {selecting ? S.cancelSelect : S.select}
+                    </Button>
+                    {!selecting && (
+                      <Button size="sm" variant="subtle" disabled={sp.busy} icon={<Trash width={15} height={15} />} onClick={() => void removeRecords()}>
+                        {S.clear}
+                      </Button>
+                    )}
+                  </div>
                 )
               }
             />
@@ -142,12 +173,17 @@ export default function SpoofScreen() {
                 </button>
               </div>
             ))}
+            {selecting && <p className="fade-swap border-b border-[var(--hairline)] px-5 py-2.5 text-[13px] text-fg-3 desk:px-4">{S.selectHint}</p>}
             {sp.items.map((rec) => (
               <SpoofResultCard
                 key={rec.id}
                 rec={rec}
                 uploading={running.some((p) => p.sourceId === rec.sourceId)}
                 onUploadNow={() => void sp.uploadNow(rec, settings)}
+                selecting={selecting}
+                selected={picked.has(rec.id)}
+                onToggle={(shift) => sel.toggle(rec.id, shift)}
+                onLongPress={() => sel.start(rec.id)}
               />
             ))}
             {sp.loaded && !sp.items.length && !sp.pending.length && <EmptyState icon={<SfSpoof size={24} />} title={S.emptyTitle} sub={S.emptySub} />}
@@ -190,7 +226,10 @@ export default function SpoofScreen() {
                 />
               )}
             </Field>
-            <Field label={f(u.creatorId, { type: settings.creatorType === "user" ? u.user : u.group })}>
+            <Field
+              label={f(u.creatorId, { type: settings.creatorType === "user" ? u.user : u.group })}
+              hint={settings.creatorType === "group" ? S.groupHint : undefined}
+            >
               {({ id }) => (
                 <Input
                   id={id}
@@ -241,6 +280,24 @@ export default function SpoofScreen() {
           </div>
         </CardBox>
       </div>
+
+      {/* Dock aksi mode pilih — sama seperti Riwayat */}
+      <SelectionDock
+        open={selecting}
+        count={selected.length}
+        label={selected.length ? t.common.pickedWord : t.common.tapToSelect}
+        onExit={sel.exit}
+        quick={[
+          selected.length === recordIds.length
+            ? { key: "none", label: S.selectNone, n: 0, onClick: () => sel.pick([]) }
+            : { key: "all", label: S.selectAll, n: recordIds.length, onClick: () => sel.pick(recordIds) },
+        ]}
+      >
+        <Button variant="danger" size="sm" disabled={!selected.length} onClick={() => void removeRecords(selected)} icon={<Trash aria-hidden="true" />}>
+          {f(S.deleteSelected, { n: selected.length })}
+        </Button>
+      </SelectionDock>
+      {confirmDialog}
     </div>
   );
 }

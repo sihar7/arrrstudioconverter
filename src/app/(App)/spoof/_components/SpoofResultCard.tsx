@@ -1,10 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Copy, Download, OpenNewWindow, Upload } from "iconoir-react";
+import type { MouseEvent, ReactNode } from "react";
+import { Check, Copy, Download, OpenNewWindow, Upload } from "iconoir-react";
 import { cn, formatBytes } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
+import { useLongPress } from "@/hooks/useLongPress";
 import { robloxCreatorUrl } from "@/Url/Url";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -16,12 +17,31 @@ import type { SpoofRecord } from "@/type/spoof";
 /**
  * Kartu hasil spoof (acuan: kartu "Animation Download Ready"): status + lama proses, detail aset sumber
  * (nama, pembuat, ID, ukuran), ID baru, cara impor manual di Studio, unduh file & upload otomatis.
+ * Mode pilih (tanpa checkbox): klik kartu = pilih (sorot + centang di ubin), aksi disembunyikan; tekan lama di HP = masuk mode pilih.
  */
-export default function SpoofResultCard({ rec, onUploadNow, uploading }: { rec: SpoofRecord; onUploadNow: () => void; uploading: boolean }) {
+export default function SpoofResultCard({
+  rec,
+  onUploadNow,
+  uploading,
+  selecting,
+  selected,
+  onToggle,
+  onLongPress,
+}: {
+  rec: SpoofRecord;
+  onUploadNow: () => void;
+  uploading: boolean;
+  selecting: boolean;
+  selected: boolean;
+  /** shift = Shift+klik (pilih rentang) */
+  onToggle: (shift: boolean) => void;
+  onLongPress: () => void;
+}) {
   const { t, f, lang } = useT();
   const S = t.spoof;
   const toast = useToast();
-  const kindWord = rec.kind === "animation" ? S.wordAnimation : S.wordAudio;
+  const lp = useLongPress(onLongPress, selecting);
+  const kindWord = S.words[rec.kind];
   const processing = !rec.assetId && Boolean(rec.operationId);
   const sec = rec.durationMs != null ? Math.max(1, Math.round(rec.durationMs / 1000)) : null;
 
@@ -66,19 +86,46 @@ export default function SpoofResultCard({ rec, onUploadNow, uploading }: { rec: 
     ...(rec.assetId ? [{ label: S.fNewId, value: rec.assetId, mono: true, copyText: rec.assetId }] : []),
   ];
 
-  const guide = rec.assetId ? S.guideDone : rec.kind === "animation" ? S.guideAnimation : S.guideAudio;
+  const guide = rec.assetId ? S.guideDone : S.guides[rec.kind];
   const canUpload = !rec.assetId && !processing;
 
+  const onPick = (e: MouseEvent) => {
+    if (lp.consume()) return;
+    onToggle(e.shiftKey);
+  };
+
   return (
-    <article className="rise border-b border-[var(--hairline)] px-5 py-5 last:border-b-0 desk:px-4 desk:py-4">
+    <article
+      {...lp.handlers}
+      className={cn(
+        "rise relative border-b border-[var(--hairline)] px-5 py-5 transition-colors duration-200 last:border-b-0 desk:px-4 desk:py-4",
+        selecting && "select-none",
+        selected ? "bg-accent/[0.07]" : selecting && "hover:bg-raised/50",
+      )}
+    >
+      {/* Penanda terpilih di tepi kiri */}
+      <span aria-hidden="true" className={cn("absolute inset-y-0 left-0 w-0.5 origin-center bg-accent transition-transform duration-300 ease-[var(--ease)]", selected ? "scale-y-100" : "scale-y-0")} />
+      {/* Mode pilih: seluruh kartu jadi satu tombol di atas isi (aksi di bawahnya tidak bisa diklik) */}
+      {selecting && (
+        <button
+          type="button"
+          onClick={onPick}
+          aria-pressed={selected}
+          aria-label={`${f(S.ready, { kind: S.kinds[rec.kind] })} · ${rec.name}`}
+          className="absolute inset-0 z-10 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+        />
+      )}
       <header className="flex items-start gap-3.5">
-        <div className="forged-tile grid size-11 shrink-0 place-items-center rounded text-fg desk:size-9">
+        <div className={cn("forged-tile relative grid size-11 shrink-0 place-items-center overflow-hidden rounded text-fg transition-transform duration-200 desk:size-9", selected && "scale-[0.94]")}>
           <SfSpoof size={20} />
+          <span aria-hidden="true" className={cn("absolute inset-0 grid place-items-center bg-accent text-on-accent transition-opacity duration-200", selected ? "opacity-100" : "opacity-0")}>
+            <Check width={20} height={20} strokeWidth={2.4} className={cn(selected && "pick-pop")} />
+          </span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <h3 className="font-display text-[16px] font-semibold tracking-[-0.01em] desk:text-[14px]">
-              {rec.kind === "animation" ? S.readyAnimation : S.readyAudio}
+              {f(S.ready, { kind: S.kinds[rec.kind] })}
             </h3>
             {status}
           </div>

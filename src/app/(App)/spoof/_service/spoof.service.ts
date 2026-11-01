@@ -1,12 +1,12 @@
 import { apiFetch } from "@/lib/utils";
 import type { PermissionMode } from "@/type/history";
-import type { SpoofKind, SpoofRecord } from "@/type/spoof";
+import type { SpoofRecord, SpoofWant } from "@/type/spoof";
 
-// Spoof audio / animasi lewat backend (/api/spoof). API key hanya diteruskan, tidak disimpan server.
+// Spoof aset (audio, animasi, gambar, mesh, model, video) lewat backend (/api/spoof). API key hanya diteruskan, tidak disimpan server.
 
 export interface SpoofRequest {
   apiKey: string;
-  kind: SpoofKind;
+  kind: SpoofWant;
   sourceId: string;
   autoUpload: boolean;
   creatorType: "user" | "group";
@@ -19,7 +19,9 @@ export const runSpoof = (body: SpoofRequest) => apiFetch<{ item: SpoofRecord }>(
 
 export const listSpoofs = () => apiFetch<{ items: SpoofRecord[] }>("/api/spoof", { cache: "no-store" }).then((r) => r.items);
 
-export const clearSpoofs = () => apiFetch<{ ok: true }>("/api/spoof", { method: "DELETE" });
+/** Tanpa ids → hapus semua riwayat */
+export const clearSpoofs = (ids?: string[]) =>
+  apiFetch<{ ok: true }>(ids ? `/api/spoof?ids=${ids.join(",")}` : "/api/spoof", { method: "DELETE" });
 
 export const refreshSpoof = (id: string, apiKey: string) =>
   apiFetch<{ item: SpoofRecord }>(`/api/spoof/${id}`, { method: "POST", json: { apiKey } }).then((r) => r.item);

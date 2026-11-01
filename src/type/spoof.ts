@@ -1,4 +1,7 @@
-export type SpoofKind = "audio" | "animation";
+export const SPOOF_KINDS = ["animation", "audio", "image", "mesh", "model", "video"] as const;
+export type SpoofKind = (typeof SPOOF_KINDS)[number];
+/** Jenis yang diminta: "auto" = deteksi dari isi file */
+export type SpoofWant = SpoofKind | "auto";
 
 export interface SpoofPermission {
   mode: "place" | "public";

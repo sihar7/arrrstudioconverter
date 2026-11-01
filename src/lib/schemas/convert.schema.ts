@@ -112,7 +112,7 @@ export const robloxUploadSchema = z.object({
 
 export const spoofSchema = z.object({
   apiKey: z.string().min(20).max(4000),
-  kind: z.enum(["audio", "animation"]),
+  kind: z.enum(["auto", "animation", "audio", "image", "mesh", "model", "video"]),
   sourceId: z.string().regex(/^\d{1,20}$/),
   name: z.string().trim().max(50).default(""),
   // false = hanya siapkan file untuk diimpor manual di Studio (tanpa upload ulang)
@@ -122,6 +122,9 @@ export const spoofSchema = z.object({
   permission: z.enum(["none", "place", "public"]).default("none"),
   placeId: z.string().regex(/^\d{1,20}$/).optional(),
 });
+
+// ID catatan spoof yang dihapus (maks riwayat)
+export const spoofDeleteSchema = z.array(z.string().regex(/^[a-f0-9]{16}$/)).min(1).max(300);
 
 export const spoofRefreshSchema = z.object({
   apiKey: z.string().min(20).max(4000),

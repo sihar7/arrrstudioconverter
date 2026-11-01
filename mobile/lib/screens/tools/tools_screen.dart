@@ -24,7 +24,7 @@ class ToolsScreen extends StatelessWidget {
     _Tool('Upscale', 'Perbesar gambar 2× / 4× tetap tajam', AppIcons.arrowsOut, '/upscale'),
     _Tool('Upload audio', 'MP3/OGG dari HP langsung ke Roblox', AppIcons.uploadSimple, '/upload'),
     _Tool('Audio saya', 'Kelola, arsip & izin aset Roblox', AppIcons.vinylRecord, '/library'),
-    _Tool('Spoof', 'Pindahkan audio/animasi ke akunmu', AppIcons.swap, '/spoof'),
+    _Tool('Spoof', 'Pindahkan aset ke akunmu', AppIcons.swap, '/spoof'),
     _Tool('Obfuscator', 'Lindungi script Luau', AppIcons.lockKey, '/obfuscator'),
   ];
 
