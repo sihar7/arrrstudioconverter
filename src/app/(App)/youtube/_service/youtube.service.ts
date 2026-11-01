@@ -9,3 +9,9 @@ export function searchYoutube(q: string, filters: SearchFilters, continuation?: 
   const qs = new URLSearchParams(continuation ? { c: continuation, duration: filters.duration } : { q, ...filters });
   return apiFetch<SearchResponse>(`/api/youtube/search?${qs}`, { signal });
 }
+
+/** Saran ketikan ala kotak cari YouTube; gagal → daftar kosong */
+export function suggestYoutube(q: string, hl: "id" | "en", signal?: AbortSignal) {
+  const qs = new URLSearchParams({ q, hl });
+  return apiFetch<{ items: string[] }>(`/api/youtube/suggest?${qs}`, { signal }).then((r) => r.items);
+}

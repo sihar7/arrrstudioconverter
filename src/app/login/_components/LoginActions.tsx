@@ -2,6 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { withBase } from "@/Url/Url";
+import GoogleG from "@/components/icons/GoogleG";
+import { useHydrated } from "@/hooks/useHydrated";
+import { getDesktop } from "@/type/desktop";
 import { ArrowRight, Discord, WarningTriangle } from "iconoir-react";
 import { useDevLoginMutation, useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
@@ -19,6 +22,8 @@ export default function LoginActions({ next, errKey }: { next: string; errKey: L
   const { data: me, isLoading } = useMeQuery();
   const [devLogin, { isLoading: devBusy }] = useDevLoginMutation();
   const error = errKey && errKey in l.errors ? l.errors[errKey] : null;
+  // Google menolak OAuth di webview Electron → di app desktop hanya Discord
+  const desktop = useHydrated() && Boolean(getDesktop());
 
   return (
     <>
@@ -45,6 +50,7 @@ export default function LoginActions({ next, errKey }: { next: string; errKey: L
             <ArrowRight width={18} height={18} />
           </Button>
         ) : (
+          <>
           <a
             href={withBase(`/api/auth/discord?next=${encodeURIComponent(next)}`)}
             aria-disabled={me ? !me.auth.discordEnabled : undefined}
@@ -54,6 +60,17 @@ export default function LoginActions({ next, errKey }: { next: string; errKey: L
             <span className="flex-1 text-left">{l.discord}</span>
             <ArrowRight width={16} height={16} className="transition-transform group-hover:translate-x-0.5" />
           </a>
+          {me?.auth.googleEnabled && !desktop && (
+            <a
+              href={withBase(`/api/auth/google?next=${encodeURIComponent(next)}`)}
+              className="group flex h-14 items-center gap-3 rounded-full border border-line-2 bg-bg px-6 text-[15px] font-semibold text-fg transition-[background-color,border-color,transform] hover:border-fg/30 hover:bg-fg/[0.04] active:scale-[0.98]"
+            >
+              <GoogleG size={20} />
+              <span className="flex-1 text-left">{l.google}</span>
+              <ArrowRight width={16} height={16} className="text-fg-3 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          )}
+          </>
         )}
         {me?.auth.guildRequired && !me.user && <p className="text-[13px] text-fg-3">{l.guildNote}</p>}
 

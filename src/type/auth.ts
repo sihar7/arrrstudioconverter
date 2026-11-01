@@ -37,6 +37,7 @@ export interface MeResponse {
   plan: UserPlan;
   auth: {
     discordEnabled: boolean;
+    googleEnabled: boolean;
     devLogin: boolean;
     guildRequired: boolean;
     inviteUrl: string;

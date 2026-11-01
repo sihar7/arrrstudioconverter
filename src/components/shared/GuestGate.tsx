@@ -1,11 +1,10 @@
 "use client";
 
-import { Discord } from "iconoir-react";
-import { withBase } from "@/Url/Url";
 import Dialog from "@/components/ui/Dialog";
-import Button, { buttonClass } from "@/components/ui/Button";
+import Button from "@/components/ui/Button";
 import { useMeQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
+import LoginLinks from "@/components/shared/LoginLinks";
 
 /** Muncul saat kuota guest habis — ajak masuk Discord */
 export default function GuestGate({ open, onClose, next = "/converter" }: { open: boolean; onClose: () => void; next?: string }) {
@@ -22,9 +21,7 @@ export default function GuestGate({ open, onClose, next = "/converter" }: { open
           <Button variant="subtle" onClick={onClose}>
             {t.gate.later}
           </Button>
-          <a href={withBase(`/api/auth/discord?next=${encodeURIComponent(next)}`)} className={buttonClass("primary")}>
-            <Discord width={18} height={18} /> {t.gate.login}
-          </a>
+          <LoginLinks next={next} label={t.gate.login} />
         </>
       }
     >

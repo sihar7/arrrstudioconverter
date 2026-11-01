@@ -1,7 +1,5 @@
 "use client";
 
-import { Discord } from "iconoir-react";
-import { withBase } from "@/Url/Url";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateRoblox } from "@/store/slices/robloxSlice";
@@ -13,8 +11,9 @@ import { Avatar } from "@/components/shared/UserMenu";
 import { switchTheme } from "@/components/shared/PrefToggles";
 import Field, { Input } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
-import Button, { buttonClass } from "@/components/ui/Button";
+import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
+import LoginLinks from "@/components/shared/LoginLinks";
 
 export function DefaultsCard() {
   const dispatch = useAppDispatch();
@@ -134,9 +133,7 @@ export function AccountCard() {
         ) : (
           <div className="flex flex-col items-start gap-4">
             <p className="text-[14px] leading-relaxed text-fg-2">{t.settings.guestAccount}</p>
-            <a href={withBase("/api/auth/discord?next=/settings")} className={buttonClass("primary")}>
-              <Discord width={18} height={18} /> {t.login.discord}
-            </a>
+            <LoginLinks next="/settings" />
           </div>
         )}
       </div>

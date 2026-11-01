@@ -11,6 +11,7 @@ import { restoreScript, robloxPlayback, round, semis } from "@/lib/robloxPlaybac
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
 import Segmented from "@/components/ui/Segmented";
 import Button from "@/components/ui/Button";
+import RobloxSetupGuide from "./RobloxSetupGuide";
 
 /** Ubin angka: label · nilai besar · keterangan — dua ubin selalu sejajar & setinggi */
 function Stat({ label, value, caption, tone }: { label: string; value: string; caption: string; tone?: "ok" }) {
@@ -148,6 +149,9 @@ export default function RobloxTempoCard({ options: o, mode }: { options: AudioOp
           <p className="text-[11.5px] leading-snug text-fg-3">{c.robloxScriptHint}</p>
         </div>
       )}
+
+      {/* Tiap game menyimpan lagu berbeda → panduan per jenis music player */}
+      {restore && (pb.exact || pb.octaveOk) && <RobloxSetupGuide speed={pb.restoreSpeed} />}
     </section>
   );
 }

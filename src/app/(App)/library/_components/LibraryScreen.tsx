@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { withBase } from "@/Url/Url";
-import { Album, Crown, Discord, Download, Globe, ListSelect, Lock, Pause, Refresh, Search, Trash, Xmark } from "iconoir-react";
+import { Album, Crown, Download, Globe, ListSelect, Lock, Pause, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { cn } from "@/lib/utils";
 import { PLANS, cheapestPlan } from "@/lib/schemas/plans";
@@ -16,12 +15,13 @@ import PageLoader from "@/components/shared/PageLoader";
 import CardBox from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
 import Spinner from "@/components/ui/Spinner";
-import Button, { ButtonLink, buttonClass } from "@/components/ui/Button";
+import Button, { ButtonLink } from "@/components/ui/Button";
 import { inputClass } from "@/components/ui/Field";
 import { useLibrary } from "../_hooks/useLibrary";
 import { parseIds } from "../_service/library.service";
 import ExportDialog from "@/components/shared/ExportDialog";
 import LibraryRow from "./LibraryRow";
+import LoginLinks from "@/components/shared/LoginLinks";
 
 type LibFilter = "all" | "Approved" | "Reviewing" | "Rejected" | "archived";
 const FILTERS: LibFilter[] = ["all", "Approved", "Reviewing", "Rejected", "archived"];
@@ -102,9 +102,7 @@ export default function LibraryScreen() {
             title={t.history.loginTitle}
             sub={t.history.loginSub}
             action={
-              <a href={withBase("/api/auth/discord?next=/library")} className={buttonClass("primary")}>
-                <Discord width={18} height={18} /> {t.login.discord}
-              </a>
+              <LoginLinks next="/library" />
             }
           />
         </CardBox>

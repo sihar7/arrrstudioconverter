@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Check, NavArrowDown, OpenNewWindow, Play, Plus, Search, Xmark } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { cn, formatDuration } from "@/lib/utils";
@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import Skeleton from "@/components/ui/Skeleton";
 import { useQuickAdd } from "../_hooks/useQuickAdd";
+import { useSuggest } from "../_hooks/useSuggest";
 import { useYoutubeSearch } from "../_hooks/useYoutubeSearch";
 import { DEFAULT_FILTERS, type SearchFilters, type SearchVideo } from "../_types/youtube.type";
 import { searchLink } from "../../converter/_utils/helpers";
@@ -27,6 +28,11 @@ export default function WebYoutube() {
   const { add, addVideo, busy } = useQuickAdd();
   const [input, setInput] = useState("");
   const [playing, setPlaying] = useState<SearchVideo | null>(null);
+  // Saran ketikan: tampil saat kolom fokus & sedang mengetik (bukan link); -1 = belum ada yang disorot
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const suggestions = useSuggest(input, suggestOpen && !searchLink(input));
+  const showSuggest = suggestOpen && suggestions.length > 0;
 
   // Sentinel di dasar daftar (pola sama dengan Audio saya)
   const more = useRef(loadMore);
@@ -66,8 +72,35 @@ export default function WebYoutube() {
     return () => window.removeEventListener(YT_SEARCH_EVENT, onSearch);
   }, [search]);
 
+  const closeSuggest = () => {
+    setSuggestOpen(false);
+    setActive(-1);
+  };
+
+  const choose = (q: string) => {
+    closeSuggest();
+    setInput(q);
+    void search(q);
+  };
+
+  // Navigasi keyboard ala kotak cari YouTube: ↑/↓ menyorot (teks ikut berubah), Enter cari, Esc tutup
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggest) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const n = suggestions.length;
+      setActive((i) => (e.key === "ArrowDown" ? (i + 1) % n : (i - 1 + n) % n));
+    } else if (e.key === "Enter" && active >= 0) {
+      e.preventDefault();
+      choose(suggestions[active]);
+    } else if (e.key === "Escape") {
+      closeSuggest();
+    }
+  };
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    closeSuggest();
     const link = searchLink(input);
     // Link YouTube → langsung ke antrean; selain itu (termasuk kata panjang) → cari
     if (link) {
@@ -95,10 +128,53 @@ export default function WebYoutube() {
             <input
               type="search"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setSuggestOpen(true);
+                setActive(-1);
+              }}
+              onFocus={() => setSuggestOpen(true)}
+              onBlur={closeSuggest}
+              onKeyDown={onKeyDown}
+              role="combobox"
+              aria-expanded={showSuggest}
+              aria-controls="yt-suggest"
+              aria-autocomplete="list"
+              aria-activedescendant={showSuggest && active >= 0 ? `yt-suggest-${active}` : undefined}
+              autoComplete="off"
               placeholder={y.placeholder}
               className="h-12 w-full rounded-full border border-line/70 bg-surface pl-11 pr-4 text-[15px] outline-none transition-colors placeholder:text-fg-3 focus:border-line-2 desk:h-10 desk:rounded-[10px] desk:border-[var(--hairline)] desk:bg-fg/[0.05] desk:pl-10 desk:text-[13.5px] desk:focus:border-accent/60 desk:focus:bg-transparent"
             />
+            {showSuggest && (
+              <ul
+                id="yt-suggest"
+                role="listbox"
+                aria-label={y.search}
+                className="absolute inset-x-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-[18px] border border-line/70 bg-surface py-1.5 shadow-[0_18px_40px_-18px_rgb(0_0_0/0.55)] desk:rounded-[10px]"
+              >
+                {suggestions.map((s, i) => (
+                  <li
+                    key={s}
+                    id={`yt-suggest-${i}`}
+                    role="option"
+                    aria-selected={i === active}
+                    // mousedown (bukan click) → terpilih sebelum input kehilangan fokus & daftar tertutup
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      choose(s);
+                    }}
+                    onMouseEnter={() => setActive(i)}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 px-4 py-2 text-[14.5px] text-fg desk:px-3 desk:py-1.5 desk:text-[13.5px]",
+                      i === active && "bg-fg/[0.06]",
+                    )}
+                  >
+                    <Search width={15} height={15} className="shrink-0 text-fg-3" aria-hidden="true" />
+                    <span className="min-w-0 truncate">{s}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </label>
           <Button type="submit" variant="primary" loading={busy} className="h-12 px-6 desk:h-10 desk:px-5">
             {y.search}

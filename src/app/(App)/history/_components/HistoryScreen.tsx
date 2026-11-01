@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { withBase } from "@/Url/Url";
 import dynamic from "next/dynamic";
-import { ClockRotateRight, Discord, Download, Globe, ListSelect, Refresh, Search, Trash, Xmark } from "iconoir-react";
+import { ClockRotateRight, Download, Globe, ListSelect, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useHistoryQuery, useMeQuery } from "@/store/api/baseApi";
 import { useAppSelector } from "@/store/hooks";
 import { shortName } from "@/lib/shortName";
@@ -27,6 +27,7 @@ import { coverAssetId } from "@/lib/coverDecal";
 import type { ExportRow } from "@/lib/assetExport";
 import { canGoPublic, dayLabel, filterHistory, groupByDay, needsCheck, quickMatch, type HistoryFilter, type QuickSelect } from "../_utils/helpers";
 import type { HistoryItem } from "@/type/history";
+import LoginLinks from "@/components/shared/LoginLinks";
 
 const RobloxUploadDialog = dynamic(() => import("@/components/roblox/RobloxUploadDialog"), {
   ssr: false,
@@ -130,9 +131,7 @@ export default function HistoryScreen() {
             title={h.loginTitle}
             sub={h.loginSub}
             action={
-              <a href={withBase("/api/auth/discord?next=/history")} className={buttonClass("primary")}>
-                <Discord width={18} height={18} /> {t.login.discord}
-              </a>
+              <LoginLinks next="/history" />
             }
           />
         </CardBox>
