@@ -23,10 +23,13 @@ export interface SpoofSettings {
   placeId: string;
 }
 
-/** Hasil "Beri akses": ID tetap, game diberi izin pakai (tidak tersimpan di riwayat) */
+/** Tujuan "Beri akses": komunitas (Group ID) atau game (Place ID) */
+export type SpoofGrantTarget = { kind: "group" | "place"; id: string };
+
+/** Hasil "Beri akses": ID tetap, komunitas / game diberi izin pakai (tidak tersimpan di riwayat) */
 export interface SpoofGrant {
   assetId: string;
-  placeId: string;
+  target: SpoofGrantTarget;
   error: string | null;
 }
 
@@ -102,19 +105,19 @@ export function useSpoof() {
     [store, upsert, toast, f, S],
   );
 
-  /** Beri izin pakai ke game (Place ID) untuk ID yang sudah ada — tanpa upload ulang, ID tidak berubah */
+  /** Beri izin pakai ke komunitas / game untuk ID yang sudah ada — tanpa upload ulang, ID tidak berubah */
   const grant = useCallback(
-    async (ids: string[], placeId: string) => {
+    async (ids: string[], target: SpoofGrantTarget) => {
       const apiKey = store.getState().roblox.apiKey;
       if (!apiKey || !ids.length) return;
       setGranting(true);
       let rows: SpoofGrant[];
       try {
-        const r = await grantAccess(apiKey, ids, "place", placeId);
-        rows = ids.map((assetId) => ({ assetId, placeId, error: r.failed[assetId] ?? null }));
+        const r = await grantAccess(apiKey, ids, target.kind, target.id);
+        rows = ids.map((assetId) => ({ assetId, target, error: r.failed[assetId] ?? null }));
       } catch (e) {
         const msg = e instanceof ApiError || e instanceof Error ? e.message : S.failed;
-        rows = ids.map((assetId) => ({ assetId, placeId, error: msg }));
+        rows = ids.map((assetId) => ({ assetId, target, error: msg }));
       }
       if (!alive.current) return;
       setGranting(false);

@@ -13,11 +13,11 @@ export function fetchLibrary(body: LibraryQuery) {
   return apiFetch<{ assets: LibraryAsset[]; nextPageToken: string | null }>("/api/roblox/library", { method: "POST", json: body });
 }
 
-/** Izinkan di place tertentu, atau publik (distribusi gratis di Creator Store) */
-export function grantAccess(apiKey: string, assetIds: string[], mode: "place" | "public", placeId?: string) {
+/** Izinkan di place tertentu, komunitas (Group ID), atau publik (distribusi gratis di Creator Store) */
+export function grantAccess(apiKey: string, assetIds: string[], mode: "place" | "public" | "group", targetId?: string) {
   return apiFetch<{ granted: string[]; failed: Record<string, string>; universeId: string | null }>("/api/roblox/permission", {
     method: "POST",
-    json: { apiKey, assetIds, mode, placeId },
+    json: { apiKey, assetIds, mode, ...(mode === "group" ? { groupId: targetId } : { placeId: targetId }) },
   });
 }
 

@@ -47,12 +47,16 @@ export default function SpoofScreen() {
   // "access" = ID tetap, game diberi izin pakai; "reupload" = unduh + upload ulang jadi ID baru
   const [action, setAction] = useState<"reupload" | "access">("reupload");
   const access = action === "access";
+  // Tujuan akses: komunitas (default ID grup dari pengaturan) atau game
+  const [grantKind, setGrantKind] = useState<"group" | "place">("group");
+  const [groupId, setGroupId] = useState(() => (roblox.creatorType === "group" ? roblox.creatorId : ""));
+  const grantId = grantKind === "group" ? groupId : settings.placeId;
 
   const ids = parseAssetIds(text, MAX_IDS);
   const hasKey = Boolean(roblox.apiKey);
   const placeValid = /^\d{1,20}$/.test(settings.placeId);
   const placeOk = !settings.autoUpload || settings.permission !== "place" || placeValid;
-  const ready = access ? hasKey && placeValid : hasKey && /^\d{1,20}$/.test(settings.creatorId) && placeOk;
+  const ready = access ? hasKey && /^\d{1,20}$/.test(grantId) : hasKey && /^\d{1,20}$/.test(settings.creatorId) && placeOk;
   const running = sp.pending.filter((p) => !p.error);
   const failed = sp.pending.filter((p) => p.error);
 
@@ -76,7 +80,7 @@ export default function SpoofScreen() {
 
   const submit = () => {
     if (!ready || !ids.length || sp.busy) return;
-    if (access) void sp.grant(ids, settings.placeId);
+    if (access) void sp.grant(ids, { kind: grantKind, id: grantId });
     else void sp.start(ids, kind, settings);
     setText("");
   };
@@ -164,7 +168,7 @@ export default function SpoofScreen() {
                   <CheckCircle width={16} height={16} className="mt-0.5 shrink-0 text-ok" aria-hidden="true" />
                 )}
                 <p className="min-w-0 flex-1 leading-relaxed text-fg-2">
-                  <span className="font-mono text-fg">{g.assetId}</span> — {g.error ?? f(S.grantDone, { place: g.placeId })}
+                  <span className="font-mono text-fg">{g.assetId}</span> — {g.error ?? f(g.target.kind === "group" ? S.grantDoneGroup : S.grantDone, { id: g.target.id })}
                 </p>
                 <button
                   type="button"
@@ -252,17 +256,36 @@ export default function SpoofScreen() {
             )}
 
             {access ? (
-              <Field label={u.placeId} hint={S.accessPlaceHint}>
-                {({ id }) => (
-                  <Input
-                    id={id}
-                    inputMode="numeric"
-                    className="font-mono"
-                    value={settings.placeId}
-                    onChange={(e) => set({ placeId: e.target.value.replace(/\D/g, "") })}
-                  />
-                )}
-              </Field>
+              <>
+                <Field label={S.grantTo}>
+                  {() => (
+                    <Segmented
+                      label={S.grantTo}
+                      value={grantKind}
+                      options={[
+                        { value: "group", label: S.grantToGroup },
+                        { value: "place", label: S.grantToPlace },
+                      ]}
+                      onChange={setGrantKind}
+                    />
+                  )}
+                </Field>
+                <Field label={grantKind === "group" ? S.groupIdLabel : u.placeId} hint={grantKind === "group" ? S.accessGroupHint : S.accessPlaceHint}>
+                  {({ id }) => (
+                    <Input
+                      id={id}
+                      inputMode="numeric"
+                      className="font-mono"
+                      value={grantId}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "");
+                        if (grantKind === "group") setGroupId(v);
+                        else set({ placeId: v });
+                      }}
+                    />
+                  )}
+                </Field>
+              </>
             ) : (
               <>
               <Switch label={S.autoUpload} hint={S.autoUploadHint} checked={settings.autoUpload} onChange={(autoUpload) => set({ autoUpload })} />

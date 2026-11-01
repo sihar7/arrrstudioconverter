@@ -133,8 +133,10 @@ export const spoofRefreshSchema = z.object({
 export const robloxPermissionSchema = z.object({
   apiKey: z.string().min(20).max(4000),
   assetIds: z.array(z.string().regex(/^\d{1,20}$/)).min(1).max(50),
-  mode: z.enum(["place", "public"]),
+  // group = izin pakai ke komunitas (Group ID), hanya untuk asset ID langsung (bukan riwayat)
+  mode: z.enum(["place", "public", "group"]),
   placeId: z.string().regex(/^\d{1,20}$/).optional(),
+  groupId: z.string().regex(/^\d{1,20}$/).optional(),
   historyId: z.string().regex(/^[a-f0-9]{16}$/).optional(),
   // Massal dari riwayat: tiap entri dicatat & diterapkan (status tersimpan di riwayat)
   historyIds: z.array(z.string().regex(/^[a-f0-9]{16}$/)).max(50).optional(),
