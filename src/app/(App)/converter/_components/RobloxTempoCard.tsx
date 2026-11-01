@@ -67,8 +67,9 @@ export default function RobloxTempoCard({ options: o, mode }: { options: AudioOp
     }
   };
 
+  // shrink-0: di panel tab (flex kolom + scroll), overflow-hidden membuat kartu menyusut & terpotong alih-alih panel di-scroll
   return (
-    <section aria-label={c.robloxTitle} className="overflow-hidden rounded-s border border-line bg-bg/40">
+    <section aria-label={c.robloxTitle} className="shrink-0 overflow-hidden rounded-s border border-line bg-bg/40">
       <p className="caps border-b border-line/60 px-3 py-2.5 text-[10.5px] text-fg-3">{c.robloxTitle}</p>
 
       {pb.speed !== 1 && (

@@ -1,6 +1,7 @@
 import Header from "./layout/header/Header";
 import Footer from "./layout/footer/Footer";
 import DesktopBridge from "@/components/shared/DesktopBridge";
+import KickNotice from "@/components/shared/KickNotice";
 import DesktopShell from "./layout/desktop/DesktopShell";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       </main>
       <Footer withTabBar />
       <DesktopBridge />
+      <KickNotice />
     </div>
   );
 }

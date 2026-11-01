@@ -918,9 +918,15 @@ const en: Dictionary = {
     guestAccount: "You're not signed in. History and Roblox uploads need a Discord account.",
     saved: "Settings saved",
   },
+  kick: {
+    title: "You've been signed out",
+    sub: "This account just signed in on another device. One account can only be active on one device — signing in here will sign the other device out. If that wasn't you, sign in again right away.",
+    again: "Sign in again",
+    later: "Later",
+  },
   gate: {
     title: "Free tokens used up",
-    sub: "You've used your {max} free tokens. Sign in with Discord for tokens that refill automatically, Roblox uploads, and saved history.",
+    sub: "You've used your {max} free tokens. Sign in with Discord or Google for tokens that refill automatically, Roblox uploads, and saved history.",
     login: "Sign in with Discord",
     later: "Maybe later",
   },

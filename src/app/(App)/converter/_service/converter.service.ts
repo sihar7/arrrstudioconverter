@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/utils";
+import { deviceId } from "@/lib/deviceId";
 import { withBase } from "@/Url/Url";
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
 import type { PublicJob } from "@/type/converter";
@@ -10,8 +11,10 @@ export function fetchInfo(url: string, playlist = false) {
 }
 
 /** title = judul tetap (lagu dari video album) — server tidak menimpanya dengan judul video */
-export function createJob(videoId: string, options: AudioOptions, signal?: AbortSignal, title?: string) {
-  return apiFetch<CreateJobResponse>("/api/convert", { method: "POST", json: { videoId, options, title }, signal });
+export async function createJob(videoId: string, options: AudioOptions, signal?: AbortSignal, title?: string) {
+  // Sidik jari perangkat → kuota tamu tidak ter-reset lewat incognito / ganti browser / VPN
+  const fp = await deviceId();
+  return apiFetch<CreateJobResponse>("/api/convert", { method: "POST", json: { videoId, options, title }, signal, headers: fp ? { "x-arr-fp": fp } : undefined });
 }
 
 export function getJob(id: string, signal?: AbortSignal) {

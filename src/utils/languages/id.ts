@@ -629,7 +629,7 @@ const id = {
     robloxGuide: {
       title: "Pasang di music player-mu",
       sub: "Tiap game menyimpan lagu dengan cara berbeda. Pilih yang paling mirip dengan game-mu.",
-      tabs: { auto: "Otomatis", playlist: "Playlist", script: "Script", explorer: "Sound", radio: "Radio" },
+      tabs: { auto: "Auto", playlist: "Playlist", script: "Script", explorer: "Sound", radio: "Radio" },
       autoHint: "Tempel config lagu dan/atau script pemutar musikmu. PlaybackSpeed ditambahkan otomatis di tempat yang tepat — diproses di perangkatmu, tidak dikirim ke server.",
       autoPlaceholder: "Tracks = {\n\t{ Name = \"Judul\", Id = \"rbxassetid://123…\" },\n}\n\nsound.SoundId = track.Id",
       autoRun: "Ubah otomatis",
@@ -917,9 +917,15 @@ const id = {
     guestAccount: "Kamu belum masuk. Riwayat dan upload Roblox butuh akun Discord.",
     saved: "Pengaturan disimpan",
   },
+  kick: {
+    title: "Kamu keluar dari akun",
+    sub: "Akun ini baru saja login di perangkat lain. Satu akun hanya bisa aktif di satu perangkat — masuk lagi di sini akan mengeluarkan perangkat yang lain. Kalau itu bukan kamu, segera masuk lagi.",
+    again: "Masuk lagi",
+    later: "Nanti",
+  },
   gate: {
     title: "Token gratis habis",
-    sub: "Kamu sudah memakai {max} token gratis. Masuk dengan Discord untuk token yang terisi ulang otomatis, upload ke Roblox, dan menyimpan riwayat.",
+    sub: "Kamu sudah memakai {max} token gratis. Masuk dengan Discord / Google untuk token yang terisi ulang otomatis, upload ke Roblox, dan menyimpan riwayat.",
     login: "Masuk dengan Discord",
     later: "Nanti saja",
   },

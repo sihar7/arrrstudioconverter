@@ -108,7 +108,11 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
           }
           dispatch(itemFailed({ key: item.key, error: "", reset: true }));
           dispatch(baseApi.util.invalidateTags(["Me"]));
-          if (e.code === "GUEST_LIMIT") optsRef.current.onGuestLimit();
+          if (e.code === "GUEST_LIMIT") {
+            // VPN / proxy → jelaskan alasannya dulu, lalu ajak login
+            if (e.data?.reason === "vpn") toast(e.message, "err");
+            optsRef.current.onGuestLimit();
+          }
           else toast(e.message, "err");
         } else {
           const msg = e instanceof ApiError ? (e.code === "NETWORK" ? textRef.current.t.toast.network : e.message) : String(e);

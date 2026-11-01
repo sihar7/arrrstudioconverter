@@ -35,6 +35,8 @@ export interface MeResponse {
   user: SessionUser | null;
   quota: QuotaInfo;
   plan: UserPlan;
+  /** true = baru saja dikeluarkan karena akun ini login di perangkat lain */
+  kicked: boolean;
   auth: {
     discordEnabled: boolean;
     googleEnabled: boolean;
