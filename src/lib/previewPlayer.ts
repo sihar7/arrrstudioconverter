@@ -11,12 +11,17 @@ export interface PreviewTrack {
   cover: string;
   /** detik dari hasil convert — dipakai sampai metadata audio terbaca */
   duration?: number;
+  /**
+   * PlaybackSpeed seperti di Roblox (default 1). Roblox Bypass "Balik ke asli" = 1/speed → file 1.25× (nada naik)
+   * terdengar seperti lagu asli, bukan cempreng. Nada ikut kecepatan (resample, persis Sound.PlaybackSpeed).
+   */
+  rate?: number;
 }
 
 export interface PreviewState {
   track: PreviewTrack | null;
   playing: boolean;
-  /** detik */
+  /** detik waktu dengar (sudah dibagi rate) */
   time: number;
   duration: number;
 }
@@ -24,6 +29,8 @@ export interface PreviewState {
 let state: PreviewState = { track: null, playing: false, time: 0, duration: 0 };
 const listeners = new Set<() => void>();
 let audio: HTMLAudioElement | null = null;
+/** rate lagu yang sedang dimuat — waktu file ÷ rate = waktu dengar */
+let rate = 1;
 
 const set = (patch: Partial<PreviewState>) => {
   state = { ...state, ...patch };
@@ -39,8 +46,8 @@ function el() {
   audio.addEventListener("ended", () => set({ playing: false, time: 0 }));
   audio.addEventListener("error", () => set({ playing: false }));
   // timeupdate ±4×/detik — cukup untuk progres tanpa render tiap frame
-  audio.addEventListener("timeupdate", () => set({ time: audio!.currentTime }));
-  audio.addEventListener("loadedmetadata", () => Number.isFinite(audio!.duration) && set({ duration: audio!.duration }));
+  audio.addEventListener("timeupdate", () => set({ time: audio!.currentTime / rate }));
+  audio.addEventListener("loadedmetadata", () => Number.isFinite(audio!.duration) && set({ duration: audio!.duration / rate }));
   return audio;
 }
 
@@ -53,7 +60,11 @@ export const previewPlayer = {
       else a.pause();
       return;
     }
+    rate = track.rate && track.rate > 0 ? track.rate : 1;
     a.src = withBase(`/api/files/${track.fileId}`);
+    // Setelah src: memuat src baru me-reset playbackRate ke defaultPlaybackRate
+    a.defaultPlaybackRate = a.playbackRate = rate;
+    a.preservesPitch = false;
     set({ track, time: 0, duration: track.duration ?? 0, playing: true });
     void a.play().catch(() => set({ playing: false }));
   },
@@ -62,8 +73,8 @@ export const previewPlayer = {
   },
   seek(sec: number) {
     if (!audio || !state.duration) return;
-    audio.currentTime = Math.max(0, Math.min(state.duration, sec));
-    set({ time: audio.currentTime });
+    audio.currentTime = Math.max(0, Math.min(state.duration, sec)) * rate;
+    set({ time: audio.currentTime / rate });
   },
   /** Berhenti & lupakan lagu (mini-player hilang) */
   stop() {
