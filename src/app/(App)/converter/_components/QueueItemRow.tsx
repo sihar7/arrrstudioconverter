@@ -69,18 +69,21 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
           onClick={onSelect}
           className="group/thumb relative aspect-video w-full cursor-pointer self-start overflow-hidden rounded-s bg-raised transition-transform duration-150 active:scale-[0.96] desk:aspect-square desk:self-center desk:rounded-[8px]"
         >
-          <Image
-            src={item.thumbnail}
-            alt=""
-            fill
-            sizes="120px"
-            unoptimized
-            loading="lazy"
-            className={cn(
-              "object-cover transition-[transform,filter] duration-300 ease-[var(--ease)] desk:scale-[1.35]",
-              selected ? "scale-[1.08] brightness-[0.42]" : "group-hover/thumb:brightness-[0.8]",
-            )}
-          />
+          {/* Sumber non-YouTube bisa tanpa thumbnail → cukup latar raised */}
+          {item.thumbnail && (
+            <Image
+              src={item.thumbnail}
+              alt=""
+              fill
+              sizes="120px"
+              unoptimized
+              loading="lazy"
+              className={cn(
+                "object-cover transition-[transform,filter] duration-300 ease-[var(--ease)] desk:scale-[1.35]",
+                selected ? "scale-[1.08] brightness-[0.42]" : "group-hover/thumb:brightness-[0.8]",
+              )}
+            />
+          )}
           {selected ? (
             <span
               key={selectIndex}
@@ -107,7 +110,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
         </button>
       ) : (
         <div className="relative aspect-video w-full self-start overflow-hidden rounded-s bg-raised desk:aspect-square desk:self-center desk:rounded-[8px]">
-          <Image src={item.thumbnail} alt="" fill sizes="120px" unoptimized loading="lazy" className="object-cover desk:scale-[1.35]" />
+          {item.thumbnail && <Image src={item.thumbnail} alt="" fill sizes="120px" unoptimized loading="lazy" className="object-cover desk:scale-[1.35]" />}
           <span className="absolute bottom-1 right-1 bg-black/75 px-1 font-mono text-[10.5px] text-white desk:hidden">{formatDuration(outDur)}</span>
         </div>
       )}
@@ -187,8 +190,10 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
           {/* Cover album → Decal (berjalan bersama upload audio) */}
           {item.decal.status !== "idle" && (
             <div className="mt-2 flex min-w-0 items-center gap-2 text-[12.5px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.cover ?? item.thumbnail} alt="" className="size-5 shrink-0 rounded-[5px] object-cover" />
+              {(item.cover || item.thumbnail) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.cover || item.thumbnail} alt="" className="size-5 shrink-0 rounded-[5px] object-cover" />
+              )}
               {(item.decal.status === "uploading" || item.decal.status === "processing") && (
                 <span className="flex items-center gap-1.5 text-fg-2">
                   <Spinner className="size-3" /> {item.decal.status === "uploading" ? t.upload.coverUploading : t.upload.coverProcessing}

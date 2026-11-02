@@ -1,0 +1,165 @@
+/* ============================================================
+   css/arr-skin.css — SKIN ARR UI untuk Converter
+   Perilaku & struktur dari ARR UI (.arr-card, __rail/__body/__head/__meta/__aside/__title/__text/__foot);
+   tampilan di sini: kanvas hitam netral + silver, kedalaman lewat tone, rel kiri = status.
+   Di @layer components → utilitas Tailwind tetap bisa menimpa.
+   ============================================================ */
+
+:root {
+  --arr-canvas: var(--bg);
+  --arr-surface: var(--surface);
+  --arr-sunk: var(--raised);
+  --arr-line: var(--line);
+  --arr-ink: var(--fg);
+  --arr-ink-2: var(--fg-2);
+  --arr-ink-3: var(--fg-3);
+  --arr-accent: var(--accent);
+  --arr-on-accent: var(--on-accent);
+  --arr-danger: var(--err);
+  --arr-focus: var(--accent-strong);
+  --arr-scrim: var(--scrim);
+  --arr-tone-neutral: var(--line-2);
+  --arr-tone-success: var(--ok);
+  --arr-tone-danger: var(--err);
+  /* Peluang lolos Roblox */
+  --arr-tone-high: var(--ok);
+  --arr-tone-mid: var(--warn);
+  --arr-tone-low: var(--err);
+  --arr-tone-active: var(--accent-strong);
+  --arr-radius-sm: var(--shape-xs);
+  --arr-radius-md: var(--shape-s);
+  --arr-radius-lg: var(--shape-m);
+  --arr-font: var(--font-sans);
+  --arr-font-mono: var(--font-mono);
+  --arr-ease: var(--ease);
+}
+
+@layer components {
+  /* ---------- Kartu preset: ubin pilihan dengan rel status + meter peluang ---------- */
+  .arr-card[data-variant="preset"] {
+    position: relative;
+    width: 100%;
+    text-align: left;
+    border: 1px solid transparent;
+    background: color-mix(in srgb, var(--arr-ink) 4%, transparent);
+    border-radius: var(--arr-radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition:
+      background-color var(--arr-dur-fast),
+      border-color var(--arr-dur-fast),
+      transform var(--arr-dur-base) var(--arr-ease-back);
+  }
+  .arr-card[data-variant="preset"]:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--arr-ink) 7%, transparent);
+  }
+  .arr-card[data-variant="preset"]:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .arr-card[data-variant="preset"][aria-pressed="true"] {
+    background: color-mix(in srgb, var(--arr-ink) 11%, transparent);
+    border-color: color-mix(in srgb, var(--arr-ink) 22%, transparent);
+  }
+  .arr-card[data-variant="preset"]:disabled {
+    cursor: not-allowed;
+    background: transparent;
+    border: 1px dashed var(--arr-line);
+  }
+  .arr-card[data-variant="preset"] .arr-card__rail {
+    width: 3px;
+    border-radius: 0;
+    background: var(--arr-tone-active);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform var(--arr-dur-base) var(--arr-ease);
+  }
+  .arr-card[data-variant="preset"][aria-pressed="true"] .arr-card__rail {
+    transform: scaleY(1);
+  }
+  .arr-card[data-variant="preset"] .arr-card__body {
+    padding: 11px 12px 12px;
+  }
+  .arr-card[data-variant="preset"] .arr-card__meta {
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    align-items: center;
+  }
+  .arr-card[data-variant="preset"] .arr-card__aside {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--arr-tone, var(--arr-ink-3));
+    font-variant-numeric: tabular-nums;
+  }
+  .arr-card[data-variant="preset"] .arr-card__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+    font-size: 14px;
+  }
+  .arr-card[data-variant="preset"] .arr-card__text {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--arr-ink-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .arr-card[data-variant="preset"] .arr-card__foot {
+    margin-top: 9px;
+  }
+  .arr-card[data-variant="preset"]:disabled .arr-card__title {
+    color: var(--arr-ink-3);
+  }
+
+  /* Penanda "Terpopuler": pill silver ber-kilau — satu-satunya elemen terang di ubin */
+  .arr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 17px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--sheen);
+    color: var(--on-accent);
+    font: 600 9.5px/1 var(--arr-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ---------- Kartu peluang: panel info, rel = warna status ---------- */
+  .arr-card[data-variant="chance"] {
+    background: var(--arr-sunk);
+    border-radius: var(--arr-radius-lg);
+    overflow: hidden;
+  }
+  .arr-card[data-variant="chance"] .arr-card__rail {
+    width: 3px;
+    border-radius: 0;
+    transition: background-color var(--arr-dur-slow);
+  }
+  .arr-card[data-variant="chance"] .arr-card__body {
+    padding: 14px 16px 16px;
+  }
+  .arr-card[data-variant="chance"] .arr-card__meta {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    align-items: center;
+  }
+  .arr-card[data-variant="chance"] .arr-card__aside {
+    font: 600 12px/1.2 var(--arr-font);
+    color: var(--arr-tone);
+  }
+  .arr-card[data-variant="chance"] .arr-card__text {
+    font-size: 12px;
+    color: var(--arr-ink-3);
+    margin-top: 10px;
+  }
+
+  [data-shell="desktop"] .arr-card[data-variant="preset"],
+  [data-shell="desktop"] .arr-card[data-variant="chance"] {
+    border-radius: 10px;
+  }
+}

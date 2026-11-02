@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isSourceId } from "./source";
 
 // Skema opsi konversi — dipakai bersama oleh UI (default & batas slider) dan API (validasi)
 
@@ -92,7 +93,8 @@ export const PRESETS = {
 export type PresetId = keyof typeof PRESETS;
 
 export const createJobSchema = z.object({
-  videoId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+  // YouTube 11 karakter atau ID sumber lain ber-namespace (tt:/sc:/ig:/x:/fb:) — lihat schemas/source
+  videoId: z.string().max(200).refine(isSourceId, "Sumber tidak didukung"),
   options: audioOptionsSchema,
   // Judul tetap (lagu dari video album) — tidak ditimpa judul video; dibersihkan server sebelum jadi nama file
   title: z.string().trim().min(1).max(200).optional(),

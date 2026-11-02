@@ -16,8 +16,9 @@ import {
   setOptions,
 } from "@/store/slices/converterSlice";
 import { updateRoblox } from "@/store/slices/robloxSlice";
-import { useMeQuery } from "@/store/api/baseApi";
-import { DEFAULT_OPTIONS, LIMITS, PRESETS, ROBLOX_FORMATS, type AudioOptions } from "@/lib/schemas/convert.schema";
+import { useMeQuery, usePresetStatsQuery } from "@/store/api/baseApi";
+import { DEFAULT_OPTIONS, LIMITS, PRESETS, ROBLOX_FORMATS, type AudioOptions, type PresetId } from "@/lib/schemas/convert.schema";
+import { approvalChance, classifyPreset } from "@/lib/schemas/presetStats";
 import { PLANS, cheapestPlan, clampOptions, fitsPlan, type EffectId, type PlanId } from "@/lib/schemas/plans";
 import { usePlans } from "@/hooks/usePlans";
 import { summarize } from "@/lib/audioSummary";
@@ -36,6 +37,8 @@ import IconButton from "@/components/ui/IconButton";
 import { BITRATE_OPTIONS, FORMAT_OPTIONS, PRESET_ORDER, SPEED_QUICK } from "../_constants/converter.constants";
 import { dbLabel, estimateBytes, secLabel, semiLabel, speedLabel } from "../_utils/helpers";
 import RobloxTempoCard from "./RobloxTempoCard";
+import { ChanceBar, ChanceCard, chanceLevel } from "./RobloxChance";
+import ArrCard from "@/components/arr/ArrCard";
 
 type Tab = "preset" | "output" | "tempo" | "effects" | "trim";
 const TABS: Tab[] = ["preset", "output", "tempo", "effects", "trim"];
@@ -83,7 +86,10 @@ function LockNote({ text, cta }: { text: string; cta: string }) {
   );
 }
 
-/** Ubin preset: nama + deskripsi singkat; aktif = garis bawah aksen + centang; locked = butuh plan lebih tinggi */
+/**
+ * Ubin preset = ARR card varian "preset": rel kiri menyala saat aktif, kanan atas = peluang lolos Roblox,
+ * kaki = meter peluang. locked = butuh plan lebih tinggi; popular = badge "Terpopuler".
+ */
 function PresetTile({
   name,
   desc,
@@ -92,6 +98,8 @@ function PresetTile({
   onDelete,
   deleteLabel,
   locked,
+  chance,
+  popular,
   className,
 }: {
   name: string;
@@ -102,50 +110,51 @@ function PresetTile({
   deleteLabel?: string;
   /** label plan yang dibutuhkan (mis. "Pro"); diisi = tile terkunci */
   locked?: string;
+  /** peluang lolos Roblox (%) */
+  chance: number;
+  /** teks badge "Terpopuler" (title = pangsa pemakaian) */
+  popular?: { label: string; title: string };
   className?: string;
 }) {
   return (
     <div className={cn("group relative", className)}>
-      <button
-        type="button"
-        aria-pressed={active}
-        onClick={onClick}
+      <ArrCard
+        variant="preset"
+        tone={chanceLevel(chance)}
+        pressed={active}
         disabled={Boolean(locked)}
-        className={cn(
-          "state-layer relative flex h-[60px] w-full cursor-pointer flex-col items-start justify-center overflow-hidden rounded-s border px-3 text-left transition-[border-color,background-color,transform] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100",
-          // App desktop: ubin tonal tanpa garis; aktif = isi lebih terang + cincin tipis
-          "desk:h-[52px] desk:rounded-[10px] desk:border-transparent",
-          active ? "border-fg-3 bg-raised desk:bg-fg/[0.13] desk:ring-1 desk:ring-inset desk:ring-fg/25" : "border-line hover:border-line-2 desk:bg-fg/[0.05] desk:hover:bg-fg/[0.08]",
-          locked && "border-dashed hover:border-line desk:border-line desk:bg-transparent",
-          onDelete && "pr-9",
-        )}
-      >
-        <span className={cn("flex w-full items-center gap-1.5 text-[13.5px] font-semibold", locked ? "text-fg-3" : "text-fg")}>
-          <span className="truncate">{name}</span>
-          {active && <Check width={14} height={14} strokeWidth={2.2} aria-hidden="true" className="pick-pop shrink-0" />}
-          {locked && (
-            <span className="caps ml-auto inline-flex shrink-0 items-center gap-1 text-[9.5px] text-fg-2">
+        onClick={onClick}
+        meta={[
+          popular && (
+            <span key="p" className="arr-badge" title={popular.title}>
+              {popular.label}
+            </span>
+          ),
+          locked && (
+            <span key="l" className="caps inline-flex items-center gap-1 text-[9.5px] text-fg-2">
               <Lock width={11} height={11} aria-hidden="true" />
               {locked}
             </span>
-          )}
-        </span>
-        <span className="mt-0.5 w-full truncate text-[11.5px] text-fg-3">{desc}</span>
-        <span
-          aria-hidden="true"
-          className={cn(
-            "absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent transition-transform duration-300 ease-[var(--ease)] desk:hidden",
-            active ? "scale-x-100" : "scale-x-0",
-          )}
-        />
-      </button>
+          ),
+        ]}
+        aside={onDelete ? undefined : `${chance}%`}
+        title={
+          <>
+            <span className="truncate">{name}</span>
+            {active && <Check width={14} height={14} strokeWidth={2.2} aria-hidden="true" className="pick-pop shrink-0" />}
+          </>
+        }
+        text={desc}
+        foot={<ChanceBar pct={chance} />}
+        className={cn(onDelete && "pr-9")}
+      />
       {onDelete && (
         <IconButton
           label={deleteLabel ?? ""}
           size="sm"
           icon={<Xmark width={14} height={14} />}
           onClick={onDelete}
-          className="absolute right-0 top-1/2 size-9 -translate-y-1/2 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
+          className="absolute right-0.5 top-0.5 size-9 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
         />
       )}
     </div>
@@ -234,6 +243,30 @@ export default function SettingsPanel() {
     : preset === "custom"
       ? c.modified
       : c.presetNames[preset as keyof typeof c.presetNames];
+
+  // Peluang lolos Roblox: prior heuristik + rasio Approved nyata dari semua user (agregat BE, cache 15 mnt)
+  const { data: stats } = usePresetStatsQuery(undefined, { skip: !hydrated });
+  const cc = c.chance;
+  const chanceOf = (opts: Partial<AudioOptions>) => {
+    const k = classifyPreset(opts);
+    return approvalChance(opts, k === "custom" ? undefined : stats?.presets[k]);
+  };
+  const presetChance = Object.fromEntries(presetIds.map((id) => [id, chanceOf(PRESETS[id]).pct])) as Record<PresetId, number>;
+  const current = chanceOf(o);
+  // Terpopuler: preset terlihat dengan pemakaian terbanyak (butuh sampel minimal supaya tidak menyesatkan)
+  const popularId =
+    stats && stats.total >= 10
+      ? presetIds.reduce<PresetId | null>((best, id) => ((stats.presets[id]?.uses ?? 0) > (best ? (stats.presets[best]?.uses ?? 0) : 0) ? id : best), null)
+      : null;
+  const popularShare = popularId && stats ? Math.round(((stats.presets[popularId]?.uses ?? 0) / stats.total) * 100) : 0;
+  // Saran: preset terbuka dengan peluang tertinggi, hanya bila jelas lebih baik dari setelan sekarang
+  const better = presetIds
+    .filter((id) => id !== preset && !presetLock(PRESETS[id]))
+    .reduce<PresetId | null>((b, id) => (!b || presetChance[id] > presetChance[b] ? id : b), null);
+  const suggestion =
+    better && current.pct < 70 && presetChance[better] >= current.pct + 10
+      ? { label: f(cc.better, { name: c.presetNames[better] }), hint: f(cc.betterHint, { n: presetChance[better] }), onClick: () => dispatch(applyPreset(better)) }
+      : undefined;
 
   const onTabKey = (e: KeyboardEvent) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
@@ -329,6 +362,14 @@ export default function SettingsPanel() {
       <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} key={tab} className="thin-scroll fade-swap flex min-h-[300px] flex-1 flex-col gap-6 overflow-y-auto p-5 desk:min-h-0 desk:gap-5 desk:p-4">
         {tab === "preset" && (
           <>
+            <ChanceCard
+              pct={current.pct}
+              title={cc.title}
+              levelLabel={cc.levels[chanceLevel(current.pct)]}
+              basis={current.sample > 0 ? f(cc.basis, { n: current.sample, days: stats?.days ?? 60 }) : cc.prior}
+              disclaimer={`${cc.hint}. ${cc.disclaimer}`}
+              suggestion={suggestion}
+            />
             <div className="grid grid-cols-2 gap-2" role="group" aria-label={p.presets}>
               {presetIds.map((id, n) => (
                 <PresetTile
@@ -337,6 +378,8 @@ export default function SettingsPanel() {
                   desc={c.presetDesc[id]}
                   active={preset === id}
                   locked={presetLock(PRESETS[id])}
+                  chance={presetChance[id]}
+                  popular={id === popularId ? { label: cc.popular, title: f(cc.share, { n: popularShare }) } : undefined}
                   onClick={() => dispatch(applyPreset(id))}
                   className={presetIds.length % 2 && n === presetIds.length - 1 ? "col-span-2" : undefined}
                 />
@@ -352,6 +395,7 @@ export default function SettingsPanel() {
                       name={cp.name}
                       desc={summarize(cp.options, t).join(" · ") || `${cp.options.format.toUpperCase()} · ${p.summaryNone}`}
                       active={preset === `u:${cp.id}`}
+                      chance={chanceOf(cp.options).pct}
                       onClick={() => dispatch(applyCustomPreset(cp.id))}
                       onDelete={() => dispatch(deletePreset(cp.id))}
                       deleteLabel={f(c.deletePreset, { name: cp.name })}
@@ -613,9 +657,17 @@ export default function SettingsPanel() {
           {f(c.estimate, { size: formatBytes(estimateBytes(o, 240, limits.smartCompress)) })}
         </span>
         {robloxOk ? (
-          <span className="flex items-center gap-1.5 text-ok">
-            <CheckCircle width={15} height={15} aria-hidden="true" /> {c.robloxReady}
-          </span>
+          <button
+            type="button"
+            onClick={() => setTab("preset")}
+            title={`${c.robloxReady} · ${cc.disclaimer}`}
+            className={cn(
+              "state-layer flex cursor-pointer items-center gap-1.5 rounded-xs px-1 tabular-nums",
+              { high: "text-ok", mid: "text-warn", low: "text-err" }[chanceLevel(current.pct)],
+            )}
+          >
+            <CheckCircle width={15} height={15} aria-hidden="true" /> {f(cc.short, { n: current.pct })}
+          </button>
         ) : (
           <button type="button" onClick={() => set({ format: "mp3" })} className="state-layer flex cursor-pointer items-center gap-1.5 rounded-xs px-1 text-warn" title={c.robloxFix}>
             <WarningTriangle width={15} height={15} aria-hidden="true" /> {c.robloxFormatBad} · <span className="underline underline-offset-2">{c.robloxFix}</span>

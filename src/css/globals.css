@@ -1,5 +1,9 @@
+/* Layer ARR UI dideklarasikan paling awal → prioritas terendah; utilitas Tailwind & skin proyek selalu menang */
+@layer arr;
 @import "tailwindcss";
 @import "./theme/tokens.css";
+@import "./arr-ui.css";
+@import "./arr-skin.css";
 @import "./layouts/components.css";
 
 /* Tema terang dipicu atribut data-theme di <html> */

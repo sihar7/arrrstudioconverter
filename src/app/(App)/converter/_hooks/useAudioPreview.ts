@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { previewPlayer, usePreview } from "@/lib/previewPlayer";
 import { getDesktop } from "@/type/desktop";
 import { robloxPlayback } from "@/lib/robloxPlayback";
@@ -18,6 +18,17 @@ export function useAudioPreview() {
   const restore = useAppSelector((s) => s.converter.robloxMode === "restore");
 
   useEffect(() => () => void (!getDesktop() && previewPlayer.stop()), []);
+
+  // Item yang sedang diputar dihapus dari antrean (X / Bersihkan / Hapus semua) → audionya ikut berhenti.
+  // Hanya fileId yang tadinya ADA di antrean → lagu dari Riwayat (mini-player desktop) tidak ikut terhenti.
+  const fileIds = useAppSelector((s) => s.converter.items.map((i) => i.result?.fileId ?? "").join(","));
+  const prevIds = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const now = new Set(fileIds.split(",").filter(Boolean));
+    const cur = track?.fileId;
+    if (cur && prevIds.current.has(cur) && !now.has(cur)) previewPlayer.stop();
+    prevIds.current = now;
+  }, [fileIds, track?.fileId]);
 
   const toggle = useCallback(
     (item: QueueItem) => {

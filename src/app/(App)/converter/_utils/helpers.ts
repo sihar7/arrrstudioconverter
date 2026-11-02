@@ -1,5 +1,6 @@
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
 import type { CompressLevel } from "@/lib/schemas/plans";
+import { parseSocialLink, type Platform } from "@/lib/schemas/source";
 
 /** Pecah teks input jadi kandidat link (spasi / baris baru / koma) */
 export function extractLinks(text: string): string[] {
@@ -31,12 +32,12 @@ export function secLabel(v: number) {
 // DETEKSI LINK — dibaca langsung saat mengetik (feedback sebelum Tambah)
 // ============================================================
 
-export type LinkKind = "video" | "short" | "music" | "playlist" | "id" | "invalid";
+export type LinkKind = "video" | "short" | "music" | "playlist" | "id" | Exclude<Platform, "youtube"> | "invalid";
 
 export interface ParsedLink {
   raw: string;
   kind: LinkKind;
-  /** videoId (11 karakter) atau playlistId */
+  /** videoId (11 karakter / ID sumber ber-namespace mis. "tt:…") atau playlistId */
   id: string | null;
   /** videoId sudah ada di antrean (belum selesai) */
   dup: boolean;
@@ -53,7 +54,11 @@ export function parseLink(raw: string): Omit<ParsedLink, "dup"> {
   } catch {
     return { raw, kind: "invalid", id: null };
   }
-  if (!YT_HOST.test(url.hostname)) return { raw, kind: "invalid", id: null };
+  if (!YT_HOST.test(url.hostname)) {
+    // TikTok / SoundCloud / Instagram / X / Facebook — pola sama dengan validasi server (lib/schemas/source)
+    const so = parseSocialLink(raw);
+    return so ? { raw, kind: so.platform, id: so.id } : { raw, kind: "invalid", id: null };
+  }
   const path = url.pathname.split("/").filter(Boolean);
   const v = url.searchParams.get("v");
   const list = url.searchParams.get("list");

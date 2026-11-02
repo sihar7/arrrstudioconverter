@@ -5,6 +5,7 @@ import type { MeResponse } from "@/type/auth";
 import type { HistoryItem } from "@/type/history";
 import type { RobloxProfile } from "@/type/roblox";
 import type { PlanId, PlanLimits, TokenRules } from "@/lib/schemas/plans";
+import type { PresetStatsResponse } from "@/lib/schemas/presetStats";
 
 // RTK Query untuk data yang di-cache & di-invalidate (sesi/kuota, riwayat)
 export const baseApi = createApi({
@@ -15,6 +16,8 @@ export const baseApi = createApi({
     me: b.query<MeResponse, void>({ query: () => "auth/me", providesTags: ["Me"] }),
     // Batas plan efektif (bawaan + pengaturan admin) — lihat hooks/usePlans
     plans: b.query<{ guest: number; tokens: TokenRules; plans: Record<PlanId, PlanLimits> }, void>({ query: () => "plans", keepUnusedDataFor: 600, providesTags: ["Plans"] }),
+    // Statistik agregat preset (pemakaian + rasio approve Roblox) — lihat SettingsPanel
+    presetStats: b.query<PresetStatsResponse, void>({ query: () => "presets/stats", keepUnusedDataFor: 900 }),
     logout: b.mutation<{ ok: boolean }, void>({
       query: () => ({ url: "auth/logout", method: "POST" }),
       invalidatesTags: ["Me", "History"],
@@ -46,6 +49,7 @@ export const {
   useRobloxProfileQuery,
   useDeleteHistoryMutation,
   useClearHistoryMutation,
+  usePresetStatsQuery,
 } = baseApi;
 
 /**

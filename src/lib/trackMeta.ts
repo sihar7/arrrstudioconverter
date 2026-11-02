@@ -3,6 +3,7 @@
 // & nama channel YouTube + thumbnail video yang dipotong kotak.
 
 import { clean } from "./shortName";
+import { isYoutubeId } from "@/lib/schemas/source";
 
 export interface TrackMeta {
   artist: string | null;
@@ -158,6 +159,8 @@ async function squareSource(cover: string | null, videoId: string): Promise<Squa
       /* lanjut ke thumbnail */
     }
   }
+  // Sumber non-YouTube tidak punya pola thumbnail ytimg → tanpa cover album, berhenti di sini
+  if (!isYoutubeId(videoId)) throw new Error("Tidak ada gambar sumber");
   return videoSquare(videoId);
 }
 
