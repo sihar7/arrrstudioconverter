@@ -58,8 +58,9 @@ export default function PresetNoteDialog({
   const rows = describe(options, t, f);
 
   return (
-    <Dialog open={open} onClose={onClose} title={f(n.title, { name })} sub={n.sub} footer={<Button onClick={onClose}>{n.ok}</Button>}>
-      <div className="flex flex-col gap-6">
+    <Dialog open={open} onClose={onClose} title={f(n.title, { name })} sub={n.sub} footer={<Button onClick={onClose}>{n.ok}</Button>} width="max-w-[960px]">
+      {/* Layar lebar: dua kolom 50/50 (setelan | di game) supaya muat tanpa scroll; HP: bertumpuk */}
+      <div className="grid gap-6 md:grid-cols-2 md:gap-7">
         <section aria-label={n.setTitle}>
           <p className="caps text-[10.5px] text-fg-3">{n.setTitle}</p>
           <dl className="mt-2 divide-y divide-fg/[0.06] overflow-hidden rounded-[12px] bg-fg/[0.04]">
