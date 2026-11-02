@@ -578,6 +578,9 @@ const en: Dictionary = {
     modified: "Modified",
     estimateLabel: "Estimated output",
     estimate: "≈ {size} / 4-minute song",
+    cancel: "Cancel",
+    cancelHint: "Stops the job on the server, removes temp files & refunds the token",
+    canceled: "“{title}” canceled",
     robloxReady: "Ready for Roblox",
     chance: {
       title: "Roblox approval chance",

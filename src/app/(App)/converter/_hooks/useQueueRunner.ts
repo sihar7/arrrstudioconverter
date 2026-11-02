@@ -7,7 +7,7 @@ import { baseApi } from "@/store/api/baseApi";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
-import { createJob, getJob } from "../_service/converter.service";
+import { cancelJob, createJob, getJob } from "../_service/converter.service";
 import { MAX_PARALLEL, POLL_MS } from "../_constants/converter.constants";
 
 const sleep = (ms: number, signal: AbortSignal) =>
@@ -96,6 +96,11 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
         const { clip } = item;
         const options = clip ? { ...item.options!, trimStart: clip.start || null, trimEnd: clip.end } : item.options!;
         const { job } = await createJob(item.videoId, options, ctrl.signal, clip ? item.title : undefined);
+        // Dibatalkan saat request masih di jalan → job terlanjur dibuat di server, hentikan juga
+        if (ctrl.signal.aborted) {
+          void cancelJob(job.id).catch(() => {});
+          return;
+        }
         dispatch(jobUpdated({ key: item.key, job }));
         dispatch(baseApi.util.invalidateTags(["Me"]));
         await poll(item.key, job.id, ctrl);
@@ -122,6 +127,15 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
         finish(item.key);
       }
     };
+
+    // Item dibatalkan / dihapus → hentikan polling & request yang masih berjalan untuk item itu
+    for (const [key, ctrl] of active.current) {
+      const it = items.find((i) => i.key === key);
+      if (!it || !["pending", "queued", "downloading", "processing"].includes(it.status)) {
+        ctrl.abort();
+        active.current.delete(key);
+      }
+    }
 
     // Lanjutkan polling job yang sudah berjalan (mis. setelah pindah halaman)
     for (const it of items) {

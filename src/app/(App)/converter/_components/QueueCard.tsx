@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Archive, Bell, BellNotification, CloudUpload, KeyCommand, MusicDoubleNote, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { clearFinished, enqueue, isRunning, moveItem, removeItem, removeMany, type QueueItem } from "@/store/slices/converterSlice";
+import { clearFinished, enqueue, isRunning, itemFailed, moveItem, removeItem, removeMany, type QueueItem } from "@/store/slices/converterSlice";
+import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -13,7 +14,7 @@ import Button, { buttonClass } from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import Progress from "@/components/ui/Progress";
 import QueueItemRow from "./QueueItemRow";
-import { zipUrl } from "../_service/converter.service";
+import { cancelJob, zipUrl } from "../_service/converter.service";
 import type { UploadBlock } from "@/type/roblox";
 
 type Filter = "all" | "ready" | "running" | "done" | "error";
@@ -63,6 +64,13 @@ export default function QueueCard({
   const items = useAppSelector((s) => s.converter.items);
   const dispatch = useAppDispatch();
   const { t, f } = useT();
+  const toast = useToast();
+  /** Batalkan: item kembali "Siap" seketika (runner menghentikan polling), server menghentikan job di latar */
+  const cancel = (item: QueueItem) => {
+    if (item.jobId) void cancelJob(item.jobId).catch(() => {});
+    dispatch(itemFailed({ key: item.key, error: "", reset: true }));
+    toast(f(t.converter.canceled, { title: item.title }), "info");
+  };
   const [confirm, confirmDialog] = useConfirm();
   const c = t.converter;
   const [filter, setFilter] = useState<Filter>("all");
@@ -265,7 +273,7 @@ export default function QueueCard({
         />
       ) : (
         <>
-          <ul>
+          <ul className="flex flex-col gap-2 p-3 desk:gap-1 desk:p-2">
             {shown.map((item) => {
               const n = order.get(item.key)!;
               return (
@@ -281,6 +289,7 @@ export default function QueueCard({
                   onSelect={() => onToggleSelect(item.key)}
                   onConvert={() => dispatch(enqueue([item.key]))}
                   onRemove={() => dispatch(removeItem(item.key))}
+                  onCancel={() => cancel(item)}
                   onMove={(dir) => dispatch(moveItem({ key: item.key, dir }))}
                   onTogglePlay={() => onTogglePlay(item)}
                   onUpload={() => onUpload(item)}

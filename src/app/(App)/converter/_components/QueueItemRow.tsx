@@ -13,6 +13,7 @@ import Progress from "@/components/ui/Progress";
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
 import RobloxPlaybackChip from "@/components/shared/RobloxPlaybackChip";
+import PlatformChip from "@/components/shared/PlatformChip";
 import { fileUrl } from "../_service/converter.service";
 import { outputDuration } from "../_utils/helpers";
 import { summarize } from "@/lib/audioSummary";
@@ -33,11 +34,13 @@ interface Props {
   onMove: (dir: -1 | 1) => void;
   onConvert: () => void;
   onRemove: () => void;
+  /** hentikan job yang sedang berjalan (server ikut berhenti & bersih-bersih) */
+  onCancel: () => void;
   onTogglePlay: () => void;
   onUpload: () => void;
 }
 
-function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, canMoveUp, canMoveDown, onSelect, onMove, onConvert, onRemove, onTogglePlay, onUpload }: Props) {
+function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, canMoveUp, canMoveDown, onSelect, onMove, onConvert, onRemove, onCancel, onTogglePlay, onUpload }: Props) {
   const { t, f, lang } = useT();
   const toast = useToast();
   const running = isRunning(item.status);
@@ -50,16 +53,25 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
   const copy = async (text: string) => {
     if (await copyText(text)) toast(t.toast.copied, "ok");
   };
+  // Rel kiri ARR card = status: berjalan (silver berdenyut) · selesai · gagal
+  const tone = running ? "active" : done ? "high" : item.status === "error" ? "low" : undefined;
 
   return (
     <li
-      className={cn(
-        "group/row grid grid-cols-[96px_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-line/70 px-4 py-4 transition-colors duration-200 last:border-b-0 hover:bg-fg/[0.02] sm:grid-cols-[120px_minmax(0,1fr)_auto] sm:px-5",
-        // App desktop: baris track list — cover kotak 44px, satu baris judul, aksi rata kanan
-        "desk:grid-cols-[44px_minmax(0,1fr)_auto] desk:items-center desk:gap-x-3 desk:gap-y-1 desk:border-[var(--hairline)] desk:px-4 desk:py-2.5 desk:hover:bg-fg/[0.035]",
-        selected && "bg-fg/[0.035] desk:bg-fg/[0.06]",
-      )}
+      className="arr-card group/row"
+      data-variant="queue"
+      data-tone={tone}
+      data-selected={selected || undefined}
+      style={tone ? ({ "--arr-tone": `var(--arr-tone-${tone})` } as CSSProperties) : undefined}
     >
+      <span className="arr-card__rail" aria-hidden="true" />
+      <div
+        className={cn(
+          "arr-card__body grid grid-cols-[96px_minmax(0,1fr)] gap-x-4 gap-y-3 px-4 py-4 sm:grid-cols-[120px_minmax(0,1fr)_auto] sm:px-5",
+          // App desktop: baris track list — cover kotak 44px, satu baris judul, aksi rata kanan
+          "desk:grid-cols-[44px_minmax(0,1fr)_auto] desk:items-center desk:gap-x-3 desk:gap-y-1 desk:px-4 desk:py-2.5",
+        )}
+      >
       {/* Thumbnail (lazy) — pada item siap upload, cover = tombol pilih bernomor ala photo picker */}
       {selectable ? (
         <button
@@ -121,6 +133,7 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
           {item.title}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-fg-3 desk:mt-0.5 desk:text-[12px]">
+          <PlatformChip videoId={item.videoId} />
           <span className="hidden font-mono tabular-nums desk:inline">{formatDuration(outDur)}</span>
           {(item.artist ?? item.author) && (
             <span className="truncate" title={[item.artist ?? item.author, item.album].filter(Boolean).join(" · ")}>
@@ -269,14 +282,14 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
             )}
           </>
         )}
-        <IconButton
-          label={t.common.remove}
-          icon={<Xmark width={16} height={16} />}
-          size="sm"
-          disabled={running || up.status === "uploading"}
-          onClick={onRemove}
-          className={cn(running && "invisible")}
-        />
+        {running ? (
+          <Button size="sm" variant="ghost" icon={<Xmark width={14} height={14} />} onClick={onCancel} title={t.converter.cancelHint}>
+            {t.converter.cancel}
+          </Button>
+        ) : (
+          <IconButton label={t.common.remove} icon={<Xmark width={16} height={16} />} size="sm" disabled={up.status === "uploading"} onClick={onRemove} />
+        )}
+      </div>
       </div>
     </li>
   );

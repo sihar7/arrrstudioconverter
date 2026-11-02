@@ -14,6 +14,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import RobloxPlaybackChip from "@/components/shared/RobloxPlaybackChip";
+import PlatformChip from "@/components/shared/PlatformChip";
 import { relTime, stateTone } from "../_utils/helpers";
 import { coverAssetId } from "@/lib/coverDecal";
 import { robloxAssetConfigureUrl } from "@/Url/Url";
@@ -109,9 +110,12 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
             <span className="line-clamp-1 text-[14.5px] font-semibold leading-snug [overflow-wrap:anywhere] sm:line-clamp-2" title={item.title}>
               {item.title}
             </span>
-            <span className="mt-1 block truncate font-mono text-[11.5px] text-fg-3">
+            <span className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[11.5px] text-fg-3">
+              <PlatformChip videoId={item.videoId} className="font-sans" />
+              <span className="truncate">
               {relTime(item.createdAt, t)} · {formatDuration(item.duration)} · {item.format.toUpperCase()} · {formatBytes(item.size)}
               {chips.length > 0 && ` · ${chips.slice(0, 2).join(" · ")}`}
+            </span>
             </span>
             <span className="mt-2 flex flex-wrap items-center gap-1.5">
               {rb ? (

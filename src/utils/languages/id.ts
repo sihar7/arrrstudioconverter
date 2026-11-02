@@ -577,6 +577,9 @@ const id = {
     modified: "Diubah",
     estimateLabel: "Perkiraan hasil",
     estimate: "≈ {size} / lagu 4 menit",
+    cancel: "Batalkan",
+    cancelHint: "Hentikan proses di server, file sementara dihapus & token dikembalikan",
+    canceled: "“{title}” dibatalkan",
     robloxReady: "Siap untuk Roblox",
     chance: {
       title: "Peluang lolos Roblox",

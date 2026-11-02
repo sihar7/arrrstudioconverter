@@ -17,6 +17,11 @@ export async function createJob(videoId: string, options: AudioOptions, signal?:
   return apiFetch<CreateJobResponse>("/api/convert", { method: "POST", json: { videoId, options, title }, signal, headers: fp ? { "x-arr-fp": fp } : undefined });
 }
 
+/** Batalkan job di server (proses dihentikan, file sementara dihapus, token dikembalikan) */
+export function cancelJob(id: string) {
+  return apiFetch<{ job: PublicJob }>(`/api/jobs/${id}`, { method: "DELETE" });
+}
+
 export function getJob(id: string, signal?: AbortSignal) {
   return apiFetch<{ job: PublicJob }>(`/api/jobs/${id}`, { signal, cache: "no-store" });
 }
