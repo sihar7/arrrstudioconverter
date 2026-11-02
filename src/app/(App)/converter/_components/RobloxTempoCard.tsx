@@ -66,7 +66,7 @@ export default function RobloxTempoCard({ options: o, mode }: { options: AudioOp
               onClick={() => dispatch(setRobloxMode("restore" as RobloxMode))}
               meta={[<span key="b" className="arr-badge">{r.recommended}</span>]}
               title={r.restoreTitle}
-              className="[&_.arr-card__text]:whitespace-normal"
+              className="arr-wrap"
               text={f(r.restoreDesc, { n: fill })}
             />
             <ArrCard
@@ -74,13 +74,13 @@ export default function RobloxTempoCard({ options: o, mode }: { options: AudioOp
               pressed={!restore}
               onClick={() => dispatch(setRobloxMode("asIs" as RobloxMode))}
               title={r.asIsTitle}
-              className="[&_.arr-card__text]:whitespace-normal"
+              className="arr-wrap"
               text={f(r.asIsDesc, { speed: pb.speed })}
             />
           </div>
 
           {restore ? (
-            <div className="rounded-s bg-raised p-4 desk:rounded-[10px]">
+            <div className="rounded-s bg-fg/[0.05] p-4 desk:rounded-[10px]">
               {/* Satu angka yang perlu diingat — besar & bisa disalin sekali klik */}
               <div className="flex items-end justify-between gap-3">
                 <div>
@@ -120,7 +120,7 @@ export default function RobloxTempoCard({ options: o, mode }: { options: AudioOp
               )}
             </div>
           ) : (
-            <div className="rounded-s bg-raised p-4 desk:rounded-[10px]">
+            <div className="rounded-s bg-fg/[0.05] p-4 desk:rounded-[10px]">
               <p className="flex items-start gap-2 text-[13px] leading-snug text-fg">
                 <CheckCircle width={16} height={16} aria-hidden="true" className="mt-px shrink-0 text-ok" /> {r.asIsDo}
               </p>

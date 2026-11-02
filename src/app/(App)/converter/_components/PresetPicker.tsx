@@ -51,7 +51,8 @@ export function FeaturedPreset({ name, desc, pct, active, locked, onClick, passL
       disabled={Boolean(locked)}
       onClick={onClick}
       className={cn(
-        "arr-card group relative w-full cursor-pointer overflow-hidden text-left disabled:cursor-not-allowed",
+        // block: timpa display:grid bawaan .arr-card · shrink-0: di panel tab (flex kolom + scroll) kartu ber-overflow-hidden ikut menyusut
+        "arr-card group relative block w-full shrink-0 cursor-pointer overflow-hidden text-left disabled:cursor-not-allowed",
         "rounded-[14px] border p-4 transition-[border-color,background-color,transform] duration-200 active:scale-[0.985] desk:rounded-[10px]",
         active ? "border-fg/30 bg-fg/[0.1]" : "border-fg/[0.12] bg-fg/[0.05] hover:border-fg/25 hover:bg-fg/[0.07]",
       )}
@@ -148,7 +149,7 @@ export function PresetRow({ name, desc, pct, active, locked, onClick, passLabel,
 /** Wadah daftar: satu permukaan, pemisah tipis (bukan kartu-kartu terpisah) */
 export function PresetList({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <ul aria-label={label} className="divide-y divide-fg/[0.06] overflow-hidden rounded-[14px] bg-fg/[0.035] desk:rounded-[10px]">
+    <ul aria-label={label} className="shrink-0 divide-y divide-fg/[0.06] overflow-hidden rounded-[14px] bg-fg/[0.035] desk:rounded-[10px]">
       {children}
     </ul>
   );

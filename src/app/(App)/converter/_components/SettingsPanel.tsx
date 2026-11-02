@@ -35,7 +35,7 @@ import Field, { Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
 import { BITRATE_OPTIONS, FORMAT_OPTIONS, PRESET_ORDER, SPEED_QUICK } from "../_constants/converter.constants";
 import { dbLabel, estimateBytes, secLabel, semiLabel, speedLabel } from "../_utils/helpers";
-import RobloxTempoCard from "./RobloxTempoCard";
+import PresetNoteDialog from "./PresetNoteDialog";
 import { ChanceCard, chanceLevel } from "./RobloxChance";
 import { FeaturedPreset, PresetList, PresetRow } from "./PresetPicker";
 
@@ -115,6 +115,8 @@ export default function SettingsPanel() {
   const p = c.panel;
   const [tab, setTab] = useState<Tab>("preset");
   const [presetName, setPresetName] = useState("");
+  // Pop-up catatan: dibuka saat preset dipilih / chip Roblox diklik — berisi setelan + cara pakai di game
+  const [noteOpen, setNoteOpen] = useState(false);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const set = (patch: Partial<AudioOptions>) => dispatch(setOptions(patch));
@@ -194,6 +196,11 @@ export default function SettingsPanel() {
       ? { label: f(cc.better, { name: c.presetNames[better] }), hint: f(cc.betterHint, { n: presetChance[better] }), onClick: () => dispatch(applyPreset(better)) }
       : undefined;
 
+  const pick = (id: PresetId) => {
+    dispatch(applyPreset(id));
+    setNoteOpen(true);
+  };
+
   const onTabKey = (e: KeyboardEvent) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     e.preventDefault();
@@ -239,8 +246,8 @@ export default function SettingsPanel() {
         {/* PlaybackSpeed Roblox selalu terlihat; klik → tab Tempo (rincian & mode "balik ke asli") */}
         <button
           type="button"
-          onClick={() => setTab("tempo")}
-          title={c.robloxTitle}
+          onClick={() => setNoteOpen(true)}
+          title={c.note.open}
           className="state-layer inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-xs border border-line px-2 font-mono text-[11.5px] text-fg-2 transition-colors hover:border-line-2 hover:text-fg"
         >
           <span className="caps text-[9.5px] text-fg-3">Roblox</span>
@@ -295,7 +302,7 @@ export default function SettingsPanel() {
               pct={presetChance[featuredId]}
               active={preset === featuredId}
               locked={presetLock(PRESETS[featuredId])}
-              onClick={() => dispatch(applyPreset(featuredId))}
+              onClick={() => pick(featuredId)}
               passLabel={cc.passLabel}
               eyebrow={popularId ? cc.popularTitle : cc.recommendedTitle}
               share={popularId ? f(cc.share, { n: popularShare }) : cc.recommendedSub}
@@ -316,7 +323,7 @@ export default function SettingsPanel() {
                       active={preset === id}
                       locked={presetLock(PRESETS[id])}
                       passLabel={cc.passLabel}
-                      onClick={() => dispatch(applyPreset(id))}
+                      onClick={() => pick(id)}
                     />
                   ))}
               </PresetList>
@@ -342,7 +349,10 @@ export default function SettingsPanel() {
                       active={preset === `u:${cp.id}`}
                       pct={chanceOf(cp.options).pct}
                       passLabel={cc.passLabel}
-                      onClick={() => dispatch(applyCustomPreset(cp.id))}
+                      onClick={() => {
+                        dispatch(applyCustomPreset(cp.id));
+                        setNoteOpen(true);
+                      }}
                       onDelete={() => dispatch(deletePreset(cp.id))}
                       deleteLabel={f(c.deletePreset, { name: cp.name })}
                     />
@@ -514,7 +524,6 @@ export default function SettingsPanel() {
                 cta={t.plan.upgrade}
               />
             )}
-            <RobloxTempoCard options={o} mode={robloxMode} />
           </>
         )}
 
@@ -620,6 +629,7 @@ export default function SettingsPanel() {
           </button>
         )}
       </div>
+      <PresetNoteDialog open={noteOpen} onClose={() => setNoteOpen(false)} name={presetLabel ?? c.modified} options={o} mode={robloxMode} />
     </CardBox>
   );
 }

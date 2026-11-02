@@ -112,17 +112,17 @@
     color: var(--arr-ink-3);
   }
 
-  /* Penanda "Terpopuler": pill silver ber-kilau — satu-satunya elemen terang di ubin */
+  /* Penanda kecil (mis. "Disarankan"): pill solid kontras tertinggi — terbaca di tema terang & gelap */
   .arr-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    height: 17px;
-    padding: 0 6px;
+    height: 18px;
+    padding: 0 7px;
     border-radius: 999px;
-    background: var(--sheen);
-    color: var(--on-accent);
-    font: 600 9.5px/1 var(--arr-font-mono);
+    background: var(--fg);
+    color: var(--bg);
+    font: 700 10px/1 var(--arr-font-mono);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
@@ -130,6 +130,8 @@
 
   /* ---------- Kartu peluang: panel info, rel = warna status ---------- */
   .arr-card[data-variant="chance"] {
+    /* di panel tab (flex kolom + scroll) jangan ikut menyusut */
+    flex-shrink: 0;
     background: var(--arr-sunk);
     border-radius: var(--arr-radius-lg);
     overflow: hidden;
@@ -207,4 +209,10 @@
   [data-shell="desktop"] .arr-card[data-variant="chance"] {
     border-radius: 10px;
   }
+  /* Deskripsi boleh turun baris (kartu pilihan berisi kalimat, bukan label pendek) */
+  .arr-card.arr-wrap .arr-card__text {
+    white-space: normal;
+    overflow: visible;
+  }
+
 }
