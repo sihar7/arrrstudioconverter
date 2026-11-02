@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Check, CheckCircle, FloppyDisk, Lock, Refresh, Sparks, WarningTriangle, Xmark } from "iconoir-react";
+import { CheckCircle, FloppyDisk, Lock, Refresh, Sparks, WarningTriangle } from "iconoir-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   applyCustomPreset,
@@ -33,12 +33,11 @@ import Slider from "@/components/ui/Slider";
 import Switch from "@/components/ui/Switch";
 import Field, { Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
-import IconButton from "@/components/ui/IconButton";
 import { BITRATE_OPTIONS, FORMAT_OPTIONS, PRESET_ORDER, SPEED_QUICK } from "../_constants/converter.constants";
 import { dbLabel, estimateBytes, secLabel, semiLabel, speedLabel } from "../_utils/helpers";
 import RobloxTempoCard from "./RobloxTempoCard";
-import { ChanceBar, ChanceCard, chanceLevel } from "./RobloxChance";
-import ArrCard from "@/components/arr/ArrCard";
+import { ChanceCard, chanceLevel } from "./RobloxChance";
+import { FeaturedPreset, PresetList, PresetRow } from "./PresetPicker";
 
 type Tab = "preset" | "output" | "tempo" | "effects" | "trim";
 const TABS: Tab[] = ["preset", "output", "tempo", "effects", "trim"];
@@ -83,81 +82,6 @@ function LockNote({ text, cta }: { text: string; cta: string }) {
         {cta}
       </Link>
     </p>
-  );
-}
-
-/**
- * Ubin preset = ARR card varian "preset": rel kiri menyala saat aktif, kanan atas = peluang lolos Roblox,
- * kaki = meter peluang. locked = butuh plan lebih tinggi; popular = badge "Terpopuler".
- */
-function PresetTile({
-  name,
-  desc,
-  active,
-  onClick,
-  onDelete,
-  deleteLabel,
-  locked,
-  chance,
-  popular,
-  className,
-}: {
-  name: string;
-  desc: string;
-  active: boolean;
-  onClick: () => void;
-  onDelete?: () => void;
-  deleteLabel?: string;
-  /** label plan yang dibutuhkan (mis. "Pro"); diisi = tile terkunci */
-  locked?: string;
-  /** peluang lolos Roblox (%) */
-  chance: number;
-  /** teks badge "Terpopuler" (title = pangsa pemakaian) */
-  popular?: { label: string; title: string };
-  className?: string;
-}) {
-  return (
-    <div className={cn("group relative", className)}>
-      <ArrCard
-        variant="preset"
-        tone={chanceLevel(chance)}
-        pressed={active}
-        disabled={Boolean(locked)}
-        onClick={onClick}
-        meta={[
-          popular && (
-            <span key="p" className="arr-badge" title={popular.title}>
-              {popular.label}
-            </span>
-          ),
-          locked && (
-            <span key="l" className="caps inline-flex items-center gap-1 text-[9.5px] text-fg-2">
-              <Lock width={11} height={11} aria-hidden="true" />
-              {locked}
-            </span>
-          ),
-        ]}
-        aside={onDelete ? undefined : `${chance}%`}
-        title={
-          <>
-            <span className="truncate">{name}</span>
-            {active && <Check width={14} height={14} strokeWidth={2.2} aria-hidden="true" className="pick-pop shrink-0" />}
-          </>
-        }
-        text={desc}
-        foot={<ChanceBar pct={chance} />}
-        className={cn(onDelete && "pr-9")}
-      />
-      {onDelete && (
-        <IconButton
-          label={deleteLabel ?? ""}
-          size="sm"
-          icon={<Xmark width={14} height={14} />}
-          onClick={onDelete}
-          className="absolute right-0.5 top-0.5 size-9 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
-        />
-      )}
-    </div>
   );
 }
 
@@ -258,6 +182,8 @@ export default function SettingsPanel() {
     stats && stats.total >= 10
       ? presetIds.reduce<PresetId | null>((best, id) => ((stats.presets[id]?.uses ?? 0) > (best ? (stats.presets[best]?.uses ?? 0) : 0) ? id : best), null)
       : null;
+  // Sorotan: terpopuler; data belum cukup → Roblox Bypass (disarankan) bila terlihat, kalau tidak preset pertama
+  const featuredId: PresetId = popularId ?? (presetIds.includes("robloxBypass") ? "robloxBypass" : presetIds[0]);
   const popularShare = popularId && stats ? Math.round(((stats.presets[popularId]?.uses ?? 0) / stats.total) * 100) : 0;
   // Saran: preset terbuka dengan peluang tertinggi, hanya bila jelas lebih baik dari setelan sekarang
   const better = presetIds
@@ -362,6 +288,40 @@ export default function SettingsPanel() {
       <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} key={tab} className="thin-scroll fade-swap flex min-h-[300px] flex-1 flex-col gap-6 overflow-y-auto p-5 desk:min-h-0 desk:gap-5 desk:p-4">
         {tab === "preset" && (
           <>
+            {/* Satu pilihan menonjol (terpopuler / disarankan) → user awam cukup sekali ketuk */}
+            <FeaturedPreset
+              name={c.presetNames[featuredId]}
+              desc={c.presetDesc[featuredId]}
+              pct={presetChance[featuredId]}
+              active={preset === featuredId}
+              locked={presetLock(PRESETS[featuredId])}
+              onClick={() => dispatch(applyPreset(featuredId))}
+              passLabel={cc.passLabel}
+              eyebrow={popularId ? cc.popularTitle : cc.recommendedTitle}
+              share={popularId ? f(cc.share, { n: popularShare }) : cc.recommendedSub}
+              useLabel={cc.use}
+              usingLabel={cc.using}
+            />
+
+            <Group title={cc.others}>
+              <PresetList label={p.presets}>
+                {presetIds
+                  .filter((id) => id !== featuredId)
+                  .map((id) => (
+                    <PresetRow
+                      key={id}
+                      name={c.presetNames[id]}
+                      desc={c.presetDesc[id]}
+                      pct={presetChance[id]}
+                      active={preset === id}
+                      locked={presetLock(PRESETS[id])}
+                      passLabel={cc.passLabel}
+                      onClick={() => dispatch(applyPreset(id))}
+                    />
+                  ))}
+              </PresetList>
+            </Group>
+
             <ChanceCard
               pct={current.pct}
               title={cc.title}
@@ -370,38 +330,24 @@ export default function SettingsPanel() {
               disclaimer={`${cc.hint}. ${cc.disclaimer}`}
               suggestion={suggestion}
             />
-            <div className="grid grid-cols-2 gap-2" role="group" aria-label={p.presets}>
-              {presetIds.map((id, n) => (
-                <PresetTile
-                  key={id}
-                  name={c.presetNames[id]}
-                  desc={c.presetDesc[id]}
-                  active={preset === id}
-                  locked={presetLock(PRESETS[id])}
-                  chance={presetChance[id]}
-                  popular={id === popularId ? { label: cc.popular, title: f(cc.share, { n: popularShare }) } : undefined}
-                  onClick={() => dispatch(applyPreset(id))}
-                  className={presetIds.length % 2 && n === presetIds.length - 1 ? "col-span-2" : undefined}
-                />
-              ))}
-            </div>
 
             <Group title={c.myPresets}>
               {customPresets.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
+                <PresetList label={c.myPresets}>
                   {customPresets.map((cp) => (
-                    <PresetTile
+                    <PresetRow
                       key={cp.id}
                       name={cp.name}
                       desc={summarize(cp.options, t).join(" · ") || `${cp.options.format.toUpperCase()} · ${p.summaryNone}`}
                       active={preset === `u:${cp.id}`}
-                      chance={chanceOf(cp.options).pct}
+                      pct={chanceOf(cp.options).pct}
+                      passLabel={cc.passLabel}
                       onClick={() => dispatch(applyCustomPreset(cp.id))}
                       onDelete={() => dispatch(deletePreset(cp.id))}
                       deleteLabel={f(c.deletePreset, { name: cp.name })}
                     />
                   ))}
-                </div>
+                </PresetList>
               ) : (
                 <p className="-mt-1 text-[13px] leading-relaxed text-fg-3">{c.noCustom}</p>
               )}

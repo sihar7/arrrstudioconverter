@@ -22,7 +22,7 @@ function Soundcloud(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-const ICONS: Record<Platform, (p: SVGProps<SVGSVGElement>) => React.ReactNode> = {
+export const PLATFORM_ICONS: Record<Platform, (p: SVGProps<SVGSVGElement>) => React.ReactNode> = {
   youtube: Youtube,
   tiktok: Tiktok,
   soundcloud: Soundcloud,
@@ -35,7 +35,7 @@ const ICONS: Record<Platform, (p: SVGProps<SVGSVGElement>) => React.ReactNode> =
 export default function PlatformChip({ videoId, className }: { videoId: string; className?: string }) {
   if (!videoId) return null;
   const p = platformOf(videoId);
-  const Icon = ICONS[p];
+  const Icon = PLATFORM_ICONS[p];
   return (
     <span
       className={cn("inline-flex h-5 shrink-0 items-center gap-1 rounded-full bg-fg/[0.07] pl-1.5 pr-2 text-[11px] font-medium text-fg-2", className)}

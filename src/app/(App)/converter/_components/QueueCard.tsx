@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, Bell, BellNotification, CloudUpload, KeyCommand, MusicDoubleNote, Refresh, Search, Trash, Xmark } from "iconoir-react";
+import { Archive, Bell, BellNotification, CloudUpload, KeyCommand, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearFinished, enqueue, isRunning, itemFailed, moveItem, removeItem, removeMany, type QueueItem } from "@/store/slices/converterSlice";
 import { useToast } from "@/hooks/useToast";
@@ -10,6 +10,8 @@ import { useT } from "@/hooks/useT";
 import { useConfirm } from "@/hooks/useConfirm";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
+import { PLATFORM_ICONS, PLATFORM_NAMES } from "@/components/shared/PlatformChip";
+import type { Platform } from "@/lib/schemas/source";
 import Button, { buttonClass } from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import Progress from "@/components/ui/Progress";
@@ -236,21 +238,31 @@ export default function QueueCard({
       )}
 
       {items.length === 0 ? (
-        <div>
-          <EmptyState icon={<MusicDoubleNote width={22} height={22} />} title={c.emptyTitle} sub={c.emptySub} />
-          {/* Satu blok berbingkai + garis pemisah tunggal (tanpa garis dobel antar kartu) */}
-          <div className="-mt-6 px-5 pb-6">
-            <ol className="mx-auto grid max-w-2xl divide-y divide-line/60 overflow-hidden rounded-s border border-line/60 bg-bg/30 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {c.emptyTips.map((tip, n) => (
-                <li key={tip} className="flex gap-3 px-4 py-4 text-[13px] leading-relaxed text-fg-2">
-                  <span aria-hidden="true" className="pt-px font-mono text-[11px] text-fg-3">
-                    {String(n + 1).padStart(2, "0")}
-                  </span>
-                  <span className="min-w-0">{tip}</span>
+        // Kosong: tunjukkan SUMBER apa saja yang bisa ditempel (bukan ikon + 3 kolom tips) + satu jalan pintas
+        <div className="flex flex-col items-center px-5 py-12 text-center desk:py-10">
+          <ul aria-label={c.emptySources} className="flex flex-wrap justify-center gap-2">
+            {(Object.keys(PLATFORM_NAMES) as Platform[]).map((pf, i) => {
+              const Icon = PLATFORM_ICONS[pf];
+              return (
+                <li
+                  key={pf}
+                  title={PLATFORM_NAMES[pf]}
+                  className="rise grid size-11 place-items-center rounded-[12px] bg-fg/[0.06] text-fg-2 [animation-duration:.4s]"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                >
+                  <Icon width={20} height={20} aria-hidden="true" />
+                  <span className="sr-only">{PLATFORM_NAMES[pf]}</span>
                 </li>
-              ))}
-            </ol>
-          </div>
+              );
+            })}
+          </ul>
+          <p className="mt-5 font-display text-[17px] font-semibold text-fg">{c.emptyTitle}</p>
+          <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-fg-3">{c.emptySub}</p>
+          <p className="mt-5 inline-flex items-center gap-1.5 text-[12px] text-fg-3">
+            <kbd className="rounded-[5px] border border-line bg-raised px-1.5 py-0.5 font-mono text-[11px] text-fg-2">Ctrl</kbd>
+            <kbd className="rounded-[5px] border border-line bg-raised px-1.5 py-0.5 font-mono text-[11px] text-fg-2">V</kbd>
+            {c.emptyPaste}
+          </p>
         </div>
       ) : shown.length === 0 ? (
         <EmptyState

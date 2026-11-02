@@ -142,7 +142,13 @@ export default function UsersTab() {
                       </span>
                     )}
                     <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold">{u.displayName ?? u.username ?? "Tanpa profil"}</p>
+                      <p className="flex min-w-0 items-center gap-2 text-[15px] font-semibold">
+                        <span className="truncate">{u.displayName ?? u.username ?? "Tanpa profil"}</span>
+                        {/* Login Google tanpa akun Discord tertaut → ID "google-<sub>"; selain itu akun Discord */}
+                        <span className="shrink-0 rounded-full bg-fg/[0.08] px-2 py-0.5 text-[10.5px] font-medium text-fg-2">
+                          {u.id.startsWith("google-") ? "Google" : "Discord"}
+                        </span>
+                      </p>
                       <p className="truncate font-mono text-[12px] text-fg-3">
                         {u.username ? `@${u.username} · ` : ""}
                         {u.id}

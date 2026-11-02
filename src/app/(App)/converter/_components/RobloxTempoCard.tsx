@@ -1,158 +1,157 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { CheckCircle, Copy, InfoCircle, WarningTriangle } from "iconoir-react";
+import { CheckCircle, Copy, InfoCircle, NavArrowDown, WarningTriangle } from "iconoir-react";
 import { useT } from "@/hooks/useT";
-import { cn } from "@/lib/utils";
+import { cn, copyText } from "@/lib/utils";
 import { useToast } from "@/hooks/useToast";
 import { useAppDispatch } from "@/store/hooks";
 import { setRobloxMode, type RobloxMode } from "@/store/slices/converterSlice";
 import { restoreScript, robloxPlayback, round, semis } from "@/lib/robloxPlayback";
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
-import Segmented from "@/components/ui/Segmented";
+import ArrCard from "@/components/arr/ArrCard";
 import Button from "@/components/ui/Button";
 import RobloxSetupGuide from "./RobloxSetupGuide";
 
-/** Ubin angka: label · nilai besar · keterangan — dua ubin selalu sejajar & setinggi */
-function Stat({ label, value, caption, tone }: { label: string; value: string; caption: string; tone?: "ok" }) {
-  return (
-    <div className={cn("flex min-w-0 flex-col rounded-xs bg-raised px-3 py-2.5", tone === "ok" && "ring-1 ring-inset ring-ok/35")}>
-      <p className="truncate text-[11.5px] text-fg-3">{label}</p>
-      <p className={cn("mt-1.5 font-display text-[22px] font-bold tabular-nums leading-none", tone === "ok" ? "text-ok" : "text-fg")}>{value}</p>
-      <p className="mt-1.5 truncate text-[11px] text-fg-3">{caption}</p>
-    </div>
-  );
-}
-
-/** Baris catatan berikon */
-function Note({ icon, className, children }: { icon: ReactNode; className?: string; children: ReactNode }) {
-  return (
-    <li className={cn("flex items-start gap-2 px-3 py-2.5 text-[12.5px] leading-snug", className)}>
-      <span aria-hidden="true" className="mt-px shrink-0">
-        {icon}
-      </span>
-      <span className="min-w-0">{children}</span>
-    </li>
-  );
-}
-
 /**
- * Playback di Roblox untuk setelan ini (hitungan di lib/robloxPlayback.ts):
- *  - "Pakai hasil ini": PlaybackSpeed 1 → terdengar persis setelan (kecepatan & nada tertanam di file).
- *  - "Balik ke asli": PlaybackSpeed 1/speed → tempo 1×; sisa nada dikoreksi PitchShiftSoundEffect bila perlu.
+ * "Di Roblox" — dibuat untuk user awam: pilih mode lewat dua kartu besar, lalu SATU angka yang tinggal disalin
+ * + 3 langkah bernomor. Cara teknis (script Command Bar, config music player) dilipat untuk developer.
+ * Hitungan di lib/robloxPlayback.ts:
+ *  - "Langsung pakai" (asIs): PlaybackSpeed 1 → terdengar persis setelan.
+ *  - "Suara asli" (restore): PlaybackSpeed 1/speed → tempo & nada kembali seperti lagu asli.
  */
 export default function RobloxTempoCard({ options: o, mode }: { options: AudioOptions; mode: RobloxMode }) {
   const { t, f } = useT();
   const toast = useToast();
   const dispatch = useAppDispatch();
   const c = t.converter;
-  const setMode = (m: RobloxMode) => dispatch(setRobloxMode(m));
+  const r = c.rbx;
   const pb = robloxPlayback(o);
-  const pitchText = (v: number) => (Math.abs(v) < 0.05 ? c.robloxHeardPitchNone : f(c.robloxHeardPitch, { pitch: semis(v) }));
-
-  // Hanya nada yang berubah (speed 1×): PlaybackSpeed tidak bisa membantu, langsung tawarkan PitchShift
-  const pitchOnly = pb.speed === 1 && !pb.untouched;
-  const restore = mode === "restore" && pb.speed !== 1;
-  const fill = restore ? pb.restoreSpeed : 1;
-  const heardTempo = restore ? 1 : pb.speed;
-  const heardPitch = restore ? pb.residual : pb.filePitch;
+  const changed = pb.speed !== 1;
+  const restore = mode === "restore" && changed;
+  const fill = pb.restoreSpeed;
   const canScript = restore && (pb.exact || pb.octaveOk);
 
-  const copyScript = async () => {
-    try {
-      await navigator.clipboard.writeText(restoreScript(pb));
-      toast(c.robloxScriptCopied, "ok");
-    } catch {
-      /* izin clipboard ditolak — tidak ada yang perlu dibersihkan */
-    }
+  const copy = async (text: string, msg: string) => {
+    if (await copyText(text)) toast(msg, "ok");
   };
 
-  // shrink-0: di panel tab (flex kolom + scroll), overflow-hidden membuat kartu menyusut & terpotong alih-alih panel di-scroll
+  // shrink-0: di panel tab (flex kolom + scroll), kartu tidak boleh menyusut & terpotong
   return (
-    <section aria-label={c.robloxTitle} className="shrink-0 overflow-hidden rounded-s border border-line bg-bg/40">
-      <p className="caps border-b border-line/60 px-3 py-2.5 text-[10.5px] text-fg-3">{c.robloxTitle}</p>
+    <section aria-label={r.title} className="flex shrink-0 flex-col gap-3">
+      <p className="caps text-[10.5px] text-fg-3">{r.title}</p>
 
-      {pb.speed !== 1 && (
-        <div className="px-3 pt-3">
-          <Segmented
-            size="sm"
-            label={c.robloxMode}
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "asIs", label: c.robloxModeAsIs },
-              { value: "restore", label: c.robloxModeRestore },
-            ]}
-          />
-        </div>
+      {/* Tanpa perubahan kecepatan: tidak ada yang perlu dilakukan */}
+      {pb.untouched && (
+        <p className="flex items-start gap-2 rounded-s bg-ok/[0.08] px-3 py-3 text-[13px] leading-snug text-ok">
+          <CheckCircle width={16} height={16} aria-hidden="true" className="mt-px shrink-0" /> {r.nothing}
+        </p>
       )}
 
-      {/* Dua angka yang dicari user: yang diisi (utama) & yang terdengar */}
-      <div className="grid grid-cols-2 gap-2 p-3">
-        <Stat label={c.robloxFill} value={String(fill)} caption={fill === 1 ? c.robloxFillValue : `Sound.PlaybackSpeed`} tone="ok" />
-        <Stat label={c.robloxHeard} value={`${round(heardTempo, 2)}×`} caption={pitchText(heardPitch)} />
-      </div>
-
-      <ul className="divide-y divide-line/60 border-t border-line/60">
-        {pb.untouched && (
-          <Note icon={<CheckCircle width={14} height={14} />} className="text-ok">
-            {c.robloxNormal}
-          </Note>
-        )}
-
-        {pitchOnly && (
-          <Note icon={<InfoCircle width={14} height={14} />} className="text-fg-2">
-            {f(c.robloxPitchOnly, { pitch: semis(pb.filePitch), octave: round(2 ** (-pb.filePitch / 12), 3) })}
-          </Note>
-        )}
-
-        {pb.speed !== 1 && !restore && (
-          <>
-            <Note icon={<InfoCircle width={14} height={14} />} className="text-fg-2">
-              {f(c.robloxWhy, { speed: pb.speed })}
-              {o.pitch !== 0 && ` ${f(c.robloxPitchNote, { pitch: semis(o.pitch) })}`}
-            </Note>
-            <Note icon={<WarningTriangle width={14} height={14} />} className="bg-warn/[0.06] text-warn">
-              {f(c.robloxDouble, { speed: pb.speed, double: round(pb.speed * pb.speed, 2) })}
-            </Note>
-          </>
-        )}
-
-        {restore && (
-          <>
-            <Note icon={<InfoCircle width={14} height={14} />} className="text-fg-2">
-              {f(c.robloxRestoreWhy, { back: pb.restoreSpeed, speed: pb.speed })}
-            </Note>
-            {pb.exact ? (
-              <Note icon={<CheckCircle width={14} height={14} />} className="text-ok">
-                {c.robloxRestoreExact}
-                {o.speed > 1 && <span className="mt-1 block text-fg-3">{c.robloxBypassNote}</span>}
-              </Note>
-            ) : pb.octaveOk ? (
-              <Note icon={<WarningTriangle width={14} height={14} />} className="bg-warn/[0.06] text-warn">
-                {f(c.robloxPitchFix, { pitch: semis(pb.residual), octave: pb.octave })}
-                {o.preservePitch && o.pitch === 0 && <span className="mt-1 block text-fg-3">{c.robloxPitchTip}</span>}
-              </Note>
-            ) : (
-              <Note icon={<WarningTriangle width={14} height={14} />} className="bg-err/[0.06] text-err">
-                {f(c.robloxPitchFixOut, { pitch: semis(pb.residual) })}
-              </Note>
-            )}
-          </>
-        )}
-      </ul>
-
-      {canScript && (
-        <div className="flex flex-col gap-2 border-t border-line/60 p-3">
-          <Button variant="tonal" size="sm" onClick={copyScript} icon={<Copy width={16} height={16} />}>
-            {c.robloxScript}
-          </Button>
-          <p className="text-[11.5px] leading-snug text-fg-3">{c.robloxScriptHint}</p>
-        </div>
+      {/* Hanya nada yang diubah (speed 1×): PlaybackSpeed tidak bisa membalik */}
+      {pb.speed === 1 && !pb.untouched && (
+        <p className="flex items-start gap-2 rounded-s bg-raised px-3 py-3 text-[12.5px] leading-snug text-fg-2">
+          <InfoCircle width={15} height={15} aria-hidden="true" className="mt-px shrink-0" />
+          {f(c.robloxPitchOnly, { pitch: semis(pb.filePitch), octave: round(2 ** (-pb.filePitch / 12), 3) })}
+        </p>
       )}
 
-      {/* Tiap game menyimpan lagu berbeda → panduan per jenis music player */}
-      {restore && (pb.exact || pb.octaveOk) && <RobloxSetupGuide speed={pb.restoreSpeed} />}
+      {changed && (
+        <>
+          {/* Mode = dua kartu besar, bukan segmented berlabel teknis */}
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label={r.title}>
+            <ArrCard
+              variant="preset"
+              tone="high"
+              pressed={restore}
+              onClick={() => dispatch(setRobloxMode("restore" as RobloxMode))}
+              meta={[<span key="b" className="arr-badge">{r.recommended}</span>]}
+              title={r.restoreTitle}
+              className="[&_.arr-card__text]:whitespace-normal"
+              text={f(r.restoreDesc, { n: fill })}
+            />
+            <ArrCard
+              variant="preset"
+              pressed={!restore}
+              onClick={() => dispatch(setRobloxMode("asIs" as RobloxMode))}
+              title={r.asIsTitle}
+              className="[&_.arr-card__text]:whitespace-normal"
+              text={f(r.asIsDesc, { speed: pb.speed })}
+            />
+          </div>
+
+          {restore ? (
+            <div className="rounded-s bg-raised p-4 desk:rounded-[10px]">
+              {/* Satu angka yang perlu diingat — besar & bisa disalin sekali klik */}
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[12px] text-fg-3">{r.fillLabel}</p>
+                  <p className="mt-1 font-display text-[40px] font-bold leading-none tabular-nums text-fg">{fill}</p>
+                </div>
+                <Button size="sm" variant="primary" icon={<Copy width={14} height={14} />} onClick={() => copy(String(fill), f(r.copied, { n: fill }))}>
+                  {f(r.copy, { n: fill })}
+                </Button>
+              </div>
+
+              <ol className="mt-4 flex flex-col gap-2.5">
+                {r.steps.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-[13px] leading-snug text-fg-2">
+                    <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-fg/[0.1] text-[11px] font-semibold tabular-nums text-fg">
+                      {i + 1}
+                    </span>
+                    <span>{f(s, { n: fill })}</span>
+                  </li>
+                ))}
+              </ol>
+
+              {pb.exact ? (
+                <p className="mt-4 flex items-center gap-1.5 text-[12.5px] text-ok">
+                  <CheckCircle width={14} height={14} aria-hidden="true" /> {r.result}
+                </p>
+              ) : pb.octaveOk ? (
+                <p className="mt-4 flex items-start gap-1.5 text-[12.5px] leading-snug text-warn">
+                  <WarningTriangle width={14} height={14} aria-hidden="true" className="mt-px shrink-0" />
+                  {f(c.robloxPitchFix, { pitch: semis(pb.residual), octave: pb.octave })}
+                </p>
+              ) : (
+                <p className="mt-4 flex items-start gap-1.5 text-[12.5px] leading-snug text-err">
+                  <WarningTriangle width={14} height={14} aria-hidden="true" className="mt-px shrink-0" />
+                  {f(c.robloxPitchFixOut, { pitch: semis(pb.residual) })}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-s bg-raised p-4 desk:rounded-[10px]">
+              <p className="flex items-start gap-2 text-[13px] leading-snug text-fg">
+                <CheckCircle width={16} height={16} aria-hidden="true" className="mt-px shrink-0 text-ok" /> {r.asIsDo}
+              </p>
+              <p className="mt-2 flex items-start gap-2 text-[12.5px] leading-snug text-warn">
+                <WarningTriangle width={14} height={14} aria-hidden="true" className="mt-px shrink-0" />
+                {f(c.robloxDouble, { speed: pb.speed, double: round(pb.speed * pb.speed, 2) })}
+              </p>
+            </div>
+          )}
+
+          {/* Cara otomatis untuk developer — dilipat supaya user awam tidak bingung */}
+          {canScript && (
+            <details className="group rounded-s border border-line/70 desk:rounded-[10px]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-3 text-[13px] font-semibold text-fg-2 hover:text-fg [&::-webkit-details-marker]:hidden">
+                <span>
+                  {r.devTitle}
+                  <span className="block text-[11.5px] font-normal text-fg-3">{r.devSub}</span>
+                </span>
+                <NavArrowDown width={16} height={16} aria-hidden="true" className="shrink-0 transition-transform duration-200 group-open:rotate-180" />
+              </summary>
+              <div className={cn("flex flex-col gap-3 border-t border-line/60 p-3")}>
+                <Button variant="tonal" size="sm" onClick={() => copy(restoreScript(pb), c.robloxScriptCopied)} icon={<Copy width={16} height={16} />}>
+                  {c.robloxScript}
+                </Button>
+                <p className="-mt-1 text-[11.5px] leading-snug text-fg-3">{c.robloxScriptHint}</p>
+                <RobloxSetupGuide speed={fill} />
+              </div>
+            </details>
+          )}
+        </>
+      )}
     </section>
   );
 }
