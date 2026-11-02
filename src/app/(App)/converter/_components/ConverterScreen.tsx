@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { HelpCircle } from "iconoir-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -17,6 +18,8 @@ import QueueCard from "./QueueCard";
 import SettingsPanel from "./SettingsPanel";
 import StatsBar from "./StatsBar";
 import StepGuide, { STEP_TARGETS } from "./StepGuide";
+import ProductTour from "@/components/shared/ProductTour";
+import Button from "@/components/ui/Button";
 import { useAddSource } from "../_hooks/useAddSource";
 import { useQueueRunner } from "../_hooks/useQueueRunner";
 import { useAudioPreview } from "../_hooks/useAudioPreview";
@@ -36,6 +39,8 @@ const BulkUploadDialog = dynamic(() => import("@/components/roblox/BulkUploadDia
 const GuestGate = dynamic(() => import("@/components/shared/GuestGate"), { ssr: false });
 const ShortcutsDialog = dynamic(() => import("./ShortcutsDialog"), { ssr: false });
 
+const TOUR_KEY = "arrc.tour.converter.v1";
+
 export default function ConverterScreen() {
   const { t, f } = useT();
   const dispatch = useAppDispatch();
@@ -45,6 +50,28 @@ export default function ConverterScreen() {
   const { plans } = usePlans();
   const [gate, setGate] = useState(false);
   const [help, setHelp] = useState(false);
+  const [tour, setTour] = useState(false);
+
+  // Tur pertama kali: per perangkat (localStorage boleh gagal → tur tetap bisa dibuka manual)
+  useEffect(() => {
+    let seen = true;
+    try {
+      seen = localStorage.getItem(TOUR_KEY) === "1";
+    } catch {
+      /* storage diblokir */
+    }
+    if (seen) return;
+    const id = window.setTimeout(() => setTour(true), 900);
+    return () => window.clearTimeout(id);
+  }, []);
+  const closeTour = () => {
+    setTour(false);
+    try {
+      localStorage.setItem(TOUR_KEY, "1");
+    } catch {
+      /* storage diblokir */
+    }
+  };
   const [uploadKey, setUploadKey] = useState<string | null>(null);
   const [bulk, setBulk] = useState<string[] | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
@@ -111,8 +138,11 @@ export default function ConverterScreen() {
         title={t.converter.title}
         sub={t.converter.sub}
         actions={
-          <div className="desk:hidden">
+          <div className="flex items-center gap-1 desk:hidden">
             <StepGuide />
+            <Button size="sm" variant="ghost" icon={<HelpCircle width={16} height={16} />} onClick={() => setTour(true)}>
+              {t.converter.tour.open}
+            </Button>
           </div>
         }
       />
@@ -150,6 +180,22 @@ export default function ConverterScreen() {
           />
         </div>
       </div>
+
+      {/* Dipasang hanya saat terbuka → selalu mulai dari langkah 1 */}
+      {tour && (
+        <ProductTour
+          open
+          onClose={closeTour}
+          steps={[...STEP_TARGETS, "step-roblox"].map((target, n) => ({ target, ...t.converter.tour.steps[n] }))}
+          labels={{
+            next: t.converter.tour.next,
+            back: t.converter.tour.back,
+            done: t.converter.tour.done,
+            skip: t.converter.tour.skip,
+            counter: (i, n) => f(t.converter.tour.counter, { i, n }),
+          }}
+        />
+      )}
 
       {uploadItem && (
         <RobloxUploadDialog

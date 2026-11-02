@@ -580,6 +580,20 @@ const en: Dictionary = {
     modified: "Modified",
     estimateLabel: "Estimated output",
     estimate: "≈ {size} / 4-minute song",
+    tour: {
+      open: "Quick tour",
+      next: "Next",
+      back: "Back",
+      done: "Start using",
+      skip: "Skip",
+      counter: "{i} of {n}",
+      steps: [
+        { title: "Paste a song link", body: "Paste a YouTube, TikTok, or SoundCloud link here, then press Add. Many links at once work too." },
+        { title: "Pick a preset", body: "Tap Roblox Bypass (most used) so the song gets approved. The % is the chance it passes on Roblox." },
+        { title: "Convert & save", body: "Songs process automatically. When done: press ▶ to listen, download, or press Roblox to upload." },
+        { title: "Using it in game", body: "Tap this any time to see the PlaybackSpeed value to set in your game. Many songs / a music player? Open \"Many songs\" in that pop-up — the script can be copied automatically." },
+      ],
+    },
     note: {
       title: "Notes: {name}",
       sub: "Here's what was just set, and what to do in your game.",

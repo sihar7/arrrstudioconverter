@@ -246,6 +246,7 @@ export default function SettingsPanel() {
         {/* PlaybackSpeed Roblox selalu terlihat; klik → tab Tempo (rincian & mode "balik ke asli") */}
         <button
           type="button"
+          id="step-roblox"
           onClick={() => setNoteOpen(true)}
           title={c.note.open}
           className="state-layer inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-xs border border-line px-2 font-mono text-[11.5px] text-fg-2 transition-colors hover:border-line-2 hover:text-fg"

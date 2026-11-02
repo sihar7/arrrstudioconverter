@@ -579,6 +579,20 @@ const id = {
     modified: "Diubah",
     estimateLabel: "Perkiraan hasil",
     estimate: "≈ {size} / lagu 4 menit",
+    tour: {
+      open: "Tur singkat",
+      next: "Lanjut",
+      back: "Kembali",
+      done: "Mulai pakai",
+      skip: "Lewati",
+      counter: "{i} dari {n}",
+      steps: [
+        { title: "Tempel link lagu", body: "Tempel link YouTube, TikTok, atau SoundCloud di sini lalu tekan Tambah. Bisa banyak link sekaligus." },
+        { title: "Pilih preset", body: "Ketuk Roblox Bypass (paling banyak dipakai) supaya lagu lolos approve. Angka % = peluang lolos di Roblox." },
+        { title: "Convert & simpan", body: "Lagu diproses otomatis. Setelah selesai: putar ▶ untuk dengar, unduh, atau tekan Roblox untuk upload." },
+        { title: "Cara pakai di game", body: "Ketuk ini kapan saja untuk lihat angka PlaybackSpeed yang perlu diisi di game. Punya banyak lagu / music player? Buka bagian \"Banyak lagu\" di pop-up itu — script-nya bisa disalin otomatis." },
+      ],
+    },
     note: {
       title: "Catatan: {name}",
       sub: "Ini yang barusan disetel, dan yang perlu kamu lakukan di game.",
