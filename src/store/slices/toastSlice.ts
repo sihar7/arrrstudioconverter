@@ -27,9 +27,15 @@ export type UpdateNotice =
   | { kind: "web"; at: number }
   | { kind: "desktop"; phase: "downloading" | "ready" | "manual"; version: string; percent: number; bps: number; at: number };
 
+/** Kartu "Apa yang baru" (tidak tutup otomatis) — id entri changelog teratas yang belum dilihat di perangkat ini */
+export interface NewsNotice {
+  id: string;
+  at: number;
+}
+
 const toastSlice = createSlice({
   name: "toast",
-  initialState: { items: [] as Toast[], queue: null as QueueNotice | null, update: null as UpdateNotice | null },
+  initialState: { items: [] as Toast[], queue: null as QueueNotice | null, update: null as UpdateNotice | null, news: null as NewsNotice | null, newsDialog: false },
   reducers: {
     pushToast: {
       reducer(state, action: PayloadAction<Toast>) {
@@ -60,12 +66,21 @@ const toastSlice = createSlice({
     dismissUpdateNotice(state) {
       state.update = null;
     },
+    setNewsNotice(state, action: PayloadAction<NewsNotice>) {
+      state.news = action.payload;
+    },
+    dismissNewsNotice(state) {
+      state.news = null;
+    },
+    setNewsDialog(state, action: PayloadAction<boolean>) {
+      state.newsDialog = action.payload;
+    },
     dismissDesktopDownload(state) {
       if (state.update?.kind === "desktop" && state.update.phase === "downloading") state.update = null;
     },
   },
 });
 
-export const { pushToast, dismissToast, queueNotice, dismissQueueNotice, setUpdateNotice, dismissUpdateNotice, dismissDesktopDownload } =
+export const { pushToast, dismissToast, queueNotice, dismissQueueNotice, setUpdateNotice, dismissUpdateNotice, dismissDesktopDownload, setNewsNotice, dismissNewsNotice, setNewsDialog } =
   toastSlice.actions;
 export default toastSlice.reducer;

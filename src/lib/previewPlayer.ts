@@ -12,7 +12,7 @@ export interface PreviewTrack {
   /** detik dari hasil convert — dipakai sampai metadata audio terbaca */
   duration?: number;
   /**
-   * PlaybackSpeed seperti di Roblox (default 1). Roblox Bypass "Balik ke asli" = 1/speed → file 1.25× (nada naik)
+   * PlaybackSpeed seperti di Roblox (default 1). Roblox Bypass "Balik ke asli" = 1/speed → file 1.4× (nada naik)
    * terdengar seperti lagu asli, bukan cempreng. Nada ikut kecepatan (resample, persis Sound.PlaybackSpeed).
    */
   rate?: number;

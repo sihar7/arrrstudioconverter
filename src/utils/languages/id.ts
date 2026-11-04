@@ -561,7 +561,7 @@ const id = {
     tabs: { preset: "Preset", output: "Output", tempo: "Tempo", effects: "Efek", trim: "Trim", roblox: "Roblox" },
     presetDesc: {
       normal: "Tanpa efek",
-      robloxBypass: "1.25× · balik asli di game",
+      robloxBypass: "1.4× · balik asli di game",
       nightcore: "1.25× · nada naik",
       spedUp: "1.3× · nada asli",
       slowed: "0.85× · nada turun",
@@ -1440,6 +1440,10 @@ const id = {
     grantToast: "Akses diberikan ke {n} dari {total} aset",
   },
   update: {
+    newsTitle: "Apa yang baru",
+    newsView: "Lihat",
+    newsSub: "Pembaruan terbaru ARRR Studio Converter.",
+    newsOk: "Mengerti",
     webTitle: "Versi baru tersedia",
     webSub: "Muat ulang untuk memakai pembaruan terbaru.",
     webBusy: "Tunggu konversi selesai dulu supaya tidak terputus.",

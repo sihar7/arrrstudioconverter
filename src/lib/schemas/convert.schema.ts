@@ -79,7 +79,7 @@ export const PRESETS = {
   normal: {},
   // Lolos moderasi lalu diputar seperti asli: resample murni (tempo + nada naik bareng, tanpa time-stretch)
   // → PlaybackSpeed 1/speed di Roblox membalik keduanya persis. Tanpa VBR (lossy ganda) + loudness rata.
-  robloxBypass: { speed: 1.25, preservePitch: false, pitch: 0, compress: false, normalize: true },
+  robloxBypass: { speed: 1.4, preservePitch: false, pitch: 0, compress: false, normalize: true },
   nightcore: { speed: 1.25, preservePitch: false, pitch: 0 },
   spedUp: { speed: 1.3, preservePitch: true, pitch: 0 },
   slowed: { speed: 0.85, preservePitch: false, pitch: 0, reverb: 0 },

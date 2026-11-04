@@ -11,7 +11,7 @@ import type { QueueItem } from "@/store/slices/converterSlice";
  * Preview hasil lewat pemutar bersama (lib/previewPlayer). Web: berhenti saat keluar dari Converter.
  * App desktop: tetap diputar & dikendalikan dari mini-player di transport bar.
  * Mode "Balik ke asli" (Roblox Bypass): diputar dengan PlaybackSpeed yang sama seperti di game → terdengar seperti
- * lagu asli, bukan file 1.25× yang cempreng.
+ * lagu asli, bukan file 1.4× yang cempreng.
  */
 export function useAudioPreview() {
   const { track, playing } = usePreview();

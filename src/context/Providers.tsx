@@ -9,6 +9,7 @@ import CookieConsent from "@/components/shared/CookieConsent";
 import DesktopLoginGuard from "@/components/shared/DesktopLoginGuard";
 import TrackMetaSync from "@/components/shared/TrackMetaSync";
 import UpdateWatcher from "@/components/shared/UpdateWatcher";
+import WhatsNew from "@/components/shared/WhatsNew";
 
 /** Terapkan tema & bahasa ke <html> setiap preferensi berubah */
 function HtmlSync() {
@@ -30,6 +31,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       {children}
       <Toaster />
       <UpdateWatcher />
+      <WhatsNew />
       <TrackMetaSync />
       <CookieConsent />
     </StoreProvider>

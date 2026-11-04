@@ -10,7 +10,7 @@ import { DEFAULT_OPTIONS, type AudioOptions } from "@/lib/schemas/convert.schema
 
 /**
  * Chip "apa yang diisi di game" untuk satu hasil convert — satu kalimat, tanpa istilah tambahan.
- * Mode "Suara asli" + kecepatan diubah → "Di game: PlaybackSpeed 0.8" (klik = salin angkanya); selain itu tanpa setting.
+ * Mode "Suara asli" + kecepatan diubah → "Di game: PlaybackSpeed 0.7143" (klik = salin angkanya); selain itu tanpa setting.
  */
 export default function RobloxPlaybackChip({ options, className }: { options?: Pick<AudioOptions, "speed" | "pitch" | "preservePitch"> | null; className?: string }) {
   const { t, f } = useT();

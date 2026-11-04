@@ -7,6 +7,7 @@ import { dismissToast, type Toast } from "@/store/slices/toastSlice";
 import { cn } from "@/lib/utils";
 import QueueNotice from "./QueueNotice";
 import UpdateNotice from "./UpdateNotice";
+import NewsNotice from "./NewsNotice";
 
 const GAP = 8;
 const PEEK = 10;
@@ -93,6 +94,7 @@ export default function Toaster() {
   // Popup antrean hanya ikut deck kalau itemnya masih ada (QueueNotice merender null bila tidak)
   const queue = useAppSelector((s) => (s.toast.queue && s.converter.items.some((i) => i.key === s.toast.queue!.keys.at(-1)) ? s.toast.queue : null));
   const update = useAppSelector((s) => s.toast.update);
+  const news = useAppSelector((s) => s.toast.news);
   const [open, setOpen] = useState(false);
   const [heights, setHeights] = useState<Record<string, number>>({});
 
@@ -100,6 +102,7 @@ export default function Toaster() {
     ...items.map((t) => ({ id: t.id, at: t.at, node: <ToastRow toast={t} paused={open} /> })),
     ...(queue ? [{ id: "queue", at: queue.stamp, node: <QueueNotice paused={open} /> }] : []),
     ...(update ? [{ id: "update", at: update.at, node: <UpdateNotice /> }] : []),
+    ...(news ? [{ id: "news", at: news.at, node: <NewsNotice /> }] : []),
   ].sort((a, b) => b.at - a.at); // terbaru di depan (index 0)
 
   // Deck kosong → pasti tertutup lagi (hover tidak pernah "lepas" kalau elemennya hilang)

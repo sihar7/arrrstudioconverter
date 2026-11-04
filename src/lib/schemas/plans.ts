@@ -105,7 +105,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     maxBitrate: 128,
     formats: ["mp3", "ogg"],
     effects: [],
-    ranges: { speed: [0.8, 1.25], pitch: 2, volume: 4, fade: 2, bass: [0, 0], treble: [0, 0], reverb: 0 },
+    ranges: { speed: [0.8, 1.4], pitch: 2, volume: 4, fade: 2, bass: [0, 0], treble: [0, 0], reverb: 0 },
     smartCompress: "off",
     fileTtlHours: 1,
     historyMax: 30,

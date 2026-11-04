@@ -562,7 +562,7 @@ const en: Dictionary = {
     tabs: { preset: "Preset", output: "Output", tempo: "Tempo", effects: "Effects", trim: "Trim", roblox: "Roblox" },
     presetDesc: {
       normal: "No effects",
-      robloxBypass: "1.25× · restores in-game",
+      robloxBypass: "1.4× · restores in-game",
       nightcore: "1.25× · higher pitch",
       spedUp: "1.3× · original pitch",
       slowed: "0.85× · lower pitch",
@@ -1441,6 +1441,10 @@ const en: Dictionary = {
     grantToast: "Access granted for {n} of {total} assets",
   },
   update: {
+    newsTitle: "What's new",
+    newsView: "View",
+    newsSub: "Latest ARRR Studio Converter updates.",
+    newsOk: "Got it",
     webTitle: "New version available",
     webSub: "Reload to get the latest improvements.",
     webBusy: "Wait for running conversions to finish so they aren't cut off.",
