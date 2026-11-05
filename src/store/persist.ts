@@ -1,4 +1,5 @@
 import type { RootState } from "./store";
+import { ytLibrary } from "@/lib/ytLibrary";
 
 // Simpan preferensi ke localStorage (per perangkat). API key hanya disimpan kalau "Ingat" aktif.
 
@@ -39,6 +40,8 @@ export function saveState(s: RootState) {
     localStorage.setItem(KEY, JSON.stringify(data));
     // Dibaca skrip anti-flash di <head>
     localStorage.setItem("arrc_theme", s.preferences.theme);
+    // Lagu di antrean = bahan rekomendasi "Untukmu" di halaman YouTube (tanpa perubahan bila sama)
+    ytLibrary.addSeeds(s.converter.items.map((i) => i.videoId));
   } catch {
     /* storage penuh / diblokir — abaikan */
   }

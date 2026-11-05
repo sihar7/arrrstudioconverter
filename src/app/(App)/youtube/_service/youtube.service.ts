@@ -19,3 +19,9 @@ export function suggestYoutube(q: string, hl: "id" | "en", signal?: AbortSignal)
   const qs = new URLSearchParams({ q, hl });
   return apiFetch<{ items: string[] }>(`/api/youtube/suggest?${qs}`, { signal }).then((r) => r.items);
 }
+
+/** Rekomendasi "Untukmu" / "Berikutnya": video terkait dari beberapa lagu acuan (maks 5) */
+export function relatedYoutube(seeds: string[], signal?: AbortSignal) {
+  const qs = new URLSearchParams({ v: seeds.slice(0, 5).join(",") });
+  return apiFetch<SearchResponse>(`/api/youtube/related?${qs}`, { signal });
+}

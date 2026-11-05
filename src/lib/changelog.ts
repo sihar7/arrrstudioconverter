@@ -14,6 +14,30 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-05-youtube-foryou-library",
+    date: "2026-11-05",
+    text: {
+      id: {
+        title: "YouTube: Untukmu, Riwayat & Tonton nanti",
+        body: [
+          "Untukmu: rekomendasi lagu otomatis dari lagu yang kamu putar, tambahkan, dan convert. Langsung terbuka saat kamu kembali ke halaman YouTube.",
+          "Riwayat: semua lagu yang pernah kamu putar, dikelompokkan per hari. Bisa dihapus satu per satu atau semuanya.",
+          "Tonton nanti: klik ikon simpan di kartu lagu atau di pemutar untuk menyimpannya.",
+          "Pemutar kini punya daftar Berikutnya dan tombol salin link. Pencarian terakhir muncul di kotak cari.",
+        ],
+      },
+      en: {
+        title: "YouTube: For you, History & Watch later",
+        body: [
+          "For you: automatic song picks based on songs you play, add, and convert. It opens right away when you come back to the YouTube page.",
+          "History: every song you've played, grouped by day. Remove one at a time or clear it all.",
+          "Watch later: tap the save icon on a song card or in the player to keep it.",
+          "The player now has an Up next list and a copy-link button. Recent searches show in the search box.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-05-youtube-filters-bypass-treble",
     date: "2026-11-05",
     text: {
