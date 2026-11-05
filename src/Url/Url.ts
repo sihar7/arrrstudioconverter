@@ -24,7 +24,7 @@ const Url = {
   // next.config memakainya sebagai basePath & withBase() memberi awalan pada fetch, <a> biasa, <img>, EventSource.
   basePath: "",
 
-  arrWebsite: "https://arrstudioweb.vercel.app/en",
+  arrWebsite: "https://arrrstudio.com",
   arrDiscord: "https://discord.gg/mtn3YmwjV",
 } as const;
 

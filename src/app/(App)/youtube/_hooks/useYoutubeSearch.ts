@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { searchYoutube } from "../_service/youtube.service";
-import { DEFAULT_FILTERS, type SearchFilters, type SearchVideo } from "../_types/youtube.type";
+import { DEFAULT_FILTERS, matchesVersion, type SearchFilters, type SearchVideo } from "../_types/youtube.type";
+
+// Hasil tersaring (Versi) masih sedikit → muat halaman berikut otomatis, maks AUTO_FILL kali per pencarian
+const MIN_VISIBLE = 12;
+const AUTO_FILL = 4;
 
 /** Pencarian YouTube + halaman berikutnya; permintaan lama dibatalkan saat kata kunci berganti */
 export function useYoutubeSearch() {
@@ -19,6 +23,7 @@ export function useYoutubeSearch() {
   // Ref → search tetap stabil (dipakai listener palette) walau filter berganti
   const filtersRef = useRef(filters);
   const ctrl = useRef<AbortController | null>(null);
+  const filled = useRef(0);
 
   const fail = useCallback(
     (e: unknown) => {
@@ -35,6 +40,7 @@ export function useYoutubeSearch() {
       ctrl.current?.abort();
       const c = (ctrl.current = new AbortController());
       setQuery(term);
+      filled.current = 0;
       setLoading(true);
       setError(null);
       try {
@@ -89,5 +95,13 @@ export function useYoutubeSearch() {
     [query, search],
   );
 
-  return { query, items, hasMore: Boolean(next), loading, loadingMore, error, search, loadMore, filters, setFilters };
+  // Item mentah dari YouTube tetap disimpan (dedupe & halaman berikut); yang tampil = lolos saring Versi
+  const visible = useMemo(() => items.filter((v) => matchesVersion(v.title, filters.version)), [items, filters.version]);
+  useEffect(() => {
+    if (loading || loadingMore || error || !next || visible.length >= MIN_VISIBLE || filled.current >= AUTO_FILL) return;
+    filled.current++;
+    void loadMore(true);
+  }, [loading, loadingMore, error, next, visible.length, loadMore]);
+
+  return { query, items: visible, pages: items.length, hasMore: Boolean(next), loading, loadingMore, error, search, loadMore, filters, setFilters };
 }

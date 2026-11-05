@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import Image from "next/image";
-import { Check, Copy, Download, NavArrowDown, NavArrowUp, Pause, Play, Refresh, Upload, WarningTriangle, Xmark } from "iconoir-react";
+import { Check, Copy, Download, NavArrowDown, NavArrowUp, Pause, Play, Refresh, Scissor, Upload, WarningTriangle, Xmark } from "iconoir-react";
 import { isRunning, type ItemStatus, type QueueItem } from "@/store/slices/converterSlice";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
@@ -38,9 +38,11 @@ interface Props {
   onCancel: () => void;
   onTogglePlay: () => void;
   onUpload: () => void;
+  /** pangkas file hasil (dialog) */
+  onTrim: () => void;
 }
 
-function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, canMoveUp, canMoveDown, onSelect, onMove, onConvert, onRemove, onCancel, onTogglePlay, onUpload }: Props) {
+function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, canMoveUp, canMoveDown, onSelect, onMove, onConvert, onRemove, onCancel, onTogglePlay, onUpload, onTrim }: Props) {
   const { t, f, lang } = useT();
   const toast = useToast();
   const running = isRunning(item.status);
@@ -167,6 +169,11 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
               </Badge>
               <span className="text-[12px] text-fg-3">{f(t.converter.expires, { time: formatClock(item.result!.expiresAt, lang) })}</span>
               <RobloxPlaybackChip options={item.options} />
+              {item.trimmedFrom != null && (
+                <span className="rounded-full bg-fg/[0.08] px-2 py-0.5 font-mono text-[11.5px] tabular-nums text-fg-2" title={formatDuration(item.trimmedFrom)}>
+                  {t.trimmer.trimmed} · {formatDuration(item.trimmedFrom)} → {formatDuration(item.result!.duration)}
+                </span>
+              )}
               {(item.result!.duration ?? 0) > ROBLOX_SOFT_LIMIT_SEC && (
                 <span className="text-[12px] text-warn">{t.converter.robloxLimit}</span>
               )}
@@ -256,6 +263,12 @@ function QueueItemRow({ item, playing, uploadBlock, selectable, selectIndex, can
               active={playing}
               icon={playing ? <Pause width={18} height={18} /> : <Play width={18} height={18} />}
               onClick={onTogglePlay}
+            />
+            <IconButton
+              label={t.trimmer.rowButton}
+              icon={<Scissor width={18} height={18} />}
+              disabled={up.status === "uploading" || up.status === "processing"}
+              onClick={onTrim}
             />
             <a
               href={fileUrl(item.result!.fileId, true)}

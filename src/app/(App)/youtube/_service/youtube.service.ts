@@ -1,12 +1,16 @@
 import { apiFetch } from "@/lib/utils";
-import type { SearchFilters, SearchResponse } from "../_types/youtube.type";
+import { VERSION_TERMS, type SearchFilters, type SearchResponse } from "../_types/youtube.type";
 
 /**
  * Kata kunci baru, atau halaman berikutnya lewat token `continuation`. Token sudah membawa filter; durasi tetap
  * dikirim karena server menyaring ulang tiap halaman.
  */
 export function searchYoutube(q: string, filters: SearchFilters, continuation?: string, signal?: AbortSignal) {
-  const qs = new URLSearchParams(continuation ? { c: continuation, duration: filters.duration } : { q, ...filters });
+  const { version, duration, upload, sort } = filters;
+  // Versi = kata kunci tambahan; dilewati bila kata kuncinya sudah memuatnya (mis. "lagu cover" + Cover)
+  const extra = VERSION_TERMS[version];
+  const term = extra && !q.toLowerCase().includes(extra) ? `${q} ${extra}` : q;
+  const qs = new URLSearchParams(continuation ? { c: continuation, duration } : { q: term, duration, upload, sort });
   return apiFetch<SearchResponse>(`/api/youtube/search?${qs}`, { signal });
 }
 

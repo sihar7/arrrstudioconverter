@@ -29,6 +29,7 @@ interface Props {
   playing: string | null;
   onTogglePlay: (item: QueueItem) => void;
   onUpload: (item: QueueItem) => void;
+  onTrim: (item: QueueItem) => void;
   blockReason: (item: QueueItem) => UploadBlock;
   /** Item siap upload massal (urut antrean) */
   uploadableKeys: string[];
@@ -51,6 +52,7 @@ export default function QueueCard({
   playing,
   onTogglePlay,
   onUpload,
+  onTrim,
   blockReason,
   uploadableKeys,
   selectableKeys,
@@ -305,6 +307,7 @@ export default function QueueCard({
                   onMove={(dir) => dispatch(moveItem({ key: item.key, dir }))}
                   onTogglePlay={() => onTogglePlay(item)}
                   onUpload={() => onUpload(item)}
+                  onTrim={() => onTrim(item)}
                 />
               );
             })}

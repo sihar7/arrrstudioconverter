@@ -14,6 +14,54 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-05-youtube-filters-bypass-treble",
+    date: "2026-11-05",
+    text: {
+      id: {
+        title: "YouTube: cari cover & yang terbanyak ditonton",
+        body: [
+          "Di halaman YouTube ada pilihan Versi: Original, Cover, Remix, Akustik, Live, Karaoke, dan Instrumental. Yang muncul hanya lagu dengan versi itu.",
+          "Urutkan dengan \"Terbanyak ditonton\": hasilnya diberi nomor peringkat dan jumlah tontonannya terlihat.",
+          "Ada pilihan cepat baru, \"Lagu barat viral\".",
+          "Roblox Bypass sekarang lebih jernih saat diputar di game atau di sini. Treble yang dulu hilang sudah kembali. Lagu lama perlu di-convert ulang.",
+        ],
+      },
+      en: {
+        title: "YouTube: find covers & the most viewed",
+        body: [
+          "The YouTube page has a Version picker: Original, Cover, Remix, Acoustic, Live, Karaoke, and Instrumental. Only songs of that version are shown.",
+          "Sort by \"Most viewed\" to see results ranked, with their view counts.",
+          "New quick pick: \"Western viral hits\".",
+          "Roblox Bypass now sounds clearer when played in game or here, with the lost treble back. Convert older songs again to get it.",
+        ],
+      },
+    },
+  },
+  {
+    id: "2026-11-05-trim-after-convert",
+    date: "2026-11-05",
+    text: {
+      id: {
+        title: "Baru: pangkas lagu setelah convert",
+        body: [
+          "Begitu lagu selesai di-convert, kamu ditanya mau dipangkas atau tidak. Geser kedua ujung di gelombang lagunya, lalu dengarkan dulu sebelum dipotong.",
+          "Beberapa lagu yang selesai bersamaan bisa dipangkas sekaligus. Tombol \"Samakan ke semua\" membuang detik awal dan akhir yang sama dari tiap lagu.",
+          "Satu lagu juga bisa dipangkas kapan saja lewat tombol gunting di antrean. Memangkas tidak memakai token.",
+          "Tidak mau ditanya terus? Centang \"Jangan tanya lagi\". Pertanyaannya bisa dinyalakan lagi di tab Trim.",
+        ],
+      },
+      en: {
+        title: "New: trim songs after converting",
+        body: [
+          "When a song finishes converting, you're asked whether to trim it. Drag both ends on the song's waveform and listen before cutting.",
+          "Songs that finish together can be trimmed in one go. \"Apply to all\" removes the same seconds from the start and end of each song.",
+          "You can also trim any song anytime from the scissors button in the queue. Trimming doesn't use tokens.",
+          "Don't want to be asked every time? Tick \"Don't ask again\". You can turn it back on in the Trim tab.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-05-roblox-bypass-1.4",
     date: "2026-11-05",
     text: {

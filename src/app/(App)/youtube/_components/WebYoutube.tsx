@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Check, NavArrowDown, OpenNewWindow, Play, Plus, Search, Xmark } from "iconoir-react";
+import { Eye, GraphUp, OpenNewWindow, Play, Plus, Search, Sparks, Xmark } from "iconoir-react";
 import { useT } from "@/hooks/useT";
 import { cn, formatDuration } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
@@ -12,7 +12,8 @@ import Skeleton from "@/components/ui/Skeleton";
 import { useQuickAdd } from "../_hooks/useQuickAdd";
 import { useSuggest } from "../_hooks/useSuggest";
 import { useYoutubeSearch } from "../_hooks/useYoutubeSearch";
-import { DEFAULT_FILTERS, type SearchFilters, type SearchVideo } from "../_types/youtube.type";
+import type { SearchFilters, SearchVersion, SearchVideo } from "../_types/youtube.type";
+import { ActiveFilters, ExploreRail, FilterSelect, Segmented } from "./SearchControls";
 import { searchLink } from "../../converter/_utils/helpers";
 import { YT_SEARCH_EVENT } from "../../layout/desktop/nav";
 
@@ -24,8 +25,10 @@ import { YT_SEARCH_EVENT } from "../../layout/desktop/nav";
 export default function WebYoutube() {
   const { t, f } = useT();
   const y = t.youtube;
-  const { query, items, hasMore, loading, loadingMore, error, search, loadMore, filters, setFilters } = useYoutubeSearch();
+  const { query, items, pages, hasMore, loading, loadingMore, error, search, loadMore, filters, setFilters } = useYoutubeSearch();
   const { add, addVideo, busy } = useQuickAdd();
+  // Judul hasil memakai label chip ("Lagu barat viral"), bukan kata kunci mentahnya
+  const labelOf = (q: string) => [...y.chips, ...y.genres].find(([, k]) => k === q)?.[0] ?? q;
   const [input, setInput] = useState("");
   const [playing, setPlaying] = useState<SearchVideo | null>(null);
   // Saran ketikan: tampil saat kolom fokus & sedang mengetik (bukan link); -1 = belum ada yang disorot
@@ -54,7 +57,7 @@ export default function WebYoutube() {
     // URL baru bisa dibaca setelah hydrate (halaman statis) → sekali saat mount, bukan state turunan
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (q) setInput(q);
-    void search(q || t.youtube.chips[0]);
+    void search(q || t.youtube.chips[0][1]);
     // hanya sekali saat halaman dibuka
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -180,17 +183,7 @@ export default function WebYoutube() {
             {y.search}
           </Button>
         </form>
-        <div className="flex flex-wrap gap-2">
-          {y.chips.map((c) => (
-            <Chip key={c} label={c} on={c === query} onClick={() => pick(c)} />
-          ))}
-        </div>
-        <div role="group" aria-label={y.genre} className="flex flex-wrap items-center gap-2">
-          <span className="caps mr-1 text-[10.5px] text-fg-3">{y.genre}</span>
-          {y.genres.map(([label, q]) => (
-            <Chip key={label} label={label} on={q === query} onClick={() => pick(q)} />
-          ))}
-        </div>
+        <ExploreRail query={query} onPick={pick} />
         <FilterBar filters={filters} onChange={setFilters} />
       </div>
 
@@ -238,7 +231,14 @@ export default function WebYoutube() {
       )}
 
       <section aria-busy={loading} className="flex flex-col gap-5">
-        {query && !loading && <h2 className="text-[15px] font-semibold text-fg-2 desk:text-[13px]">{f(items.length ? y.results : y.empty, { q: query })}</h2>}
+        {query && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h2 className="text-[15px] font-semibold text-fg-2 desk:text-[13px]">
+              {f(!loading && !loadingMore && !items.length ? y.empty : y.results, { q: labelOf(query) })}
+            </h2>
+            <ActiveFilters filters={filters} onChange={setFilters} />
+          </div>
+        )}
         {error && <p className="text-[14px] text-err">{error}</p>}
         <ul className="grid gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 desk:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] desk:gap-x-4 desk:gap-y-5">
           {loading
@@ -248,6 +248,7 @@ export default function WebYoutube() {
                   key={v.videoId}
                   video={v}
                   index={i}
+                  rank={filters.sort === "views" ? i + 1 : null}
                   active={playing?.videoId === v.videoId}
                   onPlay={() => {
                     setPlaying(v);
@@ -261,7 +262,7 @@ export default function WebYoutube() {
         {/* Infinite scroll ala YouTube: halaman berikut dimuat ~600px sebelum dasar daftar terlihat */}
         {hasMore && !loading && (
           // key → observer dipasang ulang tiap halaman bertambah (kalau dasar masih terlihat, langsung muat lagi)
-          <div key={items.length} ref={sentinel} className="flex justify-center">
+          <div key={pages} ref={sentinel} className="flex justify-center">
             {error && !loadingMore && (
               <Button variant="ghost" onClick={() => void loadMore()}>
                 {y.loadMore}
@@ -277,148 +278,45 @@ export default function WebYoutube() {
   );
 }
 
-function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={on}
-      className={cn(
-        "ios-press h-9 cursor-pointer rounded-full px-4 text-[13.5px] font-medium transition-colors desk:h-7 desk:rounded-[7px] desk:px-3 desk:text-[12.5px]",
-        on ? "bg-fg text-bg" : "bg-fg/[0.07] text-fg-2 hover:bg-fg/[0.12] hover:text-fg",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
 type FilterKey = keyof SearchFilters;
-const FILTER_KEYS: FilterKey[] = ["duration", "upload", "sort"];
 
-/** Baris filter ringkas ala menu Filter YouTube: tiga dropdown (durasi · tanggal upload · urutan) + Reset */
+/**
+ * Bilah filter: Versi (segmented, paling sering dipakai) di kiri; Urutan + Durasi + Upload di kanan.
+ * Layar sempit → menumpuk, segmented bisa digeser horizontal.
+ */
 function FilterBar({ filters, onChange }: { filters: SearchFilters; onChange: (patch: Partial<SearchFilters>) => void }) {
   const { t } = useT();
   const y = t.youtube;
-  const active = FILTER_KEYS.some((k) => filters[k] !== DEFAULT_FILTERS[k]);
+  const fl = y.filters;
+  const versions = Object.entries(fl.version.options).map(([value, label]) => ({ value: value as SearchVersion, label }));
+  const pick = (k: FilterKey) => (v: string) => onChange({ [k]: v } as Partial<SearchFilters>);
   return (
-    <div role="group" aria-label={y.filter} className="flex flex-wrap items-center gap-2">
-      <span className="caps mr-1 text-[10.5px] text-fg-3">{y.filter}</span>
-      {FILTER_KEYS.map((k) => (
-        <FilterSelect
-          key={k}
-          label={y.filters[k].label}
-          value={filters[k]}
-          options={y.filters[k].options as Record<string, string>}
-          changed={filters[k] !== DEFAULT_FILTERS[k]}
-          onPick={(v) => onChange({ [k]: v } as Partial<SearchFilters>)}
+    <div role="group" aria-label={y.filter} className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+      <div className="flex min-w-0 max-w-full items-center gap-2.5">
+        <span className="caps shrink-0 text-[10.5px] text-fg-3">{fl.version.label}</span>
+        <Segmented label={fl.version.label} value={filters.version} options={versions} onChange={pick("version")} />
+      </div>
+      <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:ml-auto">
+        <Segmented
+          label={fl.sort.label}
+          value={filters.sort}
+          onChange={pick("sort")}
+          options={[
+            { value: "relevance", label: fl.sort.options.relevance, icon: <Sparks width={14} height={14} aria-hidden="true" /> },
+            { value: "views", label: fl.sort.options.views, icon: <GraphUp width={14} height={14} aria-hidden="true" /> },
+          ]}
         />
-      ))}
-      {active && (
-        <button
-          type="button"
-          onClick={() => onChange(DEFAULT_FILTERS)}
-          className="ios-press ml-1 h-9 cursor-pointer px-2 text-[13px] font-medium text-fg-3 transition-colors hover:text-fg desk:h-7 desk:text-[12.5px]"
-        >
-          {y.filterReset}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/**
- * Pill dropdown: "Durasi · < 4 mnt". Bawaan = netral; terisi = pill terang (sama dengan chip aktif).
- * Listener luar/keyboard hanya terpasang selama menu terbuka & dilepas saat tutup/unmount.
- */
-function FilterSelect({
-  label,
-  value,
-  options,
-  changed,
-  onPick,
-}: {
-  label: string;
-  value: string;
-  options: Record<string, string>;
-  changed: boolean;
-  onPick: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const entries = Object.entries(options);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
-      }
-      // Panah atas/bawah berpindah antar opsi
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        const items = [...(ref.current?.querySelectorAll<HTMLButtonElement>("[role=option]") ?? [])];
-        const i = items.indexOf(document.activeElement as HTMLButtonElement);
-        items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    // Fokus ke opsi terpilih saat menu terbuka
-    ref.current?.querySelector<HTMLButtonElement>("[aria-selected=true]")?.focus();
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "ios-press inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full pl-4 pr-3 text-[13.5px] font-medium transition-colors desk:h-7 desk:rounded-[7px] desk:pl-3 desk:pr-2 desk:text-[12.5px]",
-          changed ? "bg-fg text-bg" : "bg-fg/[0.07] text-fg-2 hover:bg-fg/[0.12] hover:text-fg",
-          open && !changed && "bg-fg/[0.12] text-fg",
-        )}
-      >
-        <span className={cn(!changed && "text-fg-3")}>{label}</span>
-        <span aria-hidden="true" className={cn("h-3 w-px", changed ? "bg-bg/30" : "bg-fg/15")} />
-        <span>{options[value]}</span>
-        <NavArrowDown width={14} height={14} aria-hidden="true" className={cn("transition-transform duration-200", open && "rotate-180")} />
-      </button>
-      {open && (
-        <div
-          role="listbox"
-          aria-label={label}
-          className="ios-pop mat absolute left-0 top-[calc(100%+6px)] z-[60] min-w-48 rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]"
-        >
-          {entries.map(([v, text]) => (
-            <button
-              key={v}
-              type="button"
-              role="option"
-              aria-selected={v === value}
-              onClick={() => {
-                setOpen(false);
-                if (v !== value) onPick(v);
-              }}
-              className={cn(
-                "state-layer flex min-h-10 w-full cursor-pointer items-center justify-between gap-6 rounded-s px-3 text-left text-[13.5px] transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-none desk:min-h-8 desk:text-[12.5px]",
-                v === value ? "font-semibold text-fg" : "text-fg-2 hover:text-fg",
-              )}
-            >
-              {text}
-              {v === value && <Check width={15} height={15} strokeWidth={2.2} aria-hidden="true" />}
-            </button>
-          ))}
-        </div>
-      )}
+        {(["duration", "upload"] as const).map((k) => (
+          <FilterSelect
+            key={k}
+            label={fl[k].label}
+            value={filters[k]}
+            options={fl[k].options as Record<string, string>}
+            changed={filters[k] !== "any"}
+            onPick={pick(k)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -433,8 +331,23 @@ function CardSkeletons({ count }: { count: number }) {
   ));
 }
 
-function ResultCard({ video, index, active, onPlay, onAdd }: { video: SearchVideo; index: number; active: boolean; onPlay: () => void; onAdd: () => void }) {
-  const { t } = useT();
+function ResultCard({
+  video,
+  index,
+  rank,
+  active,
+  onPlay,
+  onAdd,
+}: {
+  video: SearchVideo;
+  index: number;
+  /** urutan "Terbanyak ditonton" → nomor peringkat di thumbnail */
+  rank: number | null;
+  active: boolean;
+  onPlay: () => void;
+  onAdd: () => void;
+}) {
+  const { t, f } = useT();
   const y = t.youtube;
   return (
     <li className="rise flex flex-col gap-3" style={{ animationDelay: `${Math.min(index, 11) * 35}ms` }}>
@@ -454,6 +367,17 @@ function ResultCard({ video, index, active, onPlay, onAdd }: { video: SearchVide
             <Play width={20} height={20} className="translate-x-px" />
           </span>
         </span>
+        {rank != null && (
+          <span
+            aria-label={f(y.rank, { n: rank })}
+            className={cn(
+              "absolute left-2 top-2 grid h-6 min-w-6 place-items-center rounded-full px-1.5 font-mono text-[12px] font-bold tabular-nums shadow-[0_2px_8px_rgb(0_0_0/0.35)]",
+              rank <= 3 ? "bg-white text-black" : "bg-black/70 text-white",
+            )}
+          >
+            {rank}
+          </span>
+        )}
         {video.duration != null && (
           <span className="absolute bottom-2 right-2 rounded-xs bg-black/75 px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums text-white">
             {formatDuration(video.duration)}
@@ -465,7 +389,15 @@ function ResultCard({ video, index, active, onPlay, onAdd }: { video: SearchVide
           <p className="line-clamp-2 text-[14px] font-semibold leading-snug [overflow-wrap:anywhere] desk:text-[13px]" title={video.title}>
             {video.title}
           </p>
-          <p className="mt-1 truncate text-[12.5px] text-fg-3 desk:text-[11.5px]">{[video.author, video.views, video.published].filter(Boolean).join(" · ")}</p>
+          {rank != null && video.views ? (
+            <p className="mt-1 flex min-w-0 items-center gap-1 text-[12.5px] text-fg-3 desk:text-[11.5px]">
+              <Eye width={13} height={13} className="shrink-0 text-fg-2" aria-hidden="true" />
+              <span className="shrink-0 font-semibold text-fg-2">{video.views}</span>
+              <span className="truncate">· {[video.author, video.published].filter(Boolean).join(" · ")}</span>
+            </p>
+          ) : (
+            <p className="mt-1 truncate text-[12.5px] text-fg-3 desk:text-[11.5px]">{[video.author, video.views, video.published].filter(Boolean).join(" · ")}</p>
+          )}
         </div>
         <IconButton size="sm" label={y.add} icon={<Plus width={18} height={18} strokeWidth={2.2} />} onClick={onAdd} className="-mt-1 bg-fg/[0.07] hover:bg-fg/[0.12]" />
       </div>

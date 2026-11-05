@@ -1184,3 +1184,87 @@ html[data-theme="light"] .lcd:hover {
 [data-theme="light"] .hero-pool {
   display: none;
 }
+
+/* Pangkas lagu (TrimDialog): dua input range bertumpuk di atas gelombang — hanya kenopnya yang menerima sentuhan.
+   Kenop transparan 32px (area sentuh), visual = .trim-handle (garis aksen + pegangan kapsul). */
+.trim-range {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+}
+.trim-range:focus-visible {
+  outline: none;
+}
+.trim-range::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+.trim-range::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+.trim-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 32px;
+  height: 68px;
+  background: transparent;
+  border: 0;
+  cursor: ew-resize;
+}
+.trim-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 32px;
+  height: 68px;
+  background: transparent;
+  border: 0;
+  cursor: ew-resize;
+}
+.trim-range:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+.trim-handle {
+  width: 0;
+}
+.trim-handle::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: -1.5px;
+  width: 3px;
+  background: var(--accent);
+}
+.trim-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  width: 10px;
+  height: 26px;
+  border-radius: 5px;
+  background: var(--knob);
+  box-shadow: var(--knob-shadow);
+  translate: 0 -50%;
+  transition: scale var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.trim-track:has(.trim-range--start:focus-visible) .trim-handle--start::after,
+.trim-track:has(.trim-range--end:focus-visible) .trim-handle--end::after {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+.trim-track:has(.trim-range--start:active) .trim-handle--start::after,
+.trim-track:has(.trim-range--end:active) .trim-handle--end::after {
+  scale: 1.12;
+}
+.trim-check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

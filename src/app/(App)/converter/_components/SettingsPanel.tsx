@@ -14,6 +14,7 @@ import {
   fitToPlan,
   setAutoUpload,
   setOptions,
+  setTrimAsk,
 } from "@/store/slices/converterSlice";
 import { updateRoblox } from "@/store/slices/robloxSlice";
 import { useMeQuery, usePresetStatsQuery } from "@/store/api/baseApi";
@@ -108,6 +109,7 @@ export default function SettingsPanel() {
   const autoUpload = hydrated && converter.autoUpload;
   const autoPermission = converter.autoPermission;
   const robloxMode = hydrated ? converter.robloxMode : "asIs";
+  const trimAsk = !hydrated || converter.trimAsk;
   // Mode "balik ke asli" hanya berarti bila kecepatan diubah
   const restoreMode = robloxMode === "restore" && o.speed !== 1;
   const { t, f } = useT();
@@ -603,6 +605,7 @@ export default function SettingsPanel() {
             <Slider label={p.fadeIn} min={0} max={R.fade} step={LIMITS.fade.step} value={o.fadeIn} defaultValue={0} format={secLabel} onChange={(fadeIn) => set({ fadeIn })} />
             <Slider label={p.fadeOut} min={0} max={R.fade} step={LIMITS.fade.step} value={o.fadeOut} defaultValue={0} format={secLabel} onChange={(fadeOut) => set({ fadeOut })} />
             {levelUp && <LockNote text={`${f(fx.effectsLevel, { volume: levelUp.ranges.volume, fade: levelUp.ranges.fade })} — ${planName(levelUp.id)}`} cta={t.plan.upgrade} />}
+            <Switch label={t.trimmer.askSetting} hint={t.trimmer.askSettingHint} checked={trimAsk} onChange={(v) => dispatch(setTrimAsk(v))} />
           </>
         )}
       </div>

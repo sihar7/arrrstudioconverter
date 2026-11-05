@@ -59,6 +59,8 @@ export interface QueueItem {
   autoUpload: boolean;
   upload: UploadState;
   decal: DecalState;
+  /** Sudah dipangkas setelah convert: durasi file sebelum dipangkas pertama kali (detik); null = utuh */
+  trimmedFrom: number | null;
 }
 
 /** Preset buatan user (disimpan per perangkat) */
@@ -79,6 +81,8 @@ export interface ConverterState {
   customPresets: CustomPreset[];
   /** Cara memutar di Roblox: "asIs" = PlaybackSpeed 1 (terdengar hasil), "restore" = PlaybackSpeed 1/speed (balik ke asli) */
   robloxMode: RobloxMode;
+  /** Tanya "mau dipangkas?" begitu lagu selesai di-convert (false = user memilih "jangan tanya lagi") */
+  trimAsk: boolean;
   items: QueueItem[];
 }
 
@@ -95,6 +99,7 @@ const initialState: ConverterState = {
   autoConvert: false,
   customPresets: [],
   robloxMode: "asIs",
+  trimAsk: true,
   items: [],
 };
 
@@ -178,12 +183,13 @@ const converterSlice = createSlice({
     },
     hydrateConverter(
       state,
-      action: PayloadAction<Partial<Pick<ConverterState, "options" | "preset" | "autoUpload" | "autoPermission" | "autoConvert" | "customPresets" | "robloxMode">>>,
+      action: PayloadAction<Partial<Pick<ConverterState, "options" | "preset" | "autoUpload" | "autoPermission" | "autoConvert" | "customPresets" | "robloxMode" | "trimAsk">>>,
     ) {
       Object.assign(state, action.payload);
       state.options = { ...DEFAULT_OPTIONS, ...state.options };
       state.customPresets = Array.isArray(state.customPresets) ? state.customPresets : [];
       if (state.robloxMode !== "restore") state.robloxMode = "asIs";
+      state.trimAsk = state.trimAsk !== false;
     },
 
     addItems(state, action: PayloadAction<QueueInput[]>) {
@@ -215,6 +221,7 @@ const converterSlice = createSlice({
           autoUpload: state.autoConvert && state.autoUpload,
           upload: emptyUpload,
           decal: emptyDecal,
+          trimmedFrom: null,
         });
       }
     },
@@ -234,6 +241,7 @@ const converterSlice = createSlice({
           autoUpload: state.autoUpload,
           upload: emptyUpload,
           decal: emptyDecal,
+          trimmedFrom: null,
         });
       }
     },
@@ -286,6 +294,17 @@ const converterSlice = createSlice({
       const { videoId, ...meta } = action.payload;
       for (const item of state.items) if (item.videoId === videoId) Object.assign(item, meta, { metaReady: true });
     },
+    setTrimAsk(state, action: PayloadAction<boolean>) {
+      state.trimAsk = action.payload;
+    },
+    /** File hasil diganti versi terpangkas (fileId baru). Upload Roblox sebelumnya milik file lama → direset */
+    itemTrimmed(state, action: PayloadAction<{ key: string; file: Pick<JobResult, "fileId" | "filename" | "size" | "duration" | "expiresAt"> }>) {
+      const item = find(state, action.payload.key);
+      if (!item?.result) return;
+      item.trimmedFrom ??= item.result.duration;
+      item.result = { ...item.result, ...action.payload.file, saved: null };
+      if (item.upload.status === "done" || item.upload.status === "error") item.upload = emptyUpload;
+    },
     consumeAutoUpload(state, action: PayloadAction<string>) {
       const item = find(state, action.payload);
       if (item) item.autoUpload = false;
@@ -317,5 +336,7 @@ export const {
   decalUpdated,
   metaResolved,
   consumeAutoUpload,
+  setTrimAsk,
+  itemTrimmed,
 } = converterSlice.actions;
 export default converterSlice.reducer;

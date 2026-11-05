@@ -73,7 +73,7 @@ function buildAppMenu(getWindow) {
       label: "Bantuan",
       submenu: [
         ...(isMac ? [] : [{ label: "Cek update…", click: () => updater.check(true) }, { type: "separator" }]),
-        { label: "Website ARRR Studio", click: () => shell.openExternal("https://arrstudioweb.vercel.app/en") },
+        { label: "Website ARRR Studio", click: () => shell.openExternal("https://arrrstudio.com") },
         { label: "Discord", click: () => shell.openExternal("https://discord.gg/mtn3YmwjV") },
         { type: "separator" },
         { label: `Versi ${app.getVersion()}`, enabled: false },

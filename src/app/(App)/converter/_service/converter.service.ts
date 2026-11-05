@@ -46,5 +46,26 @@ export function checkOperation(apiKey: string, operationId: string, historyId?: 
   return apiFetch<UploadResponse>("/api/roblox/operation", { method: "POST", json: { apiKey, operationId, historyId } });
 }
 
+export interface TrimBody {
+  start: number;
+  end: number;
+  fadeIn: number;
+  fadeOut: number;
+  historyId?: string;
+}
+export interface TrimmedFile {
+  fileId: string;
+  filename: string;
+  format: string;
+  size: number;
+  duration: number;
+  expiresAt: number;
+}
+
+/** Pangkas file hasil di server (waktu file, detik) → file baru menggantikan yang lama; tanpa token */
+export function trimFile(fileId: string, body: TrimBody, signal?: AbortSignal) {
+  return apiFetch<{ file: TrimmedFile }>(`/api/files/${fileId}/trim`, { method: "POST", json: body, signal });
+}
+
 export const fileUrl = (fileId: string, download = false) => withBase(`/api/files/${fileId}${download ? "?dl=1" : ""}`);
 export const zipUrl = (fileIds: string[]) => withBase(`/api/files/zip?ids=${fileIds.join(",")}`);

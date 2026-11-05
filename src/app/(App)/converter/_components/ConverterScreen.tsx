@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { HelpCircle } from "iconoir-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/store/hooks";
 import { enqueue, isRunning } from "@/store/slices/converterSlice";
 import { useMeQuery } from "@/store/api/baseApi";
 import { shortName } from "@/lib/shortName";
@@ -38,6 +38,7 @@ const BulkUploadDialog = dynamic(() => import("@/components/roblox/BulkUploadDia
 });
 const GuestGate = dynamic(() => import("@/components/shared/GuestGate"), { ssr: false });
 const ShortcutsDialog = dynamic(() => import("./ShortcutsDialog"), { ssr: false });
+const TrimDialog = dynamic(() => import("./TrimDialog"), { ssr: false });
 
 const TOUR_KEY = "arrc.tour.converter.v1";
 
@@ -72,6 +73,10 @@ export default function ConverterScreen() {
       /* storage diblokir */
     }
   };
+  const store = useAppStore();
+  // Pangkas: askKeys = lagu yang baru selesai (dialog "mau dipangkas?"; auto-upload menunggu jawabannya) · trimKey = satu lagu dari tombol gunting
+  const [askKeys, setAskKeys] = useState<string[]>([]);
+  const [trimKey, setTrimKey] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState<string | null>(null);
   const [bulk, setBulk] = useState<string[] | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
@@ -83,7 +88,19 @@ export default function ConverterScreen() {
   const preview = useAudioPreview();
   const roblox = useRobloxUpload();
   const signals = useBatchSignals();
-  useQueueRunner({ onGuestLimit: () => setGate(true), onDone: roblox.autoUpload });
+  useQueueRunner({
+    onGuestLimit: () => setGate(true),
+    onDone: (key) => {
+      if (store.getState().converter.trimAsk) setAskKeys((k) => (k.includes(key) ? k : [...k, key]));
+      else roblox.autoUpload(key);
+    },
+  });
+  // Dialog tanya ditutup (dipangkas / dilewati) → lanjutkan auto-upload yang tertahan, memakai file terbaru
+  const closeAsk = () => {
+    const keys = askKeys;
+    setAskKeys([]);
+    keys.forEach((k) => roblox.autoUpload(k));
+  };
 
   const bulkItems = items.filter(roblox.uploadable);
   const uploadableKeys = bulkItems.map((i) => i.key);
@@ -166,6 +183,7 @@ export default function ConverterScreen() {
             playing={preview.playing}
             onTogglePlay={preview.toggle}
             onUpload={(item) => setUploadKey(item.key)}
+            onTrim={(item) => setTrimKey(item.key)}
             uploadableKeys={uploadableKeys}
             selectableKeys={selectableKeys}
             selection={selection}
@@ -229,6 +247,11 @@ export default function ConverterScreen() {
           }}
         />
       )}
+      {trimKey ? (
+        <TrimDialog key={trimKey} keys={[trimKey]} mode="edit" onClose={() => setTrimKey(null)} />
+      ) : askKeys.length > 0 && !tour ? (
+        <TrimDialog keys={askKeys} mode="ask" onClose={closeAsk} />
+      ) : null}
       {help && <ShortcutsDialog open onClose={() => setHelp(false)} />}
       {gate && <GuestGate open onClose={() => setGate(false)} />}
     </div>
