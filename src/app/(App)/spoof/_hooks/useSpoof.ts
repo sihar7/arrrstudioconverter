@@ -23,8 +23,8 @@ export interface SpoofSettings {
   placeId: string;
 }
 
-/** Tujuan "Beri akses": komunitas (Group ID) atau game (Place ID) */
-export type SpoofGrantTarget = { kind: "group" | "place"; id: string };
+/** Tujuan "Beri akses": komunitas (Group ID), game (Place ID), atau publik / Open Use (tanpa ID tujuan) */
+export type SpoofGrantTarget = { kind: "group" | "place" | "open"; id: string };
 
 /** Hasil "Beri akses": ID tetap, komunitas / game diberi izin pakai (tidak tersimpan di riwayat) */
 export interface SpoofGrant {

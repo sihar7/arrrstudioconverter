@@ -1484,6 +1484,10 @@ const en: Dictionary = {
     accessGroupHint: "Every game of this community may use the asset. You must be able to manage the target community.",
     grantDoneGroup: "usable by community {id}, ID unchanged",
     grantToast: "Access granted for {n} of {total} assets",
+    grantToOpen: "Public",
+    accessOpenHint: "Open Use: your images, decals & meshes can be used by ANY game or community without permission. Paste any text containing IDs (Config, README, a list) — IDs are picked up automatically. Permanent, can't be made private again. Audio, animations & models aren't supported.",
+    grantDoneOpen: "public (Open Use), usable in any game",
+    openConfirm: "Make {n} assets public (Open Use)? This is PERMANENT — Roblox can't make them private again.",
   },
   trimmer: {
     askTitle: "Trim before using?",

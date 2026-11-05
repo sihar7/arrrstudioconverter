@@ -13,11 +13,14 @@ export function fetchLibrary(body: LibraryQuery) {
   return apiFetch<{ assets: LibraryAsset[]; nextPageToken: string | null }>("/api/roblox/library", { method: "POST", json: body });
 }
 
-/** Izinkan di place tertentu, komunitas (Group ID), atau publik (distribusi gratis di Creator Store) */
-export function grantAccess(apiKey: string, assetIds: string[], mode: "place" | "public" | "group", targetId?: string) {
+/**
+ * Izinkan di place tertentu, komunitas (Group ID), publik audio (distribusi gratis di Creator Store),
+ * atau Open Use (gambar/decal/mesh bisa dipakai game mana pun tanpa izin — permanen)
+ */
+export function grantAccess(apiKey: string, assetIds: string[], mode: "place" | "public" | "group" | "open", targetId?: string) {
   return apiFetch<{ granted: string[]; failed: Record<string, string>; universeId: string | null }>("/api/roblox/permission", {
     method: "POST",
-    json: { apiKey, assetIds, mode, ...(mode === "group" ? { groupId: targetId } : { placeId: targetId }) },
+    json: { apiKey, assetIds, mode, ...(mode === "group" ? { groupId: targetId } : mode === "place" ? { placeId: targetId } : {}) },
   });
 }
 

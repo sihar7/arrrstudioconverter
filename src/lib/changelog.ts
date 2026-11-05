@@ -14,6 +14,30 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-05-spoof-open-use",
+    date: "2026-11-05",
+    text: {
+      id: {
+        title: "Spoof: jadikan gambar & mesh publik",
+        body: [
+          "Di Spoof › Beri akses ada tujuan baru: Publik. Gambar, decal, dan mesh milikmu jadi bisa dipakai game dan komunitas mana pun tanpa izin.",
+          "Tempel saja teks yang berisi ID, misalnya isi Config atau README. ID-nya diambil otomatis.",
+          "Ini permanen, jadi akan ada konfirmasi dulu. Audio, animasi, dan model tidak bisa dijadikan publik.",
+          "API key perlu izin asset-permissions:write.",
+        ],
+      },
+      en: {
+        title: "Spoof: make images & meshes public",
+        body: [
+          "Spoof › Grant access has a new target: Public. Your images, decals, and meshes can then be used by any game or community without permission.",
+          "Just paste any text that contains IDs, like a Config or README. The IDs are picked up automatically.",
+          "This is permanent, so you'll be asked to confirm first. Audio, animations, and models can't be made public.",
+          "Your API key needs the asset-permissions:write permission.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-05-youtube-foryou-library",
     date: "2026-11-05",
     text: {

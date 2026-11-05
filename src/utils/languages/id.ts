@@ -1483,6 +1483,10 @@ const id = {
     accessGroupHint: "Semua game komunitas ini boleh memakai aset. Kamu harus bisa mengelola komunitas tujuan.",
     grantDoneGroup: "bisa dipakai komunitas {id}, ID tetap",
     grantToast: "Akses diberikan ke {n} dari {total} aset",
+    grantToOpen: "Publik",
+    accessOpenHint: "Open Use: gambar, decal & mesh milikmu bisa dipakai game & komunitas MANA PUN tanpa izin. Tempel saja teks berisi ID (Config, README, daftar) — ID diambil otomatis. Permanen, tidak bisa dibuat privat lagi. Audio, animasi & model tidak bisa.",
+    grantDoneOpen: "publik (Open Use), bisa dipakai di game mana pun",
+    openConfirm: "Jadikan {n} aset publik (Open Use)? Ini PERMANEN — Roblox tidak bisa mengembalikannya ke privat.",
   },
   trimmer: {
     askTitle: "Mau dipangkas dulu?",
