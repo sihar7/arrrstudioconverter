@@ -1486,7 +1486,9 @@ const id = {
     grantToOpen: "Publik",
     accessOpenHint: "Open Use: gambar, decal & mesh milikmu bisa dipakai game & komunitas MANA PUN tanpa izin. Tempel saja teks berisi ID (Config, README, daftar) — ID diambil otomatis. Permanen, tidak bisa dibuat privat lagi. Audio, animasi & model tidak bisa.",
     grantDoneOpen: "publik (Open Use), bisa dipakai di game mana pun",
-    openConfirm: "Jadikan {n} aset publik (Open Use)? Ini PERMANEN — Roblox tidak bisa mengembalikannya ke privat.",
+    openConfirm: "{n} aset akan bisa dipakai game & komunitas mana pun tanpa izin. Ini permanen — Roblox tidak bisa mengembalikannya ke privat.",
+    openConfirmTitle: "Jadikan publik?",
+    openConfirmOk: "Jadikan publik",
   },
   trimmer: {
     askTitle: "Mau dipangkas dulu?",

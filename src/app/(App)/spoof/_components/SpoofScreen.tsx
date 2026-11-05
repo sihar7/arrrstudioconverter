@@ -84,7 +84,7 @@ export default function SpoofScreen() {
     // Open Use permanen (Roblox tidak bisa mengembalikannya ke privat) → selalu minta konfirmasi
     if (access && openUse) {
       setAsking(true);
-      const yes = await confirm(f(S.openConfirm, { n: ids.length }));
+      const yes = await confirm(f(S.openConfirm, { n: ids.length }), { title: S.openConfirmTitle, confirmLabel: S.openConfirmOk, variant: "primary" });
       setAsking(false);
       if (!yes) return;
     }

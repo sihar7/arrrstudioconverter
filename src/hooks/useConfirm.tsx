@@ -5,13 +5,25 @@ import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import { useT } from "./useT";
 
-/** Konfirmasi aksi destruktif: const [confirm, dialog] = useConfirm(); if (await confirm(msg)) … */
+/** Teks & gaya dialog; default = konfirmasi hapus */
+export interface ConfirmOptions {
+  title?: string;
+  confirmLabel?: string;
+  variant?: "danger" | "primary";
+}
+
+/**
+ * Konfirmasi aksi: const [confirm, dialog] = useConfirm(); if (await confirm(msg)) …
+ * Default judul & tombol "Hapus"; aksi lain wajib mengisi opts (mis. "Jadikan publik").
+ */
 export function useConfirm() {
   const { t } = useT();
   const [msg, setMsg] = useState<string | null>(null);
+  const [opts, setOpts] = useState<ConfirmOptions>({});
   const resolver = useRef<((v: boolean) => void) | null>(null);
 
-  const confirm = useCallback((message: string) => {
+  const confirm = useCallback((message: string, options: ConfirmOptions = {}) => {
+    setOpts(options);
     setMsg(message);
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
@@ -28,15 +40,15 @@ export function useConfirm() {
     <Dialog
       open={msg != null}
       onClose={() => close(false)}
-      title={t.common.delete}
+      title={opts.title ?? t.common.delete}
       width="max-w-[440px]"
       footer={
         <>
           <Button variant="subtle" onClick={() => close(false)}>
             {t.common.cancel}
           </Button>
-          <Button variant="danger" onClick={() => close(true)}>
-            {t.common.delete}
+          <Button variant={opts.variant ?? "danger"} onClick={() => close(true)}>
+            {opts.confirmLabel ?? t.common.delete}
           </Button>
         </>
       }

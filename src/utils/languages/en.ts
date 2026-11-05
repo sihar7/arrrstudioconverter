@@ -1487,7 +1487,9 @@ const en: Dictionary = {
     grantToOpen: "Public",
     accessOpenHint: "Open Use: your images, decals & meshes can be used by ANY game or community without permission. Paste any text containing IDs (Config, README, a list) — IDs are picked up automatically. Permanent, can't be made private again. Audio, animations & models aren't supported.",
     grantDoneOpen: "public (Open Use), usable in any game",
-    openConfirm: "Make {n} assets public (Open Use)? This is PERMANENT — Roblox can't make them private again.",
+    openConfirm: "{n} assets will be usable by any game or community without permission. This is permanent — Roblox can't make them private again.",
+    openConfirmTitle: "Make public?",
+    openConfirmOk: "Make public",
   },
   trimmer: {
     askTitle: "Trim before using?",
