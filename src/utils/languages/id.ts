@@ -1318,7 +1318,7 @@ const id = {
     // Pilihan cepat: [label, kata kunci pencarian]
     chips: [
       ["Lagu viral", "lagu viral"],
-      ["Lagu barat viral", "lagu barat viral tiktok"],
+      ["Lagu barat viral", "viral english songs tiktok"],
       ["Phonk", "phonk"],
       ["Lofi", "lofi"],
       ["Slowed reverb", "slowed reverb"],
