@@ -37,6 +37,15 @@ export default function WebYoutube() {
   const suggestions = useSuggest(input, suggestOpen && !searchLink(input));
   const showSuggest = suggestOpen && suggestions.length > 0;
 
+  // Pilihan jelajah terakhir (chip/genre). Kolom dikosongkan setelah mencari → otomatis kembali ke sini tanpa klik Cari
+  const browse = useRef<string>(y.chips[0][1]);
+  useEffect(() => {
+    if (input.trim() || !query || query === browse.current) return;
+    // jeda singkat: menghapus cepat huruf demi huruf tidak memicu pencarian berkali-kali
+    const id = setTimeout(() => void search(browse.current), 250);
+    return () => clearTimeout(id);
+  }, [input, query, search]);
+
   // Sentinel di dasar daftar (pola sama dengan Audio saya)
   const more = useRef(loadMore);
   useEffect(() => {
@@ -115,6 +124,7 @@ export default function WebYoutube() {
 
   // Chip pencarian cepat / genre → cari kata kuncinya, kolom input dikosongkan
   const pick = (q: string) => {
+    browse.current = q;
     setInput("");
     void search(q);
   };
