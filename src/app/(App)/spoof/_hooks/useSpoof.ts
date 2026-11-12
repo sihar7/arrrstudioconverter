@@ -11,7 +11,9 @@ import { grantAccess } from "@/app/(App)/library/_service/library.service";
 import type { PermissionMode } from "@/type/history";
 import type { SpoofRecord, SpoofWant } from "@/type/spoof";
 
-export const MAX_IDS = 25;
+export const MAX_IDS = 300;
+// BE /roblox/permission menerima maks 50 asset ID per request → grant dikirim per potongan
+const GRANT_CHUNK = 50;
 // Upload Roblox kadang butuh beberapa detik → cek ulang maks ±1 menit per aset
 const MAX_POLLS = 15;
 
@@ -111,13 +113,18 @@ export function useSpoof() {
       const apiKey = store.getState().roblox.apiKey;
       if (!apiKey || !ids.length) return;
       setGranting(true);
-      let rows: SpoofGrant[];
-      try {
-        const r = await grantAccess(apiKey, ids, target.kind, target.id);
-        rows = ids.map((assetId) => ({ assetId, target, error: r.failed[assetId] ?? null }));
-      } catch (e) {
-        const msg = e instanceof ApiError || e instanceof Error ? e.message : S.failed;
-        rows = ids.map((assetId) => ({ assetId, target, error: msg }));
+      const rows: SpoofGrant[] = [];
+      for (let i = 0; i < ids.length; i += GRANT_CHUNK) {
+        if (!alive.current) return;
+        const chunk = ids.slice(i, i + GRANT_CHUNK);
+        try {
+          const r = await grantAccess(apiKey, chunk, target.kind, target.id);
+          rows.push(...chunk.map((assetId) => ({ assetId, target, error: r.failed[assetId] ?? null })));
+        } catch (e) {
+          // Satu potongan gagal tidak menggagalkan potongan lain
+          const msg = e instanceof ApiError || e instanceof Error ? e.message : S.failed;
+          rows.push(...chunk.map((assetId) => ({ assetId, target, error: msg })));
+        }
       }
       if (!alive.current) return;
       setGranting(false);
