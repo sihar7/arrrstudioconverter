@@ -180,6 +180,40 @@ export function useHistoryActions() {
     [apiKey, toast, t, f, refresh, errMsg, uploadCover],
   );
 
+  /**
+   * Upload satu entri tanpa toast (dipakai upload massal). Cover Decal ditunggu supaya tidak menumpuk paralel;
+   * gagal cover tidak menggagalkan audio. fatal = key salah / kena rem → seluruh antrean massal dihentikan.
+   */
+  const uploadQuiet = useCallback(
+    async (entry: HistoryEntry, form: UploadForm, coverUrl: string | null): Promise<{ ok: true; coverFailed: boolean } | { ok: false; error: string; fatal: boolean }> => {
+      try {
+        await uploadEntry(apiKey, entry, form);
+      } catch (e) {
+        const fatal = e instanceof ApiError && (e.status === 401 || e.status === 403 || e.status === 429);
+        return { ok: false, error: errMsg(e), fatal };
+      }
+      if (!form.uploadCover || !(coverUrl || entry.videoId)) return { ok: true, coverFailed: false };
+      try {
+        const res = await uploadCoverDecal({
+          apiKey,
+          creatorType: form.creatorType,
+          creatorId: form.creatorId,
+          displayName: form.displayName,
+          cover: coverUrl,
+          videoId: entry.videoId,
+          title: entry.title,
+          artist: null,
+          style: roblox.coverStyle,
+        });
+        await saveHistoryCover(entry.id, { url: coverUrl, ...res });
+        return { ok: true, coverFailed: false };
+      } catch {
+        return { ok: true, coverFailed: true };
+      }
+    },
+    [apiKey, roblox.coverStyle, errMsg],
+  );
+
   /** Hapus banyak riwayat (konfirmasi lewat DeleteDialog); archive = aset yang sudah diupload diarsipkan di Roblox */
   const [deleting, setDeleting] = useState(false);
   const removeMany = useCallback(
@@ -207,5 +241,5 @@ export function useHistoryActions() {
     [apiKey, toast, t, f, refresh, errMsg],
   );
 
-  return { apiKey, checking, deleting, checkAll, publishing, publishMany, grantMany, setPermission, upload, coverBusy, uploadCover, removeMany };
+  return { apiKey, checking, deleting, checkAll, publishing, publishMany, grantMany, setPermission, upload, uploadQuiet, refresh, coverBusy, uploadCover, removeMany };
 }

@@ -14,6 +14,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-12-history-reupload",
+    date: "2026-11-12",
+    text: {
+      id: {
+        title: "Upload massal & upload ulang dari Riwayat",
+        body: [
+          "Riwayat › Pilih → tandai banyak lagu (atau ketuk Belum diupload / Gagal) → tekan Upload. Atur nama, creator, izin, dan cover sekali untuk semua, lalu lagu diupload berurutan dengan progres. Bisa dihentikan kapan saja.",
+          "Audio yang Gagal / Ditolak Roblox kini punya tombol Upload ulang — selama filenya belum kedaluwarsa. Hasilnya ID baru.",
+        ],
+      },
+      en: {
+        title: "Bulk upload & re-upload from History",
+        body: [
+          "History › Select → mark many songs (or tap Not uploaded / Failed) → press Upload. Set name, creator, access and cover once for all, then songs upload in order with progress. You can stop any time.",
+          "Audio that Failed / was Rejected by Roblox now has a Re-upload button — as long as the file hasn't expired. You get a new ID.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-12-import-safe-cover",
     date: "2026-11-12",
     text: {

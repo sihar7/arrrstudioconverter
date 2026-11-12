@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Check, Copy, Download, Lock, MediaImage, MusicDoubleNote, NavArrowDown, OpenNewWindow, Trash, Upload } from "iconoir-react";
 import { cn, copyText, formatBytes, formatClock, formatDuration } from "@/lib/utils";
 import { summarize } from "@/lib/audioSummary";
-import { ROBLOX_FORMATS } from "@/lib/schemas/convert.schema";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { useLongPress } from "@/hooks/useLongPress";
@@ -15,7 +14,7 @@ import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import RobloxPlaybackChip from "@/components/shared/RobloxPlaybackChip";
 import PlatformChip from "@/components/shared/PlatformChip";
-import { relTime, stateTone } from "../_utils/helpers";
+import { canReupload, canUploadItem, relTime, stateTone } from "../_utils/helpers";
 import { coverAssetId } from "@/lib/coverDecal";
 import { robloxAssetConfigureUrl } from "@/Url/Url";
 import type { HistoryItem } from "@/type/history";
@@ -50,7 +49,10 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
   const rb = item.roblox;
   // File dari perangkat tidak diproses efek apa pun
   const chips = item.source === "file" ? [] : summarize(item.options, t);
-  const canUpload = item.fileAvailable && !rb && (ROBLOX_FORMATS as readonly string[]).includes(item.format);
+  // Belum diupload, atau upload sebelumnya gagal/ditolak → upload (ulang) jadi ID baru
+  const reupload = canReupload(item);
+  const canUpload = canUploadItem(item);
+  const uploadLabel = reupload ? h.reupload : "Roblox";
   const permLabel = (p: { mode: string; placeId: string | null }) =>
     p.mode === "public" ? t.upload.permPublic : p.mode === "group" ? `${t.permission.group} ${p.placeId}` : `${t.upload.permPlace} ${p.placeId}`;
   const failed = rb?.permissions.filter((p) => p.status === "failed") ?? [];
@@ -149,7 +151,7 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
             )}
             {canUpload && (
               <Button size="sm" variant="ghost" icon={<Upload width={14} height={14} />} onClick={onUpload} className="hidden md:inline-flex">
-                Roblox
+                {uploadLabel}
               </Button>
             )}
             {rb?.assetId && (
@@ -264,7 +266,7 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
             )}
             {canUpload && (
               <Button size="sm" variant="tonal" icon={<Upload width={14} height={14} />} onClick={onUpload} className="md:hidden">
-                Roblox
+                {uploadLabel}
               </Button>
             )}
             {rb?.assetId && (

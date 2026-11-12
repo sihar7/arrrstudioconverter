@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { withBase } from "@/Url/Url";
 import dynamic from "next/dynamic";
-import { ClockRotateRight, Download, Globe, ListSelect, Lock, Refresh, Search, Trash, Xmark } from "iconoir-react";
+import { ClockRotateRight, Download, Globe, ListSelect, Lock, Refresh, Search, Trash, Upload, Xmark } from "iconoir-react";
 import { useHistoryQuery, useMeQuery } from "@/store/api/baseApi";
 import { useAppSelector } from "@/store/hooks";
 import { shortName } from "@/lib/shortName";
@@ -26,7 +26,7 @@ import { coverAssetId } from "@/lib/coverDecal";
 import type { ExportRow } from "@/lib/assetExport";
 import { robloxPlayback } from "@/lib/robloxPlayback";
 import { DEFAULT_OPTIONS } from "@/lib/schemas/convert.schema";
-import { canGoPublic, dayLabel, filterHistory, filterMatch, groupByDay, HISTORY_FILTERS, isFailed, needsCheck, quickMatch, type HistoryFilter, type QuickSelect } from "../_utils/helpers";
+import { canGoPublic, canUploadItem, dayLabel, filterHistory, filterMatch, groupByDay, HISTORY_FILTERS, isFailed, needsCheck, quickMatch, type HistoryFilter, type QuickSelect } from "../_utils/helpers";
 import type { HistoryItem } from "@/type/history";
 import LoginLinks from "@/components/shared/LoginLinks";
 
@@ -36,6 +36,7 @@ const RobloxUploadDialog = dynamic(() => import("@/components/roblox/RobloxUploa
 });
 const PermissionDialog = dynamic(() => import("./PermissionDialog"), { ssr: false });
 const ExportDialog = dynamic(() => import("@/components/shared/ExportDialog"), { ssr: false });
+const BulkUploadDialog = dynamic(() => import("./BulkUploadDialog"), { ssr: false });
 
 /** Baris ekspor: hanya yang sudah punya asset ID di Roblox; artis & kategori dari katalog musik / judul */
 /**
@@ -114,6 +115,8 @@ export default function HistoryScreen() {
   // true = dialog "Hapus semua riwayat" (bersih total, file hasil di server ikut dihapus bila dipilih)
   const [wipeAll, setWipeAll] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  // Upload massal: daftar dikunci saat dialog dibuka (pilihan bisa berubah setelah riwayat dimuat ulang)
+  const [bulkFor, setBulkFor] = useState<{ items: HistoryItem[]; skipped: number } | null>(null);
 
   const items = useMemo(() => data?.items ?? [], [data]);
   const counts = useMemo(
@@ -132,10 +135,11 @@ export default function HistoryScreen() {
   const { covers, artists, genres } = useHistoryCovers(items);
   // Mode pilih (tanpa checkbox): klik kartu = pilih, Shift+klik = rentang, tekan lama di HP = masuk mode
   const shownIds = useMemo(() => shown.map((i) => i.id), [shown]);
-  const sel = useSelectMode(shownIds, undefined, Boolean(toDelete));
+  const sel = useSelectMode(shownIds, undefined, Boolean(toDelete || bulkFor));
   const { selecting, picked } = sel;
   // Pilihan yang sudah tidak ada (terhapus / tersaring) otomatis gugur
   const selected = useMemo(() => shown.filter((i) => picked.has(i.id)), [shown, picked]);
+  const uploadable = useMemo(() => selected.filter(canUploadItem), [selected]);
 
   // Cek status senyap tiap 60 dtk selama ada yang direview / izin menunggu (mis. publik setelah Disetujui)
   const { checkAll } = actions;
@@ -351,6 +355,16 @@ export default function HistoryScreen() {
         })}
       >
         <Button
+          variant="primary"
+          size="sm"
+          disabled={!uploadable.length}
+          onClick={() => setBulkFor({ items: uploadable, skipped: selected.length - uploadable.length })}
+          icon={<Upload aria-hidden="true" />}
+        >
+          {h.bulk.action}
+          {uploadable.length > 0 && <span className="font-mono opacity-70">{uploadable.length}</span>}
+        </Button>
+        <Button
           variant="tonal"
           size="sm"
           disabled={!selected.some((i) => i.roblox?.assetId)}
@@ -387,6 +401,26 @@ export default function HistoryScreen() {
             if (ok) void refetch();
             return ok;
           }}
+        />
+      )}
+      {bulkFor && (
+        <BulkUploadDialog
+          items={bulkFor.items}
+          skipped={bulkFor.skipped}
+          needKey={!roblox.apiKey || !roblox.creatorId}
+          initial={{
+            creatorType: roblox.creatorType,
+            creatorId: roblox.creatorId,
+            permission: roblox.defaultPermission,
+            placeId: roblox.placeId,
+            uploadCover: roblox.uploadCover,
+          }}
+          upload={(item, form) => actions.uploadQuiet(item, form, coverUrlOf(item, covers))}
+          onFinished={() => {
+            actions.refresh();
+            sel.exit();
+          }}
+          onClose={() => setBulkFor(null)}
         />
       )}
       {exportOpen && (

@@ -1,6 +1,7 @@
 import type { HistoryItem, ModerationState } from "@/type/history";
 import type { Dictionary } from "@/utils/languages/id";
 import { fmt } from "@/utils/i18n";
+import { ROBLOX_FORMATS } from "@/lib/schemas/convert.schema";
 
 /** Tab status di Riwayat */
 export const HISTORY_FILTERS = ["all", "uploaded", "approved", "reviewing", "failed", "local"] as const;
@@ -18,6 +19,14 @@ export const isFailed = (i: HistoryItem) =>
         (!i.roblox.assetId && i.roblox.error) ||
         i.roblox.permissions.some((p) => p.status === "failed")),
   );
+
+/** Upload ke Roblox gagal total (ditolak moderasi / gagal diproses / error tanpa asset ID) → boleh diupload ulang jadi ID baru */
+export const canReupload = (i: HistoryItem) =>
+  Boolean(i.roblox && (i.roblox.state === "Rejected" || i.roblox.state === "Failed" || (!i.roblox.assetId && i.roblox.error)));
+
+/** Bisa diupload (atau diupload ulang) sekarang: file masih ada, format diterima Roblox, belum pernah / gagal sebelumnya */
+export const canUploadItem = (i: HistoryItem) =>
+  i.fileAvailable && (!i.roblox || canReupload(i)) && (ROBLOX_FORMATS as readonly string[]).includes(i.format);
 
 export const filterMatch: Record<HistoryFilter, (i: HistoryItem) => boolean> = {
   all: () => true,
