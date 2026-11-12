@@ -170,7 +170,8 @@ export function useLibrary() {
         }),
       );
       setAssets((cur) => cur.map((a) => (done.has(a.assetId) ? { ...a, archived: on } : a)));
-      if (on) setSelected((s) => new Set([...s].filter((id) => !done.has(id))));
+      // Aset pindah tab (aktif <-> arsip) → keluarkan dari pilihan
+      setSelected((s) => new Set([...s].filter((id) => !done.has(id))));
       const failed = ids.length - done.size;
       toast(
         failed && lastErr ? `${f(on ? t.library.archivedToast : t.library.restoredToast, { ok: done.size, failed })} — ${lastErr}` : f(on ? t.library.archivedToast : t.library.restoredToast, { ok: done.size, failed }),

@@ -14,6 +14,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-13-library-bulk-restore",
+    date: "2026-11-13",
+    text: {
+      id: {
+        title: "Pulihkan audio arsip sekaligus",
+        body: [
+          "Audio saya › tab Arsip › Pilih → tandai banyak audio (atau ketuk Disetujui untuk memilih semua yang lolos) → tekan Pulihkan. Audio kembali aktif dan bisa diputar lagi di game.",
+        ],
+      },
+      en: {
+        title: "Restore archived audio in bulk",
+        body: [
+          "My audio › Archived tab › Select → mark many audio (or tap Approved to pick every approved one) → press Restore. They become active and play in games again.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-12-history-reupload",
     date: "2026-11-12",
     text: {

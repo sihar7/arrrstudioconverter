@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Album, Crown, Download, Globe, ListSelect, Lock, Pause, Refresh, Search, Trash, Xmark } from "iconoir-react";
+import { Album, Crown, Download, Globe, ListSelect, Lock, Pause, Refresh, Search, Trash, Undo, Xmark } from "iconoir-react";
 import { useMeQuery } from "@/store/api/baseApi";
 import { cn } from "@/lib/utils";
 import { PLANS, cheapestPlan } from "@/lib/schemas/plans";
@@ -64,6 +64,11 @@ export default function LibraryScreen() {
       return !q || a.assetId.includes(q) || Boolean(a.name?.toLowerCase().includes(q));
     });
   }, [lib.assets, query, filter]);
+  // Hanya yang terlihat & memang diarsip yang dipulihkan (pilihan bisa tersisa dari tab lain)
+  const restoreSelected = () => {
+    const ids = shown.filter((a) => a.archived && lib.selected.has(a.assetId)).map((a) => a.assetId);
+    if (ids.length) void lib.archive(ids, false);
+  };
   const selectedAssets = useMemo(() => lib.assets.filter((a) => lib.selected.has(a.assetId)), [lib.assets, lib.selected]);
 
   // Mode pilih tanpa checkbox (sama dengan Riwayat) — pilihan disimpan di useLibrary untuk izin/arsip massal
@@ -350,9 +355,16 @@ export default function LibraryScreen() {
         <Button size="sm" variant="tonal" disabled={!pickCount} loading={lib.granting} icon={<Globe />} onClick={() => lib.grant("public")}>
           {L.makePublic}
         </Button>
-        <Button size="sm" variant="danger" disabled={!pickCount} loading={lib.archiving} icon={<Trash />} onClick={removeSelected}>
-          {L.archive}
-        </Button>
+        {filter === "archived" ? (
+          // Tab Arsip: pulihkan massal (mis. pilih "Disetujui" lalu Pulihkan)
+          <Button size="sm" variant="tonal" disabled={!pickCount} loading={lib.archiving} icon={<Undo />} onClick={restoreSelected}>
+            {L.restore}
+          </Button>
+        ) : (
+          <Button size="sm" variant="danger" disabled={!pickCount} loading={lib.archiving} icon={<Trash />} onClick={removeSelected}>
+            {L.archive}
+          </Button>
+        )}
         <form
           className="flex min-w-0 basis-full gap-2 sm:basis-auto"
           onSubmit={(e) => {
