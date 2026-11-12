@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { batchUpdated, type Batch, type QueueItem } from "@/store/slices/converterSlice";
+import { batchUpdated, isRunning, type Batch, type QueueItem } from "@/store/slices/converterSlice";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { shortName } from "@/lib/shortName";
@@ -47,8 +47,14 @@ export function useBatchUpload(roblox: ReturnType<typeof useRobloxUpload>) {
     const patch = (id: string, p: Partial<Batch>) => dispatch(batchUpdated({ id, patch: p }));
 
     for (const batch of batches) {
-      if (batch.status !== "running" || !batch.upload) continue;
+      if (!batch.upload) continue;
       const own = items.filter((i) => i.batch === batch.id);
+      // Batch "selesai" tapi ada lagu yang di-convert ulang (Coba lagi yang gagal) → hidupkan lagi supaya ikut diupload
+      if (batch.status === "done" && own.some((i) => isRunning(i.status))) {
+        patch(batch.id, { status: "running", note: null });
+        continue;
+      }
+      if (batch.status !== "running") continue;
 
       // 1) Gelombang berjalan → tunggu sampai semua punya hasil (selesai / gagal / processing kelamaan)
       if (batch.wave.length) {
@@ -70,7 +76,8 @@ export function useBatchUpload(roblox: ReturnType<typeof useRobloxUpload>) {
       // 2) Gelombang berikutnya: N lagu berikutnya yang belum terupload (lagu yang gagal convert dilewati)
       const next = own.filter((i) => i.status !== "error" && (i.upload.status === "idle" || i.upload.status === "error") && !started.current.has(i.key));
       if (!next.length) {
-        if (own.some(inFlight)) continue;
+        // Selesai hanya bila impor sudah tuntas, tidak ada upload berjalan, dan tidak ada lagu yang masih di-convert
+        if (batch.importing || !own.length || own.some(inFlight) || own.some((i) => isRunning(i.status))) continue;
         const ok = own.filter((i) => i.upload.status === "done").length;
         patch(batch.id, { status: "done", note: null });
         toast(f(b.batchDone, { ok, n: own.length }), "ok");

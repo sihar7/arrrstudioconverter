@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { nanoid } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppStore } from "@/store/hooks";
-import { addItems, batchCreated, type Cut, type QueueInput } from "@/store/slices/converterSlice";
+import { addItems, batchCreated, batchUpdated, type Cut, type QueueInput } from "@/store/slices/converterSlice";
 import { readTable, ImportError } from "@/lib/import/sheet";
 import { detectRows, type ImportRow } from "@/lib/import/rows";
 import { ApiError } from "@/lib/utils";
@@ -100,6 +100,7 @@ export function useImport(limit: number) {
           waveSize: s.waveSize,
           permission: store.getState().converter.autoPermission,
           status: "running",
+          importing: true,
           note: null,
           wave: [],
           waveAt: null,
@@ -152,6 +153,7 @@ export function useImport(limit: number) {
         setPhase({ kind: "running", done: Math.min(todo.length, i + CHUNK), total: todo.length });
       }
       abort.current = null;
+      dispatch(batchUpdated({ id: batch, patch: { importing: false } }));
       // Hitung dari antrean: lagu kembar di file / sudah ada di antrean dilewati addItems
       const inQueue = store.getState().converter.items.filter((i) => i.batch === batch).length;
       setPhase({ kind: "done", added: inQueue, notFound });

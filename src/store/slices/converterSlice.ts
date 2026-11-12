@@ -55,6 +55,8 @@ export interface Batch {
   waveSize: number;
   permission: PermissionMode;
   status: "running" | "paused" | "done";
+  /** lagu masih dicari & ditambahkan dari file → batch belum boleh dianggap selesai */
+  importing: boolean;
   /** alasan jeda (teks siap tampil) */
   note: string | null;
   /** gelombang yang sedang diupload + waktu mulainya */

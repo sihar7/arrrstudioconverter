@@ -28,6 +28,10 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
   const { t, f } = useT();
   const active = useRef(new Map<string, AbortController>());
   const [tick, setTick] = useState(0);
+  // Kena rem server (429 RATE_LIMIT / BUSY) → JANGAN gagalkan lagu: tetap "menunggu", antrean jeda sampai waktu ini.
+  // Dulu tiap 429 menandai lagu gagal lalu langsung mencoba lagu berikutnya → ratusan lagu impor gagal beruntun.
+  const cooldownUntil = useRef(0);
+  const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const optsRef = useRef(opts);
   const textRef = useRef({ t, f });
 
@@ -42,6 +46,7 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
     return () => {
       map.forEach((c) => c.abort());
       map.clear();
+      if (cooldownTimer.current) clearTimeout(cooldownTimer.current);
     };
   }, []);
 
@@ -112,6 +117,18 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
         await poll(item.key, job.id, ctrl);
       } catch (e) {
         if (ctrl.signal.aborted) return;
+        if (e instanceof ApiError && (e.code === "RATE_LIMIT" || e.code === "BUSY")) {
+          // Lagu tetap "pending"; antrean berhenti mengirim sampai rem selesai, lalu lanjut sendiri
+          const wait = e.code === "BUSY" ? 4 : Math.min(60, Math.max(2, Number(e.data?.retryAfter) || 10));
+          const until = Date.now() + wait * 1000;
+          if (until > cooldownUntil.current) {
+            cooldownUntil.current = until;
+            if (cooldownTimer.current) clearTimeout(cooldownTimer.current);
+            cooldownTimer.current = setTimeout(() => setTick((n) => n + 1), wait * 1000 + 50);
+          }
+          finish(item.key);
+          return;
+        }
         if (e instanceof ApiError && (e.code === "GUEST_LIMIT" || e.code === "TOKEN_LIMIT")) {
           // Kembalikan semua yang menunggu ke "siap"; guest → gerbang login, user → toast token habis
           for (const i of store.getState().converter.items) {
@@ -152,6 +169,7 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
       }
     }
 
+    if (Date.now() < cooldownUntil.current) return;
     const free = MAX_PARALLEL - active.current.size;
     if (free <= 0) return;
     const pending = items.filter((i) => i.status === "pending" && !active.current.has(i.key)).slice(0, free);
