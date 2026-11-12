@@ -16,7 +16,6 @@ import PageLoader from "@/components/shared/PageLoader";
 import CardBox from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
 import Button, { buttonClass } from "@/components/ui/Button";
-import Segmented from "@/components/ui/Segmented";
 import Skeleton from "@/components/ui/Skeleton";
 import { inputClass } from "@/components/ui/Field";
 import HistoryRow from "./HistoryRow";
@@ -25,7 +24,9 @@ import { useHistoryActions } from "../_hooks/useHistoryActions";
 import { artistOf, coverUrlOf, genreOf, useHistoryCovers } from "../_hooks/useHistoryCovers";
 import { coverAssetId } from "@/lib/coverDecal";
 import type { ExportRow } from "@/lib/assetExport";
-import { canGoPublic, dayLabel, filterHistory, groupByDay, needsCheck, quickMatch, type HistoryFilter, type QuickSelect } from "../_utils/helpers";
+import { robloxPlayback } from "@/lib/robloxPlayback";
+import { DEFAULT_OPTIONS } from "@/lib/schemas/convert.schema";
+import { canGoPublic, dayLabel, filterHistory, filterMatch, groupByDay, HISTORY_FILTERS, isFailed, needsCheck, quickMatch, type HistoryFilter, type QuickSelect } from "../_utils/helpers";
 import type { HistoryItem } from "@/type/history";
 import LoginLinks from "@/components/shared/LoginLinks";
 
@@ -37,11 +38,34 @@ const PermissionDialog = dynamic(() => import("./PermissionDialog"), { ssr: fals
 const ExportDialog = dynamic(() => import("@/components/shared/ExportDialog"), { ssr: false });
 
 /** Baris ekspor: hanya yang sudah punya asset ID di Roblox; artis & kategori dari katalog musik / judul */
-const exportRows = (list: HistoryItem[], artists: Record<string, string | null>, genres: Record<string, string | null>): ExportRow[] =>
+/**
+ * PlaybackSpeed di game — sama persis dengan chip "Di game: PlaybackSpeed …" di baris riwayat:
+ * mode "Suara asli" + kecepatan diubah → 1/speed (mis. Roblox Bypass 1.4× → 0.7143); selain itu 1
+ */
+const playbackOf = (i: HistoryItem, restoreMode: boolean) => {
+  const pb = robloxPlayback(i.options ?? DEFAULT_OPTIONS);
+  return restoreMode && pb.speed !== 1 ? pb.restoreSpeed : 1;
+};
+
+const exportRows = (
+  list: HistoryItem[],
+  artists: Record<string, string | null>,
+  genres: Record<string, string | null>,
+  restoreMode: boolean,
+): ExportRow[] =>
   list.flatMap((i) => {
     if (!i.roblox?.assetId) return [];
     const artist = artistOf(i, artists);
-    return [{ assetId: i.roblox.assetId, name: i.roblox.displayName || i.title, artist, genre: genreOf(i, genres, artist), coverId: coverAssetId(i.cover) }];
+    return [
+      {
+        assetId: i.roblox.assetId,
+        name: i.roblox.displayName || i.title,
+        artist,
+        genre: genreOf(i, genres, artist),
+        coverId: coverAssetId(i.cover),
+        playbackSpeed: playbackOf(i, restoreMode),
+      },
+    ];
   });
 
 function ListSkeleton() {
@@ -77,6 +101,8 @@ export default function HistoryScreen() {
   const loggedIn = Boolean(me?.user);
   const { data, isLoading, isFetching, refetch } = useHistoryQuery(undefined, { skip: !loggedIn });
   const roblox = useAppSelector((s) => s.roblox);
+  // Sama dengan chip PlaybackSpeed di baris riwayat (ikut ke file ekspor)
+  const restoreMode = useAppSelector((s) => s.converter.robloxMode === "restore");
   const actions = useHistoryActions();
 
   const [filter, setFilter] = useState<HistoryFilter>("all");
@@ -90,7 +116,14 @@ export default function HistoryScreen() {
   const [exportOpen, setExportOpen] = useState(false);
 
   const items = useMemo(() => data?.items ?? [], [data]);
-  const shown = useMemo(() => filterHistory(items, filter, query), [items, filter, query]);
+  const counts = useMemo(
+    () => Object.fromEntries(HISTORY_FILTERS.map((k) => [k, items.filter(filterMatch[k]).length])) as Record<HistoryFilter, number>,
+    [items],
+  );
+  // Tab yang jadi kosong (mis. semua yang gagal sudah dihapus) → tampil sebagai Semua
+  const active: HistoryFilter = counts[filter] ? filter : "all";
+  const shown = useMemo(() => filterHistory(items, active, query), [items, active, query]);
+  const failedItems = useMemo(() => items.filter(isFailed), [items]);
   const groups = useMemo(() => groupByDay(shown), [shown]);
   const publicCandidates = useMemo(() => items.filter(canGoPublic), [items]);
   const pendingCount = useMemo(() => items.filter(needsCheck).length, [items]);
@@ -213,20 +246,48 @@ export default function HistoryScreen() {
               placeholder={h.search}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className={`${inputClass} pl-10`}
+              // !pl: desk:px-3 di inputClass menimpa pl-10 → ikon menimpa teks placeholder
+              className={`${inputClass} !pl-10`}
             />
           </div>
-          <Segmented
-            label="Filter"
-            className="sm:w-[380px]"
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: "all", label: h.filterAll },
-              { value: "uploaded", label: h.filterUploaded },
-              { value: "local", label: h.filterLocal },
-            ]}
-          />
+        </div>
+
+        {/* Tab status + jumlahnya; tab "Gagal" punya aksi hapus semua yang gagal */}
+        <div className="flex items-center justify-between gap-3 border-b border-line px-5">
+          <div role="tablist" aria-label="Filter" className="thin-scroll -mx-2 flex overflow-x-auto">
+            {HISTORY_FILTERS.map((k) => {
+              const n = counts[k];
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  role="tab"
+                  aria-selected={active === k}
+                  disabled={k !== "all" && !n}
+                  onClick={() => setFilter(k)}
+                  className={cn(
+                    "state-layer relative flex h-11 shrink-0 cursor-pointer items-center gap-1.5 px-2.5 text-[13px] font-semibold transition-colors disabled:cursor-default disabled:opacity-35",
+                    active === k ? "text-fg" : "text-fg-3 hover:text-fg-2",
+                  )}
+                >
+                  {h.statusTabs[k]}
+                  <span className={cn("font-mono text-[11px] tabular-nums", k === "failed" && n ? "text-err" : "text-fg-3")}>{n}</span>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "absolute inset-x-2 bottom-0 h-0.5 bg-accent transition-transform duration-300 ease-[var(--ease)]",
+                      active === k ? "scale-x-100" : "scale-x-0",
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          {active === "failed" && failedItems.length > 0 && !selecting && (
+            <Button size="sm" variant="danger" icon={<Trash width={14} height={14} />} onClick={() => setToDelete(failedItems)} className="shrink-0">
+              {f(h.deleteFailed, { n: failedItems.length })}
+            </Button>
+          )}
         </div>
 
         {selecting && <p className="fade-swap border-b border-[var(--hairline)] px-5 py-2.5 text-[13px] text-fg-3">{h.selectHint}</p>}
@@ -332,8 +393,8 @@ export default function HistoryScreen() {
         <ExportDialog
           open
           onClose={() => setExportOpen(false)}
-          shown={exportRows(shown, artists, genres)}
-          selected={exportRows(selected, artists, genres)}
+          shown={exportRows(shown, artists, genres, restoreMode)}
+          selected={exportRows(selected, artists, genres, restoreMode)}
           withCover
           fileBase="riwayat-roblox"
         />

@@ -2,13 +2,37 @@ import type { HistoryItem, ModerationState } from "@/type/history";
 import type { Dictionary } from "@/utils/languages/id";
 import { fmt } from "@/utils/i18n";
 
-export type HistoryFilter = "all" | "uploaded" | "local";
+/** Tab status di Riwayat */
+export const HISTORY_FILTERS = ["all", "uploaded", "approved", "reviewing", "failed", "local"] as const;
+export type HistoryFilter = (typeof HISTORY_FILTERS)[number];
+
+/**
+ * Gagal = ditolak moderasi (Rejected), gagal diproses Roblox (Failed), upload bermasalah (ada error tanpa asset ID),
+ * atau ada izin yang gagal diterapkan
+ */
+export const isFailed = (i: HistoryItem) =>
+  Boolean(
+    i.roblox &&
+      (i.roblox.state === "Rejected" ||
+        i.roblox.state === "Failed" ||
+        (!i.roblox.assetId && i.roblox.error) ||
+        i.roblox.permissions.some((p) => p.status === "failed")),
+  );
+
+export const filterMatch: Record<HistoryFilter, (i: HistoryItem) => boolean> = {
+  all: () => true,
+  uploaded: (i) => Boolean(i.roblox),
+  approved: (i) => i.roblox?.state === "Approved",
+  reviewing: (i) => i.roblox?.state === "Reviewing" || i.roblox?.state === "Processing",
+  failed: isFailed,
+  local: (i) => !i.roblox,
+};
 
 export function filterHistory(items: HistoryItem[], filter: HistoryFilter, query: string) {
   const q = query.trim().toLowerCase();
+  const match = filterMatch[filter];
   return items.filter((i) => {
-    if (filter === "uploaded" && !i.roblox) return false;
-    if (filter === "local" && i.roblox) return false;
+    if (!match(i)) return false;
     if (!q) return true;
     return i.title.toLowerCase().includes(q) || (i.roblox?.assetId ?? "").includes(q) || i.videoId.toLowerCase().includes(q);
   });
@@ -70,5 +94,5 @@ export const quickMatch: Record<QuickSelect, (i: HistoryItem) => boolean> = {
   all: () => true,
   expired: (i) => !i.fileAvailable,
   local: (i) => !i.roblox,
-  rejected: (i) => i.roblox?.state === "Rejected" || i.roblox?.state === "Failed",
+  rejected: isFailed,
 };
