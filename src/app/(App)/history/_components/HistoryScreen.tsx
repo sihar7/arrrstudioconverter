@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { withBase } from "@/Url/Url";
 import dynamic from "next/dynamic";
-import { ClockRotateRight, Download, Globe, ListSelect, Refresh, Search, Trash, Xmark } from "iconoir-react";
+import { ClockRotateRight, Download, Globe, ListSelect, Lock, Refresh, Search, Trash, Xmark } from "iconoir-react";
 import { useHistoryQuery, useMeQuery } from "@/store/api/baseApi";
 import { useAppSelector } from "@/store/hooks";
 import { shortName } from "@/lib/shortName";
@@ -82,7 +82,8 @@ export default function HistoryScreen() {
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const [query, setQuery] = useState("");
   const [uploadFor, setUploadFor] = useState<HistoryItem | null>(null);
-  const [permFor, setPermFor] = useState<HistoryItem | null>(null);
+  // Izin pakai: satu entri (tombol baris) atau banyak (mode pilih)
+  const [permFor, setPermFor] = useState<HistoryItem[] | null>(null);
   const [toDelete, setToDelete] = useState<HistoryItem[] | null>(null);
   // true = dialog "Hapus semua riwayat" (bersih total, file hasil di server ikut dihapus bila dipilih)
   const [wipeAll, setWipeAll] = useState(false);
@@ -265,7 +266,7 @@ export default function HistoryScreen() {
                       onToggle={(shift) => sel.toggle(item.id, shift)}
                       onLongPress={() => sel.start(item.id)}
                       onUpload={() => setUploadFor(item)}
-                      onPermission={() => setPermFor(item)}
+                      onPermission={() => setPermFor([item])}
                       onUploadCover={() => actions.uploadCover(item, coverUrlOf(item, covers))}
                       onDelete={() => setToDelete([item])}
                     />
@@ -288,6 +289,15 @@ export default function HistoryScreen() {
           return { key: q, label: h.quick[q], n: ids.length, onClick: () => sel.pick(ids) };
         })}
       >
+        <Button
+          variant="tonal"
+          size="sm"
+          disabled={!selected.some((i) => i.roblox?.assetId)}
+          onClick={() => setPermFor(selected.filter((i) => i.roblox?.assetId))}
+          icon={<Lock aria-hidden="true" />}
+        >
+          {h.setPermission}
+        </Button>
         <Button variant="danger" size="sm" disabled={!selected.length} onClick={() => setToDelete(selected)} icon={<Trash aria-hidden="true" />}>
           {h.deleteSelected}
         </Button>
@@ -328,7 +338,13 @@ export default function HistoryScreen() {
           fileBase="riwayat-roblox"
         />
       )}
-      {permFor && <PermissionDialog entry={permFor} onClose={() => setPermFor(null)} onApply={(mode, placeId) => actions.setPermission(permFor, mode, placeId)} />}
+      {permFor && (
+        <PermissionDialog
+          entries={permFor}
+          onClose={() => setPermFor(null)}
+          onApply={(mode, target) => (permFor.length === 1 ? actions.setPermission(permFor[0], mode, target) : actions.grantMany(permFor, mode, target))}
+        />
+      )}
     </div>
   );
 }

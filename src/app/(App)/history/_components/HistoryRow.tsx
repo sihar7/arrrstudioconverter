@@ -51,6 +51,8 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
   // File dari perangkat tidak diproses efek apa pun
   const chips = item.source === "file" ? [] : summarize(item.options, t);
   const canUpload = item.fileAvailable && !rb && (ROBLOX_FORMATS as readonly string[]).includes(item.format);
+  const permLabel = (p: { mode: string; placeId: string | null }) =>
+    p.mode === "public" ? t.upload.permPublic : p.mode === "group" ? `${t.permission.group} ${p.placeId}` : `${t.upload.permPlace} ${p.placeId}`;
   const failed = rb?.permissions.filter((p) => p.status === "failed") ?? [];
   const coverId = coverAssetId(item.cover);
 
@@ -216,12 +218,16 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
                     {coverBusy ? t.upload.coverUploading : h.uploadCover}
                   </Button>
                 )}
+                {/* HP: tombol "Atur izin" di baris disembunyikan (sempit) → ada di detail */}
+                <Button size="sm" variant="ghost" icon={<Lock width={14} height={14} />} onClick={onPermission} className="md:hidden">
+                  {h.setPermission}
+                </Button>
                 {rb.permissions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {rb.permissions.map((p) => (
                       <span key={`${p.mode}-${p.placeId}`} title={p.message ?? undefined}>
                         <Badge tone={p.status === "granted" ? "ok" : p.status === "failed" ? "err" : "neutral"}>
-                          {p.mode === "public" ? t.upload.permPublic : `${t.upload.permPlace} ${p.placeId}`} ·{" "}
+                          {permLabel(p)} ·{" "}
                           {t.permission[p.status === "granted" ? "granted" : p.status === "failed" ? "failed" : "pending"]}
                         </Badge>
                       </span>
@@ -230,7 +236,7 @@ export default function HistoryRow({ item, coverUrl, coverBusy, selecting, selec
                 )}
                 {failed.map((p) => (
                   <p key={`${p.mode}-${p.placeId}`} className="text-[12px] leading-snug text-err">
-                    {p.mode === "public" ? t.upload.permPublic : `${t.upload.permPlace} ${p.placeId}`}: {p.message ?? t.permission.failed}
+                    {permLabel(p)}: {p.message ?? t.permission.failed}
                   </p>
                 ))}
                 <a

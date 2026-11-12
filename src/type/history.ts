@@ -4,7 +4,9 @@ export type ModerationState = "Processing" | "Reviewing" | "Approved" | "Rejecte
 export type PermissionMode = "none" | "place" | "public";
 
 export interface RobloxPermissionRecord {
-  mode: Exclude<PermissionMode, "none">;
+  /** group = izin pakai ke komunitas; ID grupnya disimpan di `placeId` */
+  mode: Exclude<PermissionMode, "none"> | "group";
+  /** place: Place ID · group: ID komunitas · public: null */
   placeId: string | null;
   universeId: string | null;
   status: "pending" | "granted" | "failed";

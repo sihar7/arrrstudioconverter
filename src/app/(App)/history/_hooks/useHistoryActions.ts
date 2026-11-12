@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { saveHistoryCover, uploadCoverDecal } from "@/lib/coverDecal";
-import { applyPermission, applyPermissionMany, checkStatus, deleteMany, uploadEntry } from "../_service/history.service";
+import { applyPermission, applyPermissionMany, checkStatus, deleteMany, uploadEntry, type GrantMode } from "../_service/history.service";
 import { canGoPublic, needsCheck } from "../_utils/helpers";
 import type { HistoryEntry, HistoryItem } from "@/type/history";
 import type { UploadForm } from "@/type/roblox";
@@ -80,8 +80,46 @@ export function useHistoryActions() {
     [apiKey, toast, t, f, refresh, errMsg],
   );
 
+  /**
+   * Izin untuk banyak entri sekaligus (place / komunitas / publik). Publik untuk audio yang masih direview → menunggu,
+   * diterapkan otomatis saat Disetujui. Per 50 (batas skema), berurutan.
+   */
+  const grantMany = useCallback(
+    async (items: HistoryItem[], mode: GrantMode, target?: string) => {
+      if (!apiKey) {
+        toast(t.history.needKeyForStatus, "err");
+        return false;
+      }
+      const ids = items.filter((i) => i.roblox?.assetId).map((i) => i.id);
+      if (!ids.length) return false;
+      setPublishing(true);
+      try {
+        let granted = 0;
+        let waiting = 0;
+        for (let i = 0; i < ids.length; i += 50) {
+          const r = await applyPermissionMany(apiKey, ids.slice(i, i + 50), mode, target);
+          for (const e of r.entries) {
+            const p = e.roblox?.permissions.find((x) => x.mode === mode && (mode === "public" || x.placeId === target));
+            if (p?.status === "granted") granted++;
+            else if (p?.status === "pending") waiting++;
+          }
+        }
+        const failed = ids.length - granted - waiting;
+        toast(f(t.permission.bulkDone, { ok: granted, wait: waiting, failed }), failed ? "err" : "ok");
+        refresh();
+        return true;
+      } catch (e) {
+        toast(errMsg(e), "err");
+        return false;
+      } finally {
+        setPublishing(false);
+      }
+    },
+    [apiKey, toast, t, f, refresh, errMsg],
+  );
+
   const setPermission = useCallback(
-    async (entry: HistoryEntry, mode: "place" | "public", placeId?: string) => {
+    async (entry: HistoryEntry, mode: GrantMode, placeId?: string) => {
       try {
         const { entry: next } = await applyPermission(apiKey, entry, mode, placeId);
         const failed = next.roblox?.permissions.find((p) => p.mode === mode && p.status === "failed");
@@ -169,5 +207,5 @@ export function useHistoryActions() {
     [apiKey, toast, t, f, refresh, errMsg],
   );
 
-  return { apiKey, checking, deleting, checkAll, publishing, publishMany, setPermission, upload, coverBusy, uploadCover, removeMany };
+  return { apiKey, checking, deleting, checkAll, publishing, publishMany, grantMany, setPermission, upload, coverBusy, uploadCover, removeMany };
 }

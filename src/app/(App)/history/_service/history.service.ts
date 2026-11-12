@@ -9,17 +9,23 @@ export function checkStatus(apiKey: string, historyIds: string[]) {
   });
 }
 
-export function applyPermission(apiKey: string, entry: HistoryEntry, mode: "place" | "public", placeId?: string) {
+/** place = Place ID · group = komunitas (ID grup) · public = semua game */
+export type GrantMode = "place" | "public" | "group";
+
+/** `target` = Place ID (place) atau ID komunitas (group) */
+const targetOf = (mode: GrantMode, target?: string) => (mode === "place" ? { placeId: target } : mode === "group" ? { groupId: target } : {});
+
+export function applyPermission(apiKey: string, entry: HistoryEntry, mode: GrantMode, target?: string) {
   return apiFetch<{ entry: HistoryEntry }>("/api/roblox/permission", {
     method: "POST",
-    json: { apiKey, historyId: entry.id, assetIds: [entry.roblox!.assetId], mode, placeId },
+    json: { apiKey, historyId: entry.id, assetIds: [entry.roblox!.assetId], mode, ...targetOf(mode, target) },
   });
 }
 
-export function applyPermissionMany(apiKey: string, historyIds: string[], mode: "place" | "public", placeId?: string) {
+export function applyPermissionMany(apiKey: string, historyIds: string[], mode: GrantMode, target?: string) {
   return apiFetch<{ entries: HistoryEntry[] }>("/api/roblox/permission", {
     method: "POST",
-    json: { apiKey, historyIds, assetIds: ["0"], mode, placeId },
+    json: { apiKey, historyIds, assetIds: ["0"], mode, ...targetOf(mode, target) },
   });
 }
 
