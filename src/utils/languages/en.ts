@@ -430,6 +430,9 @@ const en: Dictionary = {
     sub: "Paste a YouTube, TikTok, SoundCloud or other link, shape the sound, then download or upload to Roblox.",
     sourceLabel: "Song link",
     sourcePlaceholder: "YouTube / TikTok / SoundCloud link… — multiple work too",
+    cancelAll: "Cancel all ({n})",
+    cancelAllConfirm: "Cancel {n} songs that are converting / waiting? Tokens for canceled songs are refunded; the songs stay in the queue.",
+    canceledMany: "{n} songs canceled",
     showMore: "Show more",
     sourceHelp: "YouTube (videos, Shorts, Music, playlists), TikTok, SoundCloud, Instagram Reels, X, or Facebook. Separate multiple links with spaces or new lines.",
     importer: {
@@ -481,6 +484,8 @@ const en: Dictionary = {
       batchWave: "wave {n}",
       batchWaiting: "Waiting for the next wave to convert…",
       batchUploading: "Uploading wave {n}…",
+      cancelBatch: "Cancel",
+      canceledBatch: "Batch canceled — {n} conversions stopped. Finished songs stay in the queue.",
       pause: "Pause",
       resume: "Resume",
       close: "Close batch",

@@ -17,6 +17,7 @@ import IconButton from "@/components/ui/IconButton";
 import Progress from "@/components/ui/Progress";
 import QueueItemRow from "./QueueItemRow";
 import { cancelJob, zipUrl } from "../_service/converter.service";
+import { useCancel } from "../_hooks/useCancel";
 import type { UploadBlock } from "@/type/roblox";
 
 const PAGE = 60;
@@ -98,6 +99,11 @@ export default function QueueCard({
   // Ringkasan batch: item yang sudah dikirim (bukan idle)
   const started = items.filter((i) => i.status !== "idle");
   const running = started.filter((i) => isRunning(i.status)).length;
+  const cancelMany = useCancel();
+  const cancelAll = async () => {
+    if (!(await confirm(f(c.cancelAllConfirm, { n: running })))) return;
+    toast(f(c.canceledMany, { n: cancelMany() }), "info");
+  };
   const doneCount = started.filter((i) => i.status === "done").length;
   const batchPct = started.length
     ? started.reduce((sum, i) => sum + (i.status === "done" || i.status === "error" ? 100 : isRunning(i.status) ? i.progress : 0), 0) /
@@ -138,6 +144,11 @@ export default function QueueCard({
                 icon={notify.on ? <BellNotification width={18} height={18} /> : <Bell width={18} height={18} />}
                 onClick={notify.toggle}
               />
+            )}
+            {running > 1 && (
+              <Button size="sm" variant="ghost" icon={<Xmark width={14} height={14} />} onClick={() => void cancelAll()} className="ml-1">
+                {f(c.cancelAll, { n: running })}
+              </Button>
             )}
             {ready > 0 && (
               <Button size="sm" variant="primary" onClick={() => dispatch(enqueue())} className="ml-1">

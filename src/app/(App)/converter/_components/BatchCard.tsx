@@ -9,12 +9,22 @@ import { useT } from "@/hooks/useT";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import Progress from "@/components/ui/Progress";
+import { useToast } from "@/hooks/useToast";
+import { useCancel } from "../_hooks/useCancel";
 
 /** Satu batch impor: dua angka (convert & upload) + status gelombang + jeda/lanjut */
 const BatchRow = memo(function BatchRow({ batch }: { batch: Batch }) {
   const { t, f } = useT();
   const c = t.converter.importer;
   const dispatch = useAppDispatch();
+  const toast = useToast();
+  const cancelMany = useCancel();
+  // Batalkan batch: convert yang berjalan / menunggu dihentikan, upload berikutnya tidak dikirim, batch ditutup
+  const cancelBatch = () => {
+    const n = cancelMany((i) => i.batch === batch.id);
+    dispatch(batchRemoved(batch.id));
+    toast(f(c.canceledBatch, { n }), "info");
+  };
   // Hanya hitungan yang dibaca (bukan item utuh) → baris tidak dirender ulang tiap progres kecil berubah
   const counts = useAppSelector((s) => {
     let n = 0;
@@ -64,7 +74,13 @@ const BatchRow = memo(function BatchRow({ batch }: { batch: Batch }) {
             {batch.status === "paused" ? c.resume : c.pause}
           </Button>
         )}
-        <IconButton label={c.close} size="sm" icon={<Xmark width={16} height={16} />} onClick={() => dispatch(batchRemoved(batch.id))} />
+        {batch.status !== "done" ? (
+          <Button size="sm" variant="ghost" icon={<Xmark width={15} height={15} />} onClick={cancelBatch}>
+            {c.cancelBatch}
+          </Button>
+        ) : (
+          <IconButton label={c.close} size="sm" icon={<Xmark width={16} height={16} />} onClick={() => dispatch(batchRemoved(batch.id))} />
+        )}
       </div>
       <Progress value={pct} tone={batch.status === "done" ? "ok" : "accent"} label={batch.label} />
       {status && <p className={cn("text-[12.5px] leading-relaxed", batch.status === "paused" && batch.note ? "text-warn" : "text-fg-3")}>{status}</p>}

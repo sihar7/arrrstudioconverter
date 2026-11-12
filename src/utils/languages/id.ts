@@ -429,6 +429,9 @@ const id = {
     sub: "Tempel link YouTube, TikTok, SoundCloud & lainnya, atur suaranya, lalu unduh atau upload ke Roblox.",
     sourceLabel: "Link lagu",
     sourcePlaceholder: "Link YouTube / TikTok / SoundCloud… — bisa beberapa sekaligus",
+    cancelAll: "Batalkan semua ({n})",
+    cancelAllConfirm: "Batalkan {n} lagu yang sedang / menunggu convert? Token lagu yang dibatalkan dikembalikan, lagunya tetap di antrean.",
+    canceledMany: "{n} lagu dibatalkan",
     showMore: "Tampilkan lagi",
     sourceHelp: "YouTube (video, Shorts, Music, playlist), TikTok, SoundCloud, Instagram Reels, X, atau Facebook. Pisahkan beberapa link dengan spasi atau baris baru.",
     importer: {
@@ -480,6 +483,8 @@ const id = {
       batchWave: "gelombang {n}",
       batchWaiting: "Menunggu convert gelombang berikutnya…",
       batchUploading: "Mengupload gelombang {n}…",
+      cancelBatch: "Batalkan",
+      canceledBatch: "Batch dibatalkan — {n} convert dihentikan. Yang sudah selesai tetap di antrean.",
       pause: "Jeda",
       resume: "Lanjutkan",
       close: "Tutup batch",
