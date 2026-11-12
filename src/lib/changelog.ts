@@ -14,6 +14,30 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-12-import-safe-cover",
+    date: "2026-11-12",
+    text: {
+      id: {
+        title: "Impor CSV / Excel + cover lebih aman",
+        body: [
+          "Plan Pro ke atas: tekan Impor file di Converter, pilih CSV / Excel / TXT berisi judul lagu atau link. Lagu dicari otomatis, dipangkas sedikit, lalu diupload ke Roblox berurutan per gelombang (mis. 10 aman semua, baru 10 berikutnya).",
+          "Cover otomatis sekarang TANPA tulisan, nama orang, atau wajah — nama di gambar bisa dianggap data pribadi oleh Roblox. Pilihan cover asli dihapus.",
+          "Kata kasar, kata dewasa, nomor HP, dan email otomatis dibuang dari nama aset sebelum diupload.",
+          "Riwayat bisa dihapus total lewat tombol Hapus semua.",
+        ],
+      },
+      en: {
+        title: "CSV / Excel import + safer covers",
+        body: [
+          "Pro plan and up: press Import file in the Converter and pick a CSV / Excel / TXT with song titles or links. Songs are found automatically, trimmed a little, then uploaded to Roblox in waves (e.g. 10 all safe, then the next 10).",
+          "Auto covers now have NO text, names, or faces — Roblox can treat names in images as personal info. The original-cover option is gone.",
+          "Swear words, adult words, phone numbers, and emails are removed from asset names before upload.",
+          "History can be wiped completely with the Delete all button.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-05-spoof-open-use",
     date: "2026-11-05",
     text: {

@@ -84,6 +84,8 @@ export default function HistoryScreen() {
   const [uploadFor, setUploadFor] = useState<HistoryItem | null>(null);
   const [permFor, setPermFor] = useState<HistoryItem | null>(null);
   const [toDelete, setToDelete] = useState<HistoryItem[] | null>(null);
+  // true = dialog "Hapus semua riwayat" (bersih total, file hasil di server ikut dihapus bila dipilih)
+  const [wipeAll, setWipeAll] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
   const items = useMemo(() => data?.items ?? [], [data]);
@@ -111,11 +113,12 @@ export default function HistoryScreen() {
     return () => window.clearInterval(timer);
   }, [pendingCount, roblox.apiKey, items, checkAll]);
 
-  const confirmDelete = async (archive: boolean) => {
+  const confirmDelete = async (archive: boolean, files: boolean) => {
     if (!toDelete) return;
-    const ok = await actions.removeMany(toDelete, archive);
+    const ok = await actions.removeMany(toDelete, archive, files);
     if (!ok) return;
     setToDelete(null);
+    setWipeAll(false);
     sel.pick(selected.filter((i) => !toDelete.includes(i)).map((i) => i.id));
   };
 
@@ -162,6 +165,18 @@ export default function HistoryScreen() {
             {hasAsset && (
               <Button variant="tonal" icon={<Download width={16} height={16} />} onClick={() => setExportOpen(true)}>
                 {h.export}
+              </Button>
+            )}
+            {items.length > 0 && !selecting && (
+              <Button
+                variant="ghost"
+                icon={<Trash width={16} height={16} />}
+                onClick={() => {
+                  setWipeAll(true);
+                  setToDelete(items);
+                }}
+              >
+                {h.deleteAll}
               </Button>
             )}
             {items.length > 0 && (
@@ -278,7 +293,7 @@ export default function HistoryScreen() {
         </Button>
       </SelectionDock>
 
-      <DeleteDialog items={toDelete} hasKey={Boolean(roblox.apiKey)} busy={actions.deleting} onClose={() => setToDelete(null)} onConfirm={confirmDelete} />
+      <DeleteDialog all={wipeAll} items={toDelete} hasKey={Boolean(roblox.apiKey)} busy={actions.deleting} onClose={() => (setToDelete(null), setWipeAll(false))} onConfirm={confirmDelete} />
 
       {uploadFor && (
         <RobloxUploadDialog

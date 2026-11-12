@@ -33,8 +33,44 @@ export interface Clip {
   total: number;
 }
 
-/** Item baru untuk antrean: info video, opsional potongan lagu album */
-export type QueueInput = VideoInfo & { clip?: Clip };
+/** Pangkas otomatis saat convert (impor file): detik dibuang di awal & akhir + fade halus */
+export interface Cut {
+  start: number;
+  /** detik dari awal sumber; null = sampai akhir (durasi tidak diketahui) */
+  end: number | null;
+  fadeIn: number;
+  fadeOut: number;
+}
+
+/**
+ * Impor file (CSV / Excel): sekumpulan lagu yang langsung di-convert lalu diupload ke Roblox BERURUTAN per gelombang
+ * (mis. 10 → semua selesai & aman → 10 berikutnya). Gelombang dengan upload gagal → batch dijeda, user memutuskan.
+ */
+export interface Batch {
+  id: string;
+  /** nama file asal */
+  label: string;
+  /** upload otomatis ke Roblox setelah convert */
+  upload: boolean;
+  waveSize: number;
+  permission: PermissionMode;
+  status: "running" | "paused" | "done";
+  /** alasan jeda (teks siap tampil) */
+  note: string | null;
+  /** gelombang yang sedang diupload + waktu mulainya */
+  wave: string[];
+  waveAt: number | null;
+  waves: number;
+}
+
+/** Item baru untuk antrean: info video, opsional potongan lagu album / impor file */
+export type QueueInput = VideoInfo & {
+  clip?: Clip;
+  cut?: Cut;
+  batch?: string;
+  /** nama aset Roblox dari file impor (disaring lagi saat upload) */
+  assetName?: string | null;
+};
 
 export interface QueueItem {
   key: string;
@@ -61,6 +97,11 @@ export interface QueueItem {
   decal: DecalState;
   /** Sudah dipangkas setelah convert: durasi file sebelum dipangkas pertama kali (detik); null = utuh */
   trimmedFrom: number | null;
+  /** Pangkas otomatis saat convert (impor file) */
+  cut: Cut | null;
+  /** id Batch impor; null = item biasa */
+  batch: string | null;
+  assetName: string | null;
 }
 
 /** Preset buatan user (disimpan per perangkat) */
@@ -84,6 +125,7 @@ export interface ConverterState {
   /** Tanya "mau dipangkas?" begitu lagu selesai di-convert (false = user memilih "jangan tanya lagi") */
   trimAsk: boolean;
   items: QueueItem[];
+  batches: Batch[];
 }
 
 export type RobloxMode = "asIs" | "restore";
@@ -101,6 +143,7 @@ const initialState: ConverterState = {
   robloxMode: "asIs",
   trimAsk: true,
   items: [],
+  batches: [],
 };
 
 export const MAX_CUSTOM_PRESETS = 8;
@@ -193,12 +236,15 @@ const converterSlice = createSlice({
     },
 
     addItems(state, action: PayloadAction<QueueInput[]>) {
+      // Cek duplikat lewat Set (impor file bisa ratusan item → hindari O(n²))
+      const open = new Set(state.items.filter((i) => i.status !== "done" && i.status !== "error").map((i) => `${i.videoId}@${i.clip?.start ?? ""}`));
       for (const v of action.payload) {
         // Duplikat = video sama DAN potongan sama (lagu-lagu dari satu video album bukan duplikat)
-        const dup = state.items.find(
-          (i) => i.videoId === v.videoId && (i.clip?.start ?? null) === (v.clip?.start ?? null) && i.status !== "done" && i.status !== "error",
-        );
-        if (dup) continue;
+        const id = `${v.videoId}@${v.clip?.start ?? ""}`;
+        if (open.has(id)) continue;
+        open.add(id);
+        // Item impor selalu langsung di-convert; upload-nya diatur gelombang batch (bukan auto-upload per item)
+        const start = state.autoConvert || Boolean(v.batch);
         state.items.push({
           key: nanoid(10),
           videoId: v.videoId,
@@ -212,16 +258,19 @@ const converterSlice = createSlice({
           cover: null,
           metaReady: false,
           // Auto-convert: langsung masuk antrean server dengan opsi saat ini
-          status: state.autoConvert ? "pending" : "idle",
+          status: start ? "pending" : "idle",
           progress: 0,
           jobId: null,
           error: null,
           result: null,
-          options: state.autoConvert ? state.options : null,
-          autoUpload: state.autoConvert && state.autoUpload,
+          options: start ? state.options : null,
+          autoUpload: !v.batch && state.autoConvert && state.autoUpload,
           upload: emptyUpload,
           decal: emptyDecal,
           trimmedFrom: null,
+          cut: v.cut ?? null,
+          batch: v.batch ?? null,
+          assetName: v.assetName ?? null,
         });
       }
     },
@@ -238,7 +287,7 @@ const converterSlice = createSlice({
           error: null,
           result: null,
           options: state.options,
-          autoUpload: state.autoUpload,
+          autoUpload: !item.batch && state.autoUpload,
           upload: emptyUpload,
           decal: emptyDecal,
           trimmedFrom: null,
@@ -305,6 +354,18 @@ const converterSlice = createSlice({
       item.result = { ...item.result, ...action.payload.file, saved: null };
       if (item.upload.status === "done" || item.upload.status === "error") item.upload = emptyUpload;
     },
+    batchCreated(state, action: PayloadAction<Batch>) {
+      state.batches.push(action.payload);
+    },
+    batchUpdated(state, action: PayloadAction<{ id: string; patch: Partial<Batch> }>) {
+      const b = state.batches.find((x) => x.id === action.payload.id);
+      if (b) Object.assign(b, action.payload.patch);
+    },
+    /** Tutup batch: item tetap di antrean sebagai item biasa */
+    batchRemoved(state, action: PayloadAction<string>) {
+      state.batches = state.batches.filter((b) => b.id !== action.payload);
+      for (const i of state.items) if (i.batch === action.payload) i.batch = null;
+    },
     consumeAutoUpload(state, action: PayloadAction<string>) {
       const item = find(state, action.payload);
       if (item) item.autoUpload = false;
@@ -336,6 +397,9 @@ export const {
   decalUpdated,
   metaResolved,
   consumeAutoUpload,
+  batchCreated,
+  batchUpdated,
+  batchRemoved,
   setTrimAsk,
   itemTrimmed,
 } = converterSlice.actions;

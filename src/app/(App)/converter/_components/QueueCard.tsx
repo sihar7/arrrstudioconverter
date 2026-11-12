@@ -19,6 +19,8 @@ import QueueItemRow from "./QueueItemRow";
 import { cancelJob, zipUrl } from "../_service/converter.service";
 import type { UploadBlock } from "@/type/roblox";
 
+const PAGE = 60;
+
 type Filter = "all" | "ready" | "running" | "done" | "error";
 const FILTERS: Filter[] = ["all", "ready", "running", "done", "error"];
 
@@ -79,6 +81,8 @@ export default function QueueCard({
   const c = t.converter;
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
+  // Impor file bisa ratusan lagu → render bertahap supaya halaman tetap ringan (DOM tidak membengkak)
+  const [limit, setLimit] = useState(PAGE);
 
   const counts = Object.fromEntries(FILTERS.map((k) => [k, items.filter((i) => matches(i, k)).length])) as Record<Filter, number>;
   // Filter yang kosongnya karena item habis → kembali ke "Semua" otomatis
@@ -288,7 +292,7 @@ export default function QueueCard({
       ) : (
         <>
           <ul className="flex flex-col gap-2 p-3 desk:gap-1 desk:p-2">
-            {shown.map((item) => {
+            {shown.slice(0, limit).map((item) => {
               const n = order.get(item.key)!;
               return (
                 <QueueItemRow
@@ -312,6 +316,13 @@ export default function QueueCard({
               );
             })}
           </ul>
+          {shown.length > limit && (
+            <div className="flex justify-center px-5 pb-3">
+              <Button size="sm" variant="ghost" onClick={() => setLimit((n) => n + PAGE)}>
+                {`${c.showMore} (${shown.length - limit})`}
+              </Button>
+            </div>
+          )}
           {(q || active !== "all") && shown.length > 1 && (
             <div className="flex justify-end border-t border-line/70 px-5 py-2">
               <Button

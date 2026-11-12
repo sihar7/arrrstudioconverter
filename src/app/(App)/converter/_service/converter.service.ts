@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/utils";
 import { deviceId } from "@/lib/deviceId";
 import { withBase } from "@/Url/Url";
+import { safeName, safeText } from "@/lib/schemas/safeText";
 import type { AudioOptions } from "@/lib/schemas/convert.schema";
 import type { PublicJob } from "@/type/converter";
 import type { PermissionMode } from "@/type/history";
@@ -38,8 +39,10 @@ export interface UploadPayload {
   placeId?: string;
 }
 
+/** Nama & deskripsi disaring dulu (kata kasar / data pribadi) — server menyaring ulang */
 export function uploadToRoblox(body: UploadPayload) {
-  return apiFetch<UploadResponse>("/api/roblox/upload", { method: "POST", json: body });
+  const json = { ...body, displayName: safeName(body.displayName), description: safeText(body.description).text };
+  return apiFetch<UploadResponse>("/api/roblox/upload", { method: "POST", json });
 }
 
 export function checkOperation(apiKey: string, operationId: string, historyId?: string) {
@@ -69,3 +72,16 @@ export function trimFile(fileId: string, body: TrimBody, signal?: AbortSignal) {
 
 export const fileUrl = (fileId: string, download = false) => withBase(`/api/files/${fileId}${download ? "?dl=1" : ""}`);
 export const zipUrl = (fileIds: string[]) => withBase(`/api/files/zip?ids=${fileIds.join(",")}`);
+
+export interface ResolvedVideo {
+  videoId: string;
+  title: string;
+  author: string;
+  duration: number | null;
+  thumbnail: string;
+}
+
+/** Impor file: judul lagu (atau "id:<videoId>") → video YouTube paling cocok; null = tidak ketemu. Maks 25 per panggilan */
+export function resolveSongs(queries: string[], signal?: AbortSignal) {
+  return apiFetch<{ items: (ResolvedVideo | null)[] }>("/api/youtube/resolve", { method: "POST", json: { queries }, signal });
+}

@@ -145,7 +145,7 @@ export function useHistoryActions() {
   /** Hapus banyak riwayat (konfirmasi lewat DeleteDialog); archive = aset yang sudah diupload diarsipkan di Roblox */
   const [deleting, setDeleting] = useState(false);
   const removeMany = useCallback(
-    async (items: HistoryItem[], archive: boolean) => {
+    async (items: HistoryItem[], archive: boolean, files = false) => {
       if (!items.length) return false;
       setDeleting(true);
       try {
@@ -153,6 +153,7 @@ export function useHistoryActions() {
           items.map((i) => i.id),
           archive,
           apiKey,
+          files,
         );
         toast(r.archived ? f(t.history.archivedSummary, { n: r.deleted, a: r.archived }) : f(t.history.deletedSummary, { n: r.deleted }), "ok");
         if (r.archiveFailed) toast(f(t.history.archiveFailed, { n: r.archiveFailed }), "err");

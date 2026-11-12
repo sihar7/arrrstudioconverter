@@ -43,6 +43,7 @@ const SPEC: Record<PlanTunable, Spec> = {
   fileTtlHours: { label: "Masa simpan file", hint: "Lama hasil bisa diunduh.", unit: "jam", min: 1, max: 720 },
   historyMax: { label: "Entri riwayat", hint: "Yang lebih lama dibuang.", unit: "entri", min: 10, max: 20_000 },
   bulkRoblox: { label: "Upload massal Roblox", hint: "0 = tidak bisa. Kosongkan = tanpa batas.", unit: "lagu", min: 0, max: 1000, nullable: true },
+  batchImport: { label: "Impor file CSV / Excel", hint: "Maks lagu per file. 0 = terkunci.", unit: "lagu", min: 0, max: 2000 },
   imageMaxSide: { label: "Sisi gambar maksimal", hint: "Hapus background & Upscale.", unit: "px", min: 256, max: 8192 },
 };
 

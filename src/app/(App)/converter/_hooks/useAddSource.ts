@@ -92,7 +92,7 @@ export function useAddSource() {
       store
         .getState()
         .converter.items.filter((i) => i.status !== "done" && i.status !== "error")
-        .map((i) => itemKey({ ...i, clip: i.clip ?? undefined })),
+        .map((i) => itemKey({ ...i, clip: i.clip ?? undefined, cut: undefined, batch: undefined })),
     );
     const seen = new Set<string>();
     const videos = results.flat().filter((v) => !queued.has(itemKey(v)) && !seen.has(itemKey(v)) && seen.add(itemKey(v)));

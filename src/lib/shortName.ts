@@ -1,4 +1,7 @@
-// Judul YouTube → nama aset Roblox yang pendek & bersih (dipakai converter dan riwayat)
+// Judul YouTube → nama aset Roblox yang pendek & bersih (dipakai converter dan riwayat).
+// Semua gaya nama lewat safeText: kata kasar / seksual / data pribadi dibuang sebelum sampai ke Roblox.
+
+import { safeText } from "./schemas/safeText";
 
 // String.raw: di string biasa "\s"/"\d" kehilangan backslash → regex noise tidak pernah cocok
 const TITLE_NOISE = String.raw`official|music\s*video|video\s*clip|video|audio|lyrics?|lirik|mv|m\/v|hd|hq|4k|8k|\d{3,4}p|visuali[sz]er|remaster(?:ed)?|explicit|clean|full\s*song|official\s*audio`;
@@ -17,7 +20,7 @@ export function clean(title: string): string {
 
 /** Hanya karakter yang diterima Roblox + rapikan spasi/tanda di ujung */
 function tidy(name: string): string {
-  return name
+  return safeText(name).text
     // En/em dash pemisah "Artis – Judul" → "-" (dibuang oleh filter karakter di bawah)
     .replace(/\s+[–—]\s+/g, " - ")
     .replace(/[^\p{L}\p{N} _.\-()]/gu, " ")

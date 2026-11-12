@@ -2,6 +2,7 @@
 // supaya cover & ID-nya tampil di Riwayat dan ikut ekspor (Nama · Asset ID · Cover ID).
 
 import { apiFetch } from "./utils";
+import { safeName } from "./schemas/safeText";
 import { coverDataUrl, type CoverStyle } from "./trackMeta";
 import { checkOperation, fetchTextureId, uploadDecal } from "@/app/(App)/skybox/_service/skybox.service";
 import type { HistoryCover } from "@/type/history";
@@ -37,7 +38,7 @@ export async function uploadCoverDecal(
     apiKey: body.apiKey,
     creatorType: body.creatorType,
     creatorId: body.creatorId,
-    displayName: body.displayName.trim().slice(0, 50) || "Cover",
+    displayName: safeName(body.displayName, "Cover"),
     image: await coverDataUrl(body.cover, body.videoId, { style: body.style, text: { title: body.title, artist: body.artist } }),
   });
   onStage({ status: "processing" });

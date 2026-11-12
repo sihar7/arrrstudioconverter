@@ -26,6 +26,8 @@ import { useAudioPreview } from "../_hooks/useAudioPreview";
 import { useRobloxUpload } from "../_hooks/useRobloxUpload";
 import { useShortcuts } from "../_hooks/useShortcuts";
 import { useBatchSignals } from "../_hooks/useBatchSignals";
+import { useBatchUpload } from "../_hooks/useBatchUpload";
+import BatchCard from "./BatchCard";
 
 // Dialog berat di-load saat dibutuhkan saja (lazy)
 const RobloxUploadDialog = dynamic(() => import("@/components/roblox/RobloxUploadDialog"), {
@@ -39,6 +41,7 @@ const BulkUploadDialog = dynamic(() => import("@/components/roblox/BulkUploadDia
 const GuestGate = dynamic(() => import("@/components/shared/GuestGate"), { ssr: false });
 const ShortcutsDialog = dynamic(() => import("./ShortcutsDialog"), { ssr: false });
 const TrimDialog = dynamic(() => import("./TrimDialog"), { ssr: false });
+const ImportDialog = dynamic(() => import("./ImportDialog"), { ssr: false });
 
 const TOUR_KEY = "arrc.tour.converter.v1";
 
@@ -52,6 +55,9 @@ export default function ConverterScreen() {
   const [gate, setGate] = useState(false);
   const [help, setHelp] = useState(false);
   const [tour, setTour] = useState(false);
+  // Impor file: null = tertutup · { file } = dibuka (file opsional dari drag & drop)
+  const [importer, setImporter] = useState<{ file: File | null } | null>(null);
+  const robloxSettings = useAppSelector((s) => s.roblox);
 
   // Tur pertama kali: per perangkat (localStorage boleh gagal → tur tetap bisa dibuka manual)
   useEffect(() => {
@@ -88,9 +94,22 @@ export default function ConverterScreen() {
   const preview = useAudioPreview();
   const roblox = useRobloxUpload();
   const signals = useBatchSignals();
+  useBatchUpload(roblox);
+  const planLimits = plans[me?.plan?.id ?? "free"];
+  const openImport = (file: File | null = null) => {
+    // Plan tanpa impor → jelaskan & arahkan ke Harga (server juga menolak lewat PLAN_REQUIRED)
+    if (!planLimits.batchImport) {
+      toast(t.converter.importer.locked, "info");
+      router.push("/pricing");
+      return;
+    }
+    setImporter({ file });
+  };
   useQueueRunner({
     onGuestLimit: () => setGate(true),
     onDone: (key) => {
+      // Lagu impor: tanpa dialog pangkas (sudah dipangkas otomatis) & upload diatur gelombang batch
+      if (store.getState().converter.items.find((i) => i.key === key)?.batch) return;
       if (store.getState().converter.trimAsk) setAskKeys((k) => (k.includes(key) ? k : [...k, key]));
       else roblox.autoUpload(key);
     },
@@ -172,13 +191,14 @@ export default function ConverterScreen() {
       {/* Mobile: sumber → pengaturan → antrean. Web lebar: pengaturan di kolom kanan (sticky). App desktop: inspector. */}
       <div className="studio-grid grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] lg:grid-rows-[auto_1fr]">
         <div id={STEP_TARGETS[0]} className="min-w-0 scroll-mt-28 lg:col-start-1">
-          <SourceCard ref={inputRef} src={src} />
+          <SourceCard ref={inputRef} src={src} onImport={openImport} importLocked={!planLimits.batchImport} />
         </div>
         {/* App desktop: inspector — panel penuh di tepi kanan, scroll sendiri di antara toolbar & transport bar */}
         <div id={STEP_TARGETS[1]} className="inspector thin-scroll min-w-0 scroll-mt-28 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1">
           <SettingsPanel />
         </div>
-        <div id={STEP_TARGETS[2]} className="min-w-0 scroll-mt-28 lg:col-start-1">
+        <div id={STEP_TARGETS[2]} className="flex min-w-0 scroll-mt-28 flex-col gap-4 lg:col-start-1">
+          <BatchCard />
           <QueueCard
             playing={preview.playing}
             onTogglePlay={preview.toggle}
@@ -252,6 +272,15 @@ export default function ConverterScreen() {
       ) : askKeys.length > 0 && !tour ? (
         <TrimDialog keys={askKeys} mode="ask" onClose={closeAsk} />
       ) : null}
+      {importer && (
+        <ImportDialog
+          limit={planLimits.batchImport}
+          bulkMax={planLimits.bulkRoblox}
+          canUpload={Boolean(me?.user && robloxSettings.apiKey && robloxSettings.creatorId)}
+          initialFile={importer.file}
+          onClose={() => setImporter(null)}
+        />
+      )}
       {help && <ShortcutsDialog open onClose={() => setHelp(false)} />}
       {gate && <GuestGate open onClose={() => setGate(false)} />}
     </div>

@@ -44,6 +44,7 @@ export function planFeatures(id: PlanId, t: Dictionary, plans: Record<PlanId, Pl
       text: p.bulkRoblox == null ? f.bulkUnlimited : p.bulkRoblox > 0 ? fmt(f.bulkMax, { n: p.bulkRoblox }) : f.bulk,
       included: p.bulkRoblox !== 0,
     },
+    p.batchImport > 0 ? { text: fmt(f.batchImport, { n: p.batchImport }), included: true } : { text: f.batchImportLocked, included: false },
     { text: f.priority, included: p.priority },
     { text: fmt(f.imageMax, { n: p.imageMaxSide, label: p.imageMaxSide >= 4096 ? "4K" : p.imageMaxSide >= 2560 ? "2K" : "HD" }), included: true },
     { text: fmt(f.upscale, { list: p.upscaleScales.map((x) => `${x}×`).join(" / ") }), included: true },

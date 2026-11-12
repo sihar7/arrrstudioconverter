@@ -70,6 +70,11 @@ export interface PlanLimits {
   historyMax: number;
   /** upload massal ke Roblox: 0 = tidak bisa, n = maks n lagu sekali kirim, null = tanpa batas */
   bulkRoblox: number | null;
+  /**
+   * Impor file (CSV / Excel / TXT): maks baris lagu per file — judul dicari otomatis, dipangkas sedikit, lalu diupload
+   * ke Roblox bergelombang. 0 = terkunci (mulai Pro)
+   */
+  batchImport: number;
   /** halaman "Audio saya" (kelola, arsip & izin audio Roblox milik sendiri) */
   library: LibraryLevel;
   /** antrean server didahulukan */
@@ -110,6 +115,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     fileTtlHours: 1,
     historyMax: 30,
     bulkRoblox: 0,
+    batchImport: 0,
     library: "off",
     priority: false,
     albumSplit: false,
@@ -133,6 +139,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     fileTtlHours: 12,
     historyMax: 150,
     bulkRoblox: 5,
+    batchImport: 0,
     library: "basic",
     priority: false,
     albumSplit: false,
@@ -156,6 +163,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     fileTtlHours: 24,
     historyMax: 300,
     bulkRoblox: 15,
+    batchImport: 100,
     library: "full",
     priority: true,
     albumSplit: false,
@@ -179,6 +187,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     fileTtlHours: 48,
     historyMax: 600,
     bulkRoblox: 40,
+    batchImport: 300,
     library: "full",
     priority: true,
     albumSplit: true,
@@ -202,6 +211,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     fileTtlHours: 72,
     historyMax: 1000,
     bulkRoblox: null,
+    batchImport: 500,
     library: "full",
     priority: true,
     albumSplit: true,
@@ -226,6 +236,7 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     fileTtlHours: 72,
     historyMax: 1000,
     bulkRoblox: null,
+    batchImport: 1000,
     library: "full",
     priority: true,
     albumSplit: true,

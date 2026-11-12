@@ -11,7 +11,6 @@ import Segmented from "@/components/ui/Segmented";
 import Switch from "@/components/ui/Switch";
 import { nameFor, type NameStyle } from "@/lib/shortName";
 import { coverDataUrl } from "@/lib/trackMeta";
-import { useAppSelector } from "@/store/hooks";
 import NameStylePicker from "./NameStylePicker";
 import type { UploadBlock, UploadForm } from "@/type/roblox";
 
@@ -38,9 +37,9 @@ export default function RobloxUploadDialog({ title, cover, artist, videoId, bloc
   const set = (patch: Partial<UploadForm>) => setForm((s) => ({ ...s, ...patch }));
 
   // Cover otomatis → pratinjau persis gambar yang akan diupload sebagai Decal
-  const coverStyle = useAppSelector((s) => s.roblox.coverStyle);
+  // Selalu cover otomatis tanpa teks (opsi cover asli sudah dihapus)
   const [autoCover, setAutoCover] = useState<string | null>(null);
-  const wantAuto = Boolean(cover && videoId && coverStyle === "safe" && form.uploadCover);
+  const wantAuto = Boolean(cover && videoId && form.uploadCover);
   useEffect(() => {
     if (!wantAuto) return;
     let alive = true;
@@ -51,7 +50,8 @@ export default function RobloxUploadDialog({ title, cover, artist, videoId, bloc
       alive = false;
     };
   }, [wantAuto, cover, videoId, title, artist]);
-  const shownCover = wantAuto ? (autoCover ?? cover) : cover;
+  // Selama dibuat: kotak kosong (bukan cover asli — yang terlihat harus persis yang akan diupload)
+  const shownCover = wantAuto ? (autoCover ?? undefined) : cover;
 
   const submit = async () => {
     if (form.permission === "place" && !/^\d{1,20}$/.test(form.placeId)) {

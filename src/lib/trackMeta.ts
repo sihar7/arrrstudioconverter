@@ -165,9 +165,9 @@ async function squareSource(cover: string | null, videoId: string): Promise<Squa
 }
 
 /**
- * - safe (bawaan): gambar abstrak BARU — hanya palet warna yang diambil dari cover asli. Cover album / thumbnail
- *   adalah karya berhak cipta (sering ada wajah, logo, teks) → diupload apa adanya bisa kena moderasi Roblox.
- * - original: cover asli apa adanya (risiko moderasi ditanggung user).
+ * Hanya "safe" yang dipakai: gambar abstrak BARU tanpa teks — hanya hue yang diambil dari cover asli.
+ * "original" (cover asli apa adanya) dihapus 2026-11-12: thumbnail berisi wajah/teks → risiko ban PII & hak cipta.
+ * Nilai lama "original" di penyimpanan perangkat tetap valid secara tipe, tapi diperlakukan sebagai "safe".
  */
 export type CoverStyle = "safe" | "original";
 
@@ -212,177 +212,221 @@ function paletteOf(src: Square): { base: RGB; colors: RGB[] } {
 
 const rgba = (c: RGB, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
+/** Dulu dipakai untuk menulis judul & artis di cover. Kini cover TANPA teks — hanya dipakai sebagai seed. */
 export interface CoverText {
-  /** Judul video / lagu (dirapikan otomatis) */
   title: string;
-  /** Artis dari katalog musik; null = ditebak dari judul */
   artist: string | null;
 }
 
-const FONT = `-apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, system-ui, sans-serif`;
+// ---------- Warna tinta ----------
 
-/** Potong teks ke maks `lines` baris selebar `width` (kata terakhir diberi "…" bila terpotong) */
-function wrap(ctx: CanvasRenderingContext2D, text: string, width: number, lines: number): string[] {
-  const out: string[] = [];
-  let line = "";
-  const words = text.split(/\s+/).filter(Boolean);
-  for (let i = 0; i < words.length; i++) {
-    const next = line ? `${line} ${words[i]}` : words[i];
-    if (ctx.measureText(next).width <= width || !line) {
-      line = next;
-      continue;
-    }
-    out.push(line);
-    line = words[i];
-    if (out.length === lines) return ellipsize(ctx, out, width);
-  }
-  if (line) out.push(line);
-  return out.length > lines ? ellipsize(ctx, out.slice(0, lines), width) : out;
+/** RGB → HSL (h 0–360, s & l 0–1) */
+function toHsl([r, g, b]: RGB): [number, number, number] {
+  const R = r / 255;
+  const G = g / 255;
+  const B = b / 255;
+  const max = Math.max(R, G, B);
+  const min = Math.min(R, G, B);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === R ? (G - B) / d + (G < B ? 6 : 0) : max === G ? (B - R) / d + 2 : (R - G) / d + 4;
+  return [h * 60, s, l];
 }
 
-function ellipsize(ctx: CanvasRenderingContext2D, rows: string[], width: number) {
-  let last = `${rows[rows.length - 1]}…`;
-  while (ctx.measureText(last).width > width && last.length > 2) last = `${last.slice(0, -2)}…`;
-  return [...rows.slice(0, -1), last];
-}
-
-/** Motif per ARTIS (artis yang sama → motif & komposisi sama), dibuat dari garis putih tipis */
-function drawMotif(ctx: CanvasRenderingContext2D, kind: number, rand: () => number, accent: RGB) {
-  const S = COVER_SIZE;
-  ctx.lineWidth = 1;
-  if (kind === 0) {
-    // Piringan hitam besar, sebagian keluar bingkai
-    const cx = S * (0.62 + rand() * 0.14);
-    const cy = S * (0.3 + rand() * 0.12);
-    for (let r = S * 0.1; r < S * 0.46; r += 4 + rand() * 3) {
-      ctx.strokeStyle = `rgba(255,255,255,${0.03 + rand() * 0.06})`;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.fillStyle = rgba(accent, 0.95);
-    ctx.beginPath();
-    ctx.arc(cx, cy, S * 0.085, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(0,0,0,0.6)";
-    ctx.beginPath();
-    ctx.arc(cx, cy, S * 0.011, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (kind === 1) {
-    // Gelombang suara: garis sinus bertumpuk
-    const amp = S * (0.04 + rand() * 0.05);
-    const freq = 1.5 + rand() * 2;
-    const phase = rand() * Math.PI * 2;
-    for (let k = 0; k < 16; k++) {
-      const y0 = S * 0.12 + k * S * 0.026;
-      ctx.strokeStyle = `rgba(255,255,255,${0.05 + (k % 4 === 0 ? 0.12 : 0.04)})`;
-      ctx.beginPath();
-      for (let x = 0; x <= S; x += 8) {
-        const y = y0 + Math.sin((x / S) * Math.PI * freq + phase + k * 0.18) * amp * (0.5 + k / 24);
-        if (x) ctx.lineTo(x, y);
-        else ctx.moveTo(x, y);
-      }
-      ctx.stroke();
-    }
-  } else {
-    // Equalizer: batang vertikal dengan tinggi ber-seed
-    const n = 22;
-    const w = (S * 0.84) / n;
-    for (let k = 0; k < n; k++) {
-      const h = S * (0.08 + rand() * 0.34);
-      const x = S * 0.08 + k * w;
-      ctx.fillStyle = k % 5 === 2 ? rgba(accent, 0.85) : "rgba(255,255,255,0.12)";
-      ctx.fillRect(x, S * 0.5 - h, w * 0.5, h);
-    }
-  }
+function fromHsl(h: number, s: number, l: number): RGB {
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
 }
 
 /**
- * Cover otomatis "aman": gambar BARU, selaras dengan lagu & artis tapi tanpa memakai karya aslinya.
- * - Warna: palet dari cover album lagu itu (warna tidak berhak cipta) → nuansa sama dengan rilisannya.
- * - Motif & komposisi: ditentukan nama artis → konsisten antar lagu artis yang sama.
- * - Tipografi: judul lagu + nama artis. Tanpa wajah, logo, atau gambar milik orang lain.
+ * Palet cetak: kertas + 2 tinta. Hue diambil dari gambar sumber (warna tidak berhak cipta); kejenuhan & terang
+ * dijepit ke rentang tinta cetak → rata, tidak neon, tidak "glow". Kertas gelap atau krem dipilih per seri.
  */
-function drawSafe(ctx: CanvasRenderingContext2D, src: Square, videoId: string, text: CoverText) {
+function inkPalette(src: Square, rand: () => number): { paper: RGB; inks: [RGB, RGB]; dark: boolean } {
+  const { colors } = paletteOf(src);
+  const [h1, s1] = toHsl(colors[0]);
+  const [h2raw, s2] = toHsl(colors[1]);
+  // Hue tinta kedua terlalu dekat → geser supaya tetap dua warna yang terbaca
+  const gap = 180 - Math.abs(((h2raw - h1 + 540) % 360) - 180);
+  const h2 = gap < 30 ? (h1 + 35 + rand() * 25) % 360 : h2raw;
+  const sat = (s: number) => Math.min(0.78, Math.max(0.42, s));
+  const dark = rand() < 0.55;
+  const paper = dark ? fromHsl(h1, 0.18, 0.09) : fromHsl(h1, 0.22, 0.9);
+  const inks: [RGB, RGB] = dark
+    ? [fromHsl(h1, sat(s1), 0.56), fromHsl(h2, sat(s2), 0.8)]
+    : [fromHsl(h1, sat(s1), 0.46), fromHsl(h2, sat(s2) * 0.9, 0.24)];
+  return { paper, inks, dark };
+}
+
+// ---------- Komposisi (tanpa teks, tanpa gambar milik orang lain) ----------
+
+type Ink = (layer: 0 | 1) => string;
+
+/** Petak Bauhaus: grid 3–4 kolom, tiap sel satu bentuk datar (seperempat lingkaran, setengah, segitiga, garis) */
+function tiles(ctx: CanvasRenderingContext2D, rand: () => number, ink: Ink) {
   const S = COVER_SIZE;
-  const guess = guessTrack(text.title, "");
-  const song = guess.song || text.title;
-  const artist = text.artist ?? guess.artist ?? "";
-  const byArtist = seeded((artist || song).toLowerCase());
-  const rand = seeded(videoId);
-  const { base, colors } = paletteOf(src);
-
-  ctx.fillStyle = rgba(base, 1);
-  ctx.fillRect(0, 0, S, S);
-
-  // Kabut warna: gumpalan radial di posisi acak (per lagu), lalu diburamkan
-  const layer = document.createElement("canvas");
-  layer.width = layer.height = S;
-  const l = layer.getContext("2d")!;
-  for (const [i, col] of [...colors, colors[0]].entries()) {
-    const x = S * (0.1 + rand() * 0.8);
-    const y = S * (0.05 + rand() * 0.6);
-    const r = S * (0.35 + rand() * 0.35);
-    const g = l.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, rgba(col, i === 3 ? 0.55 : 0.95));
-    g.addColorStop(1, rgba(col, 0));
-    l.fillStyle = g;
-    l.fillRect(0, 0, S, S);
-  }
-  ctx.filter = "blur(28px)";
-  ctx.drawImage(layer, 0, 0);
-  ctx.filter = "none";
-
-  drawMotif(ctx, Math.floor(byArtist() * 3), byArtist, colors[0]);
-
-  // Scrim bawah supaya teks selalu terbaca
-  const scrim = ctx.createLinearGradient(0, S * 0.45, 0, S);
-  scrim.addColorStop(0, "rgba(0,0,0,0)");
-  scrim.addColorStop(1, "rgba(0,0,0,0.72)");
-  ctx.fillStyle = scrim;
-  ctx.fillRect(0, 0, S, S);
-
-  // Grain halus supaya tidak terlihat datar
-  const img = ctx.getImageData(0, 0, S, S);
-  for (let i = 0; i < img.data.length; i += 4) {
-    const n = (rand() - 0.5) * 12;
-    img.data[i] += n;
-    img.data[i + 1] += n;
-    img.data[i + 2] += n;
-  }
-  ctx.putImageData(img, 0, 0);
-
-  // Tipografi: artis (kapital kecil, berjarak) di atas judul (tebal, maks 3 baris), rata kiri bawah
-  const pad = S * 0.075;
-  const width = S - pad * 2;
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#fff";
-  let size = 50;
-  ctx.font = `700 ${size}px ${FONT}`;
-  let lines = wrap(ctx, song, width, 3);
-  // Judul panjang → huruf mengecil dulu sebelum dipotong
-  while (size > 34 && (lines.length > 2 || lines.some((x) => x.endsWith("…")))) {
-    size -= 4;
-    ctx.font = `700 ${size}px ${FONT}`;
-    lines = wrap(ctx, song, width, 3);
-  }
-  const lh = size * 1.08;
-  let y = S - pad - (lines.length - 1) * lh;
-  for (const line of lines) {
-    ctx.fillText(line, pad, y);
-    y += lh;
-  }
-  if (artist) {
-    ctx.font = `600 17px ${FONT}`;
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "2.5px";
-    ctx.fillStyle = "rgba(255,255,255,0.72)";
-    const [a] = wrap(ctx, artist.toUpperCase(), width, 1);
-    ctx.fillText(a, pad, S - pad - (lines.length - 1) * lh - size - 8);
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  const n = rand() < 0.5 ? 3 : 4;
+  const m = S * 0.07;
+  const c = (S - m * 2) / n;
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const kind = Math.floor(rand() * 6);
+      const rot = Math.floor(rand() * 4) * (Math.PI / 2);
+      const layer = rand() < 0.62 ? 0 : 1;
+      if (kind === 5) continue; // sel kosong = ruang napas
+      ctx.save();
+      ctx.translate(m + x * c + c / 2, m + y * c + c / 2);
+      ctx.rotate(rot);
+      ctx.translate(-c / 2, -c / 2);
+      ctx.fillStyle = ink(layer);
+      ctx.beginPath();
+      if (kind === 0) {
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, c, 0, Math.PI / 2);
+      } else if (kind === 1) {
+        ctx.arc(c / 2, c, c / 2, Math.PI, 0);
+      } else if (kind === 2) {
+        ctx.moveTo(0, 0);
+        ctx.lineTo(c, 0);
+        ctx.lineTo(0, c);
+      } else if (kind === 3) {
+        for (let k = 0; k < 3; k++) ctx.rect(0, (k * c) / 3 + c / 12, c, c / 6);
+      } else {
+        ctx.arc(c / 2, c / 2, c * 0.36, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.restore();
+    }
   }
 }
 
-/** Cover → JPEG kotak 512px, siap dikirim ke /api/roblox/decal (bawaan: cover otomatis yang aman) */
+/** Halftone: titik bergrid yang ukurannya mengikuti gelombang ber-seed; tinta kedua bergeser setengah sel */
+function halftone(ctx: CanvasRenderingContext2D, rand: () => number, ink: Ink) {
+  const S = COVER_SIZE;
+  const n = 26;
+  const c = S / n;
+  const fx = 1 + rand() * 2.5;
+  const fy = 1 + rand() * 2.5;
+  const ph = rand() * Math.PI * 2;
+  const cx = S * (0.25 + rand() * 0.5);
+  const cy = S * (0.25 + rand() * 0.5);
+  for (const layer of [0, 1] as const) {
+    ctx.fillStyle = ink(layer);
+    const off = layer ? c / 2 : 0;
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        const px = x * c + c / 2 + off;
+        const py = y * c + c / 2 + off;
+        const wave = Math.sin((px / S) * fx * Math.PI * 2 + ph) * Math.cos((py / S) * fy * Math.PI * 2 - ph);
+        const radial = Math.max(0, 1 - Math.hypot(px - cx, py - cy) / (S * 0.75));
+        const v = layer ? (wave + 1) / 2 : radial * 0.8 + ((wave + 1) / 2) * 0.35;
+        const r = (c / 2) * Math.min(0.95, v) * (layer ? 0.55 : 1);
+        if (r < 0.6) continue;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+/** Busur konsentris dari satu sudut (sablon matahari terbit) + satu lingkaran penuh */
+function arcs(ctx: CanvasRenderingContext2D, rand: () => number, ink: Ink) {
+  const S = COVER_SIZE;
+  const corner = Math.floor(rand() * 4);
+  const ox = corner % 2 ? S : 0;
+  const oy = corner > 1 ? S : 0;
+  const band = S * (0.045 + rand() * 0.03);
+  for (let k = 0, r = S * 1.35; r > band; k++, r -= band * 1.6) {
+    ctx.fillStyle = ink(k % 3 === 2 ? 1 : 0);
+    ctx.beginPath();
+    ctx.arc(ox, oy, r, 0, Math.PI * 2);
+    ctx.arc(ox, oy, Math.max(0, r - band), 0, Math.PI * 2, true);
+    ctx.fill();
+  }
+  ctx.fillStyle = ink(1);
+  ctx.beginPath();
+  ctx.arc(S * (0.3 + rand() * 0.4), S * (0.3 + rand() * 0.4), S * (0.08 + rand() * 0.06), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** Batang gelombang tebal yang dicerminkan — bentuk "suara" datar, bukan equalizer neon */
+function bars(ctx: CanvasRenderingContext2D, rand: () => number, ink: Ink) {
+  const S = COVER_SIZE;
+  const n = 14 + Math.floor(rand() * 10);
+  const m = S * 0.08;
+  const w = (S - m * 2) / n;
+  // Kurva halus dari 3 sinus ber-seed (bukan acak per batang → tidak terlihat seperti noise)
+  const a = [rand() * 6.28, rand() * 6.28, rand() * 6.28];
+  const mid = S * (0.42 + rand() * 0.16);
+  for (let k = 0; k < n; k++) {
+    const t = k / (n - 1);
+    const v = 0.55 + 0.25 * Math.sin(t * 5 + a[0]) + 0.15 * Math.sin(t * 11 + a[1]) + 0.1 * Math.sin(t * 23 + a[2]);
+    const h = S * 0.62 * Math.max(0.08, v);
+    ctx.fillStyle = ink(k % 4 === 1 ? 1 : 0);
+    ctx.fillRect(m + k * w + w * 0.18, mid - h / 2, w * 0.64, h);
+  }
+}
+
+const LAYOUTS = [tiles, halftone, arcs, bars];
+
+/**
+ * Cover otomatis yang aman untuk moderasi Roblox: gambar abstrak BARU bergaya cetak (sablon / risograph).
+ * - TANPA teks apa pun: nama artis / judul di gambar pernah membuat akun user kena suspend
+ *   "Privacy: Giving PII" (2026-11-12) — nama orang di gambar dianggap data pribadi.
+ * - Tanpa wajah, logo, atau potongan gambar milik orang lain: hanya HUE yang diambil dari cover asli.
+ * - Warna datar 2 tinta + kertas, sedikit meleset & berbutir → terasa dicetak, bukan gradasi blur "AI".
+ * - Gaya & palet dari nama artis (lagu satu artis terasa satu seri), detail dari videoId (tiap lagu beda).
+ */
+function drawSafe(ctx: CanvasRenderingContext2D, src: Square, videoId: string, seedText: string) {
+  const S = COVER_SIZE;
+  const series = seeded(seedText.toLowerCase() || videoId);
+  const rand = seeded(videoId);
+  const { paper, inks, dark } = inkPalette(src, series);
+
+  ctx.fillStyle = rgba(paper, 1);
+  ctx.fillRect(0, 0, S, S);
+
+  // Tinta digambar di lapisan sendiri lalu ditumpuk: multiply di kertas terang, screen di kertas gelap
+  const layout = LAYOUTS[Math.floor(series() * LAYOUTS.length)];
+  const layer = document.createElement("canvas");
+  layer.width = layer.height = S;
+  layout(layer.getContext("2d")!, rand, (i) => rgba(inks[i], 1));
+  ctx.globalCompositeOperation = dark ? "screen" : "multiply";
+  ctx.drawImage(layer, 0, 0);
+  // Salinan tipis yang meleset 2–4px → kesan tinta tidak pas register
+  ctx.globalAlpha = 0.16;
+  ctx.drawImage(layer, 2 + rand() * 2, 1 + rand() * 2);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+
+  // Butir kertas (per piksel) + tinta tidak rata (per blok 4px)
+  const img = ctx.getImageData(0, 0, S, S);
+  const d = img.data;
+  const B = S / 4;
+  const blocks = new Float32Array(B * B);
+  for (let i = 0; i < blocks.length; i++) blocks[i] = (rand() - 0.5) * 10;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = (y * S + x) * 4;
+      const n = (rand() - 0.5) * 16 + blocks[(y >> 2) * B + (x >> 2)];
+      d[i] += n;
+      d[i + 1] += n;
+      d[i + 2] += n;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/**
+ * Cover → JPEG kotak 512px, siap dikirim ke /api/roblox/decal. SELALU cover otomatis tanpa teks: opsi cover asli
+ * dihapus (thumbnail sering berisi wajah orang & teks → risiko ban PII / hak cipta). `style` lama tetap diterima
+ * supaya pemanggil lama tidak rusak; judul/artis hanya dipakai sebagai seed warna & komposisi, tidak digambar.
+ */
 export async function coverDataUrl(
   cover: string | null,
   videoId: string,
@@ -392,9 +436,8 @@ export async function coverDataUrl(
   const c = document.createElement("canvas");
   c.width = c.height = COVER_SIZE;
   const ctx = c.getContext("2d")!;
-  ctx.imageSmoothingQuality = "high";
-  if ((opts.style ?? "safe") === "safe") drawSafe(ctx, src, videoId, opts.text ?? { title: "", artist: null });
-  else ctx.drawImage(src.bmp, src.sx, src.sy, src.size, src.size, 0, 0, COVER_SIZE, COVER_SIZE);
+  const artist = opts.text?.artist ?? guessTrack(opts.text?.title ?? "", "").artist ?? "";
+  drawSafe(ctx, src, videoId, artist);
   src.bmp.close();
   return c.toDataURL("image/jpeg", 0.92);
 }

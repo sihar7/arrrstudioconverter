@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useMemo, useState } from "react";
-import { Link as LinkIcon, PasteClipboard, Plus, Xmark } from "iconoir-react";
+import { Link as LinkIcon, Lock, PasteClipboard, Plus, Table2Columns, Xmark } from "iconoir-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAutoConvert } from "@/store/slices/converterSlice";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -38,7 +38,18 @@ function LinkChip({ link }: { link: ParsedLink }) {
 }
 
 /** Composer sumber: kolom link + deteksi langsung + tempel/tambah; menerima drag & drop */
-const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useAddSource> }>(function SourceCard({ src }, ref) {
+interface Props {
+  src: ReturnType<typeof useAddSource>;
+  /** Buka impor file (CSV / Excel); file = hasil drag & drop */
+  onImport: (file?: File | null) => void;
+  /** plan belum termasuk impor file → ikon gembok */
+  importLocked: boolean;
+}
+
+/** File tabel yang di-drop ke kolom link → dialog impor (bukan ditempel sebagai teks) */
+const isSheet = (f: File) => /\.(csv|tsv|txt|xlsx|xls|json)$/i.test(f.name);
+
+const SourceCard = forwardRef<HTMLTextAreaElement, Props>(function SourceCard({ src, onImport, importLocked }, ref) {
   const { t, f } = useT();
   const c = t.converter;
   const dispatch = useAppDispatch();
@@ -104,6 +115,11 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
             onDrop={(e) => {
               e.preventDefault();
               setDrag(false);
+              const file = e.dataTransfer.files[0];
+              if (file && isSheet(file)) {
+                onImport(file);
+                return;
+              }
               const text = e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain");
               if (text) append(text);
             }}
@@ -187,6 +203,18 @@ const SourceCard = forwardRef<HTMLTextAreaElement, { src: ReturnType<typeof useA
                 <Kbd>V</Kbd> {c.pasteAnywhere.replace(/^Ctrl\+V\s*/, "")}
               </p>
               <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto">
+                {/* Impor file: Pro ke atas (plan lain melihat gembok → halaman Harga) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  title={c.importer.openHint}
+                  onClick={() => onImport(null)}
+                  icon={importLocked ? <Lock width={15} height={15} /> : <Table2Columns width={16} height={16} />}
+                  className="col-span-2 md:col-span-1"
+                >
+                  {c.importer.open}
+                </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={paste} icon={<PasteClipboard width={16} height={16} />}>
                   {c.paste}
                 </Button>

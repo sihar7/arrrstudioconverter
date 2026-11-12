@@ -93,8 +93,14 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
     const start = async (item: QueueItem, ctrl: AbortController) => {
       try {
         // Lagu dari video album: potong ke rentang lagunya + judul tetap
-        const { clip } = item;
-        const options = clip ? { ...item.options!, trimStart: clip.start || null, trimEnd: clip.end } : item.options!;
+        // Impor file: pangkas sedikit di awal & akhir + fade halus (menggantikan trim manual untuk item ini)
+        const { clip, cut } = item;
+        const base = item.options!;
+        const options = clip
+          ? { ...base, trimStart: clip.start || null, trimEnd: clip.end }
+          : cut
+            ? { ...base, trimStart: cut.start || null, trimEnd: cut.end, fadeIn: Math.max(base.fadeIn, cut.fadeIn), fadeOut: Math.max(base.fadeOut, cut.fadeOut) }
+            : base;
         const { job } = await createJob(item.videoId, options, ctrl.signal, clip ? item.title : undefined);
         // Dibatalkan saat request masih di jalan → job terlanjur dibuat di server, hentikan juga
         if (ctrl.signal.aborted) {

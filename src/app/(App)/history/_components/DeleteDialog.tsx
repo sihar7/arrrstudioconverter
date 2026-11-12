@@ -19,16 +19,20 @@ export default function DeleteDialog({
   busy,
   onClose,
   onConfirm,
+  all = false,
 }: {
+  /** "Hapus semua": judul beda + opsi hapus file hasil di server */
+  all?: boolean;
   items: HistoryItem[] | null;
   hasKey: boolean;
   busy: boolean;
   onClose: () => void;
-  onConfirm: (archive: boolean) => void;
+  onConfirm: (archive: boolean, files: boolean) => void;
 }) {
   const { t, f } = useT();
   const h = t.history;
   const [archive, setArchive] = useState(true);
+  const [files, setFiles] = useState(true);
   const list = items ?? [];
   const uploaded = list.filter((i) => i.roblox?.assetId).length;
 
@@ -36,20 +40,25 @@ export default function DeleteDialog({
     <Dialog
       open={items != null}
       onClose={onClose}
-      title={list.length === 1 ? h.deleteTitleOne : f(h.deleteTitle, { n: list.length })}
-      sub={list.length === 1 ? list[0].title : h.deleteSub}
+      title={all ? f(h.deleteAllTitle, { n: list.length }) : list.length === 1 ? h.deleteTitleOne : f(h.deleteTitle, { n: list.length })}
+      sub={all ? h.deleteAllSub : list.length === 1 ? list[0].title : h.deleteSub}
       width="max-w-[480px]"
       footer={
         <>
           <Button variant="subtle" onClick={onClose} disabled={busy}>
             {t.common.cancel}
           </Button>
-          <Button variant="danger" loading={busy} onClick={() => onConfirm(hasKey && uploaded > 0 && archive)} icon={<Trash aria-hidden="true" />}>
+          <Button variant="danger" loading={busy} onClick={() => onConfirm(hasKey && uploaded > 0 && archive, all && files)} icon={<Trash aria-hidden="true" />}>
             {f(h.deleteAction, { n: list.length })}
           </Button>
         </>
       }
     >
+      {all && (
+        <div className="mb-3 rounded-s border border-line/60 bg-bg/40 p-4">
+          <Switch label={h.deleteFiles} hint={h.deleteFilesHint} checked={files} onChange={setFiles} />
+        </div>
+      )}
       {uploaded === 0 ? (
         <p className="text-[14px] leading-relaxed text-fg-2">{h.deleteLocalOnly}</p>
       ) : hasKey ? (

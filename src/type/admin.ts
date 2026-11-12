@@ -122,7 +122,7 @@ export interface JanitorReport {
 }
 
 /** Angka plan yang bisa diatur admin (sama dengan TUNABLE di BE lib/server/planConfig.ts) */
-export const PLAN_TUNABLE = ["tokens", "maxDurationSec", "playlistMax", "parallel", "maxBitrate", "fileTtlHours", "historyMax", "bulkRoblox", "imageMaxSide"] as const;
+export const PLAN_TUNABLE = ["tokens", "maxDurationSec", "playlistMax", "parallel", "maxBitrate", "fileTtlHours", "historyMax", "bulkRoblox", "batchImport", "imageMaxSide"] as const;
 export type PlanTunable = (typeof PLAN_TUNABLE)[number];
 export type TunableLimits = Pick<PlanLimits, PlanTunable>;
 
