@@ -121,36 +121,50 @@ export function useImport(limit: number) {
         assetName: row.name ?? row.query ?? null,
       });
 
-      for (let i = 0; i < todo.length && !ctrl.signal.aborted; i += CHUNK) {
-        const part = todo.slice(i, i + CHUNK);
+      /** Satu potongan (maks 25): YouTube (link / ID) & judul lewat resolve; link sosial lain lewat info satu per satu */
+      const resolveChunk = async (part: ImportRow[]): Promise<(QueueInput | null)[] | "stop"> => {
         const out: (QueueInput | null)[] = part.map(() => null);
-        // YouTube (link / ID) & judul → resolve sekaligus; link sosial lain lewat info satu per satu
         const viaResolve = part.map((r, k) => ({ r, k, q: r.link ? (youtubeId(r.link) ? `id:${youtubeId(r.link)}` : null) : r.query })).filter((x) => x.q);
-        try {
-          if (viaResolve.length) {
+        // Kena rem server → tunggu lalu ulang (maks 4×), bukan langsung dianggap "tidak ketemu"
+        for (let attempt = 0; viaResolve.length && attempt < 4 && !ctrl.signal.aborted; attempt++) {
+          try {
             const { items } = await resolveSongs(viaResolve.map((x) => x.q!), ctrl.signal);
             viaResolve.forEach((x, n) => {
               const v = items[n];
               if (v) out[x.k] = toInput(x.r, v);
             });
-          }
-          for (const [k, r] of part.entries()) {
-            if (!r.link || youtubeId(r.link) || ctrl.signal.aborted) continue;
-            const res = await fetchInfo(r.link).catch(() => null);
-            if (res?.type === "video") out[k] = toInput(r, res.video);
-          }
-        } catch (e) {
-          if (ctrl.signal.aborted) break;
-          // Gagal satu potongan (jaringan / batas) → judulnya masuk daftar "tidak ketemu", lanjut potongan berikutnya
-          if (e instanceof ApiError && e.code === "PLAN_REQUIRED") {
-            setError(e.message);
             break;
+          } catch (e) {
+            if (ctrl.signal.aborted) return "stop";
+            if (e instanceof ApiError && e.code === "PLAN_REQUIRED") {
+              setError(e.message);
+              return "stop";
+            }
+            const wait = e instanceof ApiError && e.code === "RATE_LIMIT" ? Math.min(60, Number(e.data?.retryAfter) || 10) : 3 * (attempt + 1);
+            await new Promise((r) => setTimeout(r, wait * 1000));
           }
         }
-        out.forEach((v, k) => !v && notFound.push(part[k].query ?? part[k].link ?? ""));
-        const ok = out.filter((v): v is QueueInput => Boolean(v));
-        if (ok.length) dispatch(addItems(ok));
-        setPhase({ kind: "running", done: Math.min(todo.length, i + CHUNK), total: todo.length });
+        for (const [k, r] of part.entries()) {
+          if (!r.link || youtubeId(r.link) || ctrl.signal.aborted) continue;
+          const res = await fetchInfo(r.link).catch(() => null);
+          if (res?.type === "video") out[k] = toInput(r, res.video);
+        }
+        return out;
+      };
+
+      // 2 potongan dicari bersamaan (lebih cepat), tetap dimasukkan ke antrean SESUAI urutan file
+      const PAIR = 2;
+      for (let i = 0; i < todo.length && !ctrl.signal.aborted; i += CHUNK * PAIR) {
+        const parts = Array.from({ length: PAIR }, (_, n) => todo.slice(i + n * CHUNK, i + (n + 1) * CHUNK)).filter((p) => p.length);
+        const results = await Promise.all(parts.map(resolveChunk));
+        if (results.includes("stop")) break;
+        results.forEach((out, n) => {
+          if (out === "stop") return;
+          out.forEach((v, k) => !v && notFound.push(parts[n][k].query ?? parts[n][k].link ?? ""));
+          const ok = out.filter((v): v is QueueInput => Boolean(v));
+          if (ok.length) dispatch(addItems(ok));
+        });
+        setPhase({ kind: "running", done: Math.min(todo.length, i + CHUNK * PAIR), total: todo.length });
       }
       abort.current = null;
       dispatch(batchUpdated({ id: batch, patch: { importing: false } }));

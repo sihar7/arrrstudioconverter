@@ -237,6 +237,29 @@ const converterSlice = createSlice({
       state.trimAsk = state.trimAsk !== false;
     },
 
+    /**
+     * Pulihkan antrean tersimpan (setelah refresh / update). Job server yang masih berjalan dilanjutkan polling-nya
+     * oleh runner. Upload yang terputus di tengah request TIDAK diulang otomatis (bisa jadi aset dobel) → ditandai
+     * gagal dengan pesan cek Riwayat; upload yang sedang diproses Roblox (punya operationId) dicek lagi.
+     */
+    hydrateQueue(state, action: PayloadAction<{ items: QueueItem[]; batches: Batch[] }>) {
+      if (state.items.length) return; // sudah ada antrean di tab ini (mis. hot reload) → jangan timpa
+      state.items = action.payload.items.map((i) => {
+        const it: QueueItem = { ...i, cut: i.cut ?? null, batch: i.batch ?? null, assetName: i.assetName ?? null };
+        // Sedang dikirim ke server saat refresh (belum dapat jobId) → kirim ulang
+        if (isRunning(it.status) && !it.jobId) Object.assign(it, { status: "pending", progress: 0 });
+        if (it.upload.status === "uploading") it.upload = { ...it.upload, status: "error", error: "Terputus saat halaman dimuat ulang — cek Riwayat sebelum upload ulang" };
+        if (it.upload.status === "processing" && !it.upload.operationId) it.upload = { ...it.upload, status: "error", error: "Terputus saat halaman dimuat ulang — cek Riwayat" };
+        if (it.decal.status === "uploading" || it.decal.status === "processing") it.decal = { ...it.decal, status: "error", error: "Terputus" };
+        return it;
+      });
+      state.batches = action.payload.batches.map((b) => ({ ...b, importing: false }));
+    },
+    /** Job hilang di server (mis. server di-update di tengah convert) → kirim ulang dari awal */
+    requeue(state, action: PayloadAction<string>) {
+      const item = find(state, action.payload);
+      if (item) Object.assign(item, { status: "pending", progress: 0, jobId: null, error: null, result: null });
+    },
     addItems(state, action: PayloadAction<QueueInput[]>) {
       // Cek duplikat lewat Set (impor file bisa ratusan item → hindari O(n²))
       const open = new Set(state.items.filter((i) => i.status !== "done" && i.status !== "error").map((i) => `${i.videoId}@${i.clip?.start ?? ""}`));
@@ -386,6 +409,8 @@ export const {
   applyCustomPreset,
   deletePreset,
   hydrateConverter,
+  hydrateQueue,
+  requeue,
   setRobloxMode,
   addItems,
   enqueue,

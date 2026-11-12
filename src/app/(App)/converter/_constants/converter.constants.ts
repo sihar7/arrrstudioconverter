@@ -2,7 +2,7 @@ import { AUDIO_FORMATS, BITRATES, type PresetId } from "@/lib/schemas/convert.sc
 
 export const MAX_PARALLEL = 2;
 export const POLL_MS = 1000;
-export const OPERATION_POLL_MS = 4000;
+export const OPERATION_POLL_MS = 2500;
 // Upload massal: semua dikirim serentak (server mengulang otomatis bila kena rate limit 429)
 export const UPLOAD_PARALLEL = 10;
 export const ROBLOX_SOFT_LIMIT_SEC = 7 * 60;

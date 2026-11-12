@@ -44,7 +44,8 @@ export async function uploadCoverDecal(
   onStage({ status: "processing" });
   for (let i = 0; !res.assetId && res.operationId && i < 30 && alive(); i++) {
     await sleep(2000);
-    res = await checkOperation(body.apiKey, res.operationId);
+    // Kena rem / jaringan sesaat → cek lagi di putaran berikutnya
+    res = await checkOperation(body.apiKey, res.operationId).catch(() => res);
   }
   if (!res.assetId) throw new Error("timeout");
   const decalId = res.assetId;

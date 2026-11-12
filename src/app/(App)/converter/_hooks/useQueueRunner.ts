@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/store/hooks";
-import { itemFailed, jobUpdated, type QueueItem } from "@/store/slices/converterSlice";
+import { itemFailed, jobUpdated, requeue, type QueueItem } from "@/store/slices/converterSlice";
 import { baseApi } from "@/store/api/baseApi";
 import { ApiError } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
@@ -17,10 +17,14 @@ const sleep = (ms: number, signal: AbortSignal) =>
   });
 
 /**
- * Menjalankan antrean: kirim item "pending" ke server (maks MAX_PARALLEL) lalu polling statusnya.
+ * Menjalankan antrean: kirim item "pending" ke server (maks `parallel` = batas plan, bawaan MAX_PARALLEL) lalu polling statusnya.
  * Job tetap jalan di server walau user pindah halaman — polling dilanjutkan saat kembali.
  */
-export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: string) => void }) {
+// Job yang sudah pernah dikirim ulang karena hilang di server (per tab) → kedua kalinya baru dianggap gagal
+const requeued = new Set<string>();
+
+export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: string) => void; parallel?: number }) {
+  const parallel = Math.max(1, opts.parallel ?? MAX_PARALLEL);
   const items = useAppSelector((s) => s.converter.items);
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -81,6 +85,13 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
         } catch (e) {
           if (ctrl.signal.aborted) return;
           if (e instanceof ApiError && e.status === 404) {
+            // Job hilang (server di-update / restart di tengah convert) → kirim ulang sekali, tidak langsung gagal
+            if (!requeued.has(key)) {
+              requeued.add(key);
+              dispatch(requeue(key));
+              finish(key);
+              return;
+            }
             dispatch(itemFailed({ key, error: e.message }));
             finish(key);
             return;
@@ -170,7 +181,7 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
     }
 
     if (Date.now() < cooldownUntil.current) return;
-    const free = MAX_PARALLEL - active.current.size;
+    const free = parallel - active.current.size;
     if (free <= 0) return;
     const pending = items.filter((i) => i.status === "pending" && !active.current.has(i.key)).slice(0, free);
     for (const it of pending) {
@@ -178,5 +189,5 @@ export function useQueueRunner(opts: { onGuestLimit: () => void; onDone: (key: s
       active.current.set(it.key, ctrl);
       void start(it, ctrl);
     }
-  }, [items, tick, dispatch, store, toast]);
+  }, [items, tick, parallel, dispatch, store, toast]);
 }

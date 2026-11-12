@@ -46,3 +46,30 @@ export function saveState(s: RootState) {
     /* storage penuh / diblokir — abaikan */
   }
 }
+
+// ---------- Antrean converter (terpisah: bisa ratusan lagu dari impor file) ----------
+
+const QUEUE_KEY = "arrc_queue_v1";
+
+type QueueSnapshot = Pick<RootState["converter"], "items" | "batches">;
+
+export function loadQueue(): QueueSnapshot | null {
+  try {
+    const raw = localStorage.getItem(QUEUE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as Partial<QueueSnapshot>;
+    return Array.isArray(data.items) ? { items: data.items, batches: Array.isArray(data.batches) ? data.batches : [] } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Disimpan supaya antrean tetap ada setelah refresh / update aplikasi — job server dilanjutkan polling-nya */
+export function saveQueue(s: QueueSnapshot) {
+  try {
+    if (!s.items.length && !s.batches.length) localStorage.removeItem(QUEUE_KEY);
+    else localStorage.setItem(QUEUE_KEY, JSON.stringify({ items: s.items, batches: s.batches }));
+  } catch {
+    /* storage penuh / diblokir — antrean tetap jalan, hanya tidak bertahan saat refresh */
+  }
+}

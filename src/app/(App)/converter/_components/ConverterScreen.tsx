@@ -106,6 +106,8 @@ export default function ConverterScreen() {
     setImporter({ file });
   };
   useQueueRunner({
+    // Convert bersamaan = batas plan (Pro 3 · Studio 4 · Ultimate 5); server menegakkannya lagi (BUSY → antrean jeda)
+    parallel: plans[me?.plan?.id ?? "free"].parallel,
     onGuestLimit: () => setGate(true),
     onDone: (key) => {
       // Lagu impor: tanpa dialog pangkas (sudah dipangkas otomatis) & upload diatur gelombang batch

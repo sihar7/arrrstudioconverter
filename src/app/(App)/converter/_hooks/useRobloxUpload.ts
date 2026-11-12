@@ -14,6 +14,9 @@ import { shortName } from "@/lib/shortName";
 import { saveHistoryCover, uploadCoverDecal } from "@/lib/coverDecal";
 import type { UploadBlock, UploadForm } from "@/type/roblox";
 
+// Operasi upload yang sedang dipantau (per tab) → tidak dipantau dobel saat halaman dibuka ulang
+const watching = new Set<string>();
+
 /** Upload hasil ke Roblox + polling operasi sampai asset ID keluar (+ cover album sebagai Decal bila diaktifkan) */
 export function useRobloxUpload() {
   const dispatch = useAppDispatch();
@@ -92,7 +95,7 @@ export function useRobloxUpload() {
     [dispatch, store, t],
   );
 
-  const pollOperation = useCallback(
+  const pollOnce = useCallback(
     async (key: string, operationId: string, historyId?: string, quiet = false) => {
       const apiKey = store.getState().roblox.apiKey;
       const deadline = Date.now() + 3 * 60_000;
@@ -108,12 +111,27 @@ export function useRobloxUpload() {
             return;
           }
         } catch (e) {
+          // Rem server / jaringan putus sesaat ≠ upload gagal (asetnya mungkin sudah jadi) → coba cek lagi nanti
+          if (e instanceof ApiError && (e.code === "RATE_LIMIT" || e.code === "NETWORK")) continue;
           dispatch(uploadUpdated({ key, upload: { status: "error", error: e instanceof ApiError ? e.message : String(e) } }));
           return;
         }
       }
     },
     [dispatch, store, toast, t, f],
+  );
+
+  const pollOperation = useCallback(
+    async (key: string, operationId: string, historyId?: string, quiet = false) => {
+      if (watching.has(operationId)) return;
+      watching.add(operationId);
+      try {
+        await pollOnce(key, operationId, historyId, quiet);
+      } finally {
+        watching.delete(operationId);
+      }
+    },
+    [pollOnce],
   );
 
   const upload = useCallback(
@@ -152,6 +170,19 @@ export function useRobloxUpload() {
     },
     [dispatch, store, toast, t, f, pollOperation, uploadCover],
   );
+
+  // Setelah refresh: upload yang masih diproses Roblox (punya operationId) dipantau lagi sampai asset ID keluar
+  // (antrean dipulihkan StoreProvider SETELAH efek halaman jalan → pantau lewat selector, bukan sekali saat mount)
+  const processing = useAppSelector((s) =>
+    s.converter.items.filter((i) => i.upload.status === "processing" && i.upload.operationId).map((i) => i.upload.operationId).join(","),
+  );
+  useEffect(() => {
+    if (!processing) return;
+    for (const i of store.getState().converter.items) {
+      // watching mencegah dobel: operasi yang baru dikirim upload() sudah dipantau
+      if (i.upload.status === "processing" && i.upload.operationId) void pollOperation(i.key, i.upload.operationId, i.result?.historyId ?? undefined, true);
+    }
+  }, [processing, store, pollOperation]);
 
   /** Item yang bisa ikut upload massal: selesai, belum terupload, format diterima Roblox */
   const uploadable = useCallback(
