@@ -1085,6 +1085,7 @@ const en: Dictionary = {
     removeAccountConfirm: "Remove “{name}” from this device? Its API key is removed from the app (the key stays active on Roblox).",
     switchedTo: "Now using {name}",
     manageAccounts: "Manage accounts",
+    usingAccount: "Using account",
     eyebrow: "Account & preferences",
     title: "Settings",
     sub: "Connect Roblox, set upload defaults, and appearance.",

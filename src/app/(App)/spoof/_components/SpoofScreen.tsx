@@ -11,6 +11,7 @@ import { useSelectMode } from "@/hooks/useSelectMode";
 import SelectionDock from "@/components/shared/SelectionDock";
 import PageHeader from "@/components/shared/PageHeader";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
+import { AccountPicker } from "@/components/shared/RobloxAccounts";
 import EmptyState from "@/components/shared/EmptyState";
 import Button, { ButtonLink } from "@/components/ui/Button";
 import Field, { Input, Textarea } from "@/components/ui/Field";
@@ -236,7 +237,7 @@ export default function SpoofScreen() {
 
         {/* Pengaturan upload ulang */}
         <CardBox as="aside" className="rise lg:sticky lg:top-[calc(var(--nav-h)+24px)] desk:lg:top-4">
-          <CardHeader title={access ? S.accessTitle : S.settingsTitle} />
+          <CardHeader title={access ? S.accessTitle : S.settingsTitle} aside={<AccountPicker />} />
           <div className="flex flex-col gap-5 p-5 desk:gap-4 desk:p-4">
             <Field label={S.action} hint={access ? S.accessHint : undefined}>
               {() => (

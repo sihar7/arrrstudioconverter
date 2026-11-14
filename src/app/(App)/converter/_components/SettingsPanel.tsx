@@ -29,6 +29,7 @@ import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import { useHydrated } from "@/hooks/useHydrated";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
+import { AccountPicker } from "@/components/shared/RobloxAccounts";
 import Segmented from "@/components/ui/Segmented";
 import Slider from "@/components/ui/Slider";
 import Switch from "@/components/ui/Switch";
@@ -455,6 +456,10 @@ export default function SettingsPanel() {
           />
           {canAuto && autoUpload && (
             <div className="mt-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[12.5px] text-fg-3">{t.settings.usingAccount}</span>
+                <AccountPicker />
+              </div>
               <Segmented
                 size="sm"
                 label={t.upload.permission}

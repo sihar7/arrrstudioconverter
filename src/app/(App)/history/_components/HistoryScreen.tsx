@@ -12,6 +12,7 @@ import { useT } from "@/hooks/useT";
 import { useSelectMode } from "@/hooks/useSelectMode";
 import SelectionDock from "@/components/shared/SelectionDock";
 import PageHeader from "@/components/shared/PageHeader";
+import { AccountPicker } from "@/components/shared/RobloxAccounts";
 import PageLoader from "@/components/shared/PageLoader";
 import CardBox from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
@@ -190,6 +191,7 @@ export default function HistoryScreen() {
         sub={h.sub}
         actions={
           <>
+            <AccountPicker />
             {hasRoblox && (
               <Button variant="ghost" loading={actions.checking} icon={<Refresh width={16} height={16} />} onClick={() => actions.checkAll(items)}>
                 {actions.checking ? h.checking : h.checkStatus}

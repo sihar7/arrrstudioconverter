@@ -11,6 +11,7 @@ import { useConfirm } from "@/hooks/useConfirm";
 import { useSelectMode } from "@/hooks/useSelectMode";
 import SelectionDock from "@/components/shared/SelectionDock";
 import PageHeader from "@/components/shared/PageHeader";
+import { AccountPicker } from "@/components/shared/RobloxAccounts";
 import PageLoader from "@/components/shared/PageLoader";
 import CardBox from "@/components/shared/CardBox";
 import EmptyState from "@/components/shared/EmptyState";
@@ -168,6 +169,7 @@ export default function LibraryScreen() {
         sub={L.sub}
         actions={
           <>
+            <AccountPicker />
             {lib.assets.length > 0 && (
               <Button
                 variant={sel.selecting ? "primary" : "ghost"}

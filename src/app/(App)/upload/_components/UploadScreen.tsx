@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/useT";
 import PageHeader from "@/components/shared/PageHeader";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
+import { AccountPicker } from "@/components/shared/RobloxAccounts";
 import Button, { ButtonLink } from "@/components/ui/Button";
 import Field, { Input, Textarea } from "@/components/ui/Field";
 import Segmented from "@/components/ui/Segmented";
@@ -184,7 +185,7 @@ export default function UploadScreen() {
 
         {/* Pengaturan bersama + aksi massal */}
         <CardBox as="aside" className="rise lg:sticky lg:top-[calc(var(--nav-h)+24px)] desk:lg:top-4">
-          <CardHeader title={U.settingsTitle} />
+          <CardHeader title={U.settingsTitle} aside={<AccountPicker />} />
           <form
             className="flex flex-col gap-5 p-5 desk:gap-4 desk:p-4"
             onSubmit={(e) => {

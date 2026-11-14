@@ -8,6 +8,7 @@ import { useAppSelector } from "@/store/hooks";
 import { useT } from "@/hooks/useT";
 import { useToast } from "@/hooks/useToast";
 import CardBox, { CardHeader } from "@/components/shared/CardBox";
+import { AccountPicker } from "@/components/shared/RobloxAccounts";
 import Button from "@/components/ui/Button";
 import Field, { inputClass } from "@/components/ui/Field";
 import { FACE_PROP, FACES, luauScript, parseAssetId, type FaceId } from "../_lib/skyMath";
@@ -162,7 +163,7 @@ export default function InstallCard({
 
   return (
     <CardBox>
-      <CardHeader title={s.install} />
+      <CardHeader title={s.install} aside={<AccountPicker />} />
 
       {/* Upload otomatis */}
       <div className="flex flex-col gap-4 border-b border-[var(--hairline)] p-5">

@@ -1084,6 +1084,7 @@ const id = {
     removeAccountConfirm: "Hapus “{name}” dari perangkat ini? API key-nya ikut dihapus dari aplikasi (key di Roblox tetap aktif).",
     switchedTo: "Sekarang memakai {name}",
     manageAccounts: "Kelola akun",
+    usingAccount: "Memakai akun",
     eyebrow: "Akun & preferensi",
     title: "Pengaturan",
     sub: "Hubungkan Roblox, atur default upload, dan tampilan.",
