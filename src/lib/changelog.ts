@@ -14,6 +14,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-14-spoof-grouped-results",
+    date: "2026-11-14",
+    text: {
+      id: {
+        title: "Hasil Spoof lebih ringkas",
+        body: [
+          "Aset dengan hasil yang sama kini digabung jadi satu baris (mis. \"37 aset — …\"), lengkap dengan Salin ID dan Masukkan lagi untuk mencoba ulang.",
+          "Hapus semua kini juga menutup semua baris hasil sekaligus — tidak perlu ditutup satu per satu.",
+        ],
+      },
+      en: {
+        title: "Tidier Spoof results",
+        body: [
+          "Assets with the same result are now grouped into one row (e.g. \"37 assets — …\"), with Copy IDs and Put back to try again.",
+          "Clear all now also dismisses every result row at once — no more closing them one by one.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-14-roblox-accounts",
     date: "2026-11-14",
     text: {

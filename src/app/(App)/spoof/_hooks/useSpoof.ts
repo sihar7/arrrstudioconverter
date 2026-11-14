@@ -136,7 +136,11 @@ export function useSpoof() {
     [store, toast, f, S],
   );
 
-  const dismissGrant = useCallback((assetId: string) => setGrants((g) => g.filter((x) => x.assetId !== assetId)), []);
+  /** Tutup hasil izin; banyak ID sekaligus (satu grup hasil) */
+  const dismissGrant = useCallback((assetIds: string | string[]) => {
+    const drop = new Set(Array.isArray(assetIds) ? assetIds : [assetIds]);
+    setGrants((g) => g.filter((x) => !drop.has(x.assetId)));
+  }, []);
 
   /** Catatan tanpa ID baru → spoof ulang dengan upload otomatis menyala */
   const uploadNow = useCallback(
@@ -144,7 +148,16 @@ export function useSpoof() {
     [start],
   );
 
-  const dismiss = useCallback((sourceId: string) => setPending((p) => p.filter((x) => x.sourceId !== sourceId || !x.error)), []);
+  const dismiss = useCallback((sourceIds: string | string[]) => {
+    const drop = new Set(Array.isArray(sourceIds) ? sourceIds : [sourceIds]);
+    setPending((p) => p.filter((x) => !drop.has(x.sourceId) || !x.error));
+  }, []);
+
+  /** Tutup semua baris hasil izin & spoof gagal sekaligus */
+  const clearResults = useCallback(() => {
+    setGrants([]);
+    setPending((p) => p.filter((x) => !x.error));
+  }, []);
 
   /** ids → hapus yang dipilih; tanpa ids → hapus semua. true = berhasil */
   const remove = useCallback(
@@ -185,5 +198,5 @@ export function useSpoof() {
     return () => clearTimeout(timer);
   }, [waitingKey, items, store, upsert]);
 
-  return { items, loaded, pending, grants, busy, start, grant, uploadNow, dismiss, dismissGrant, remove };
+  return { items, loaded, pending, grants, busy, start, grant, uploadNow, dismiss, dismissGrant, clearResults, remove };
 }

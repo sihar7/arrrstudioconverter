@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CheckCircle, ListSelect, ShieldCheck, Trash, WarningTriangle, Xmark } from "iconoir-react";
+import { useMemo, useRef, useState } from "react";
+import { ListSelect, ShieldCheck, Trash, WarningTriangle, Xmark } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
 import { useT } from "@/hooks/useT";
@@ -22,6 +22,7 @@ import { SfSpoof } from "@/components/icons/SfIcons";
 import { MAX_IDS, useSpoof, type SpoofSettings } from "../_hooks/useSpoof";
 import { parseAssetIds } from "../_service/spoof.service";
 import SpoofResultCard from "./SpoofResultCard";
+import SpoofResultGroup from "./SpoofResultGroup";
 import KindPicker from "./KindPicker";
 import type { SpoofWant } from "@/type/spoof";
 
@@ -60,7 +61,29 @@ export default function SpoofScreen() {
   const placeOk = !settings.autoUpload || settings.permission !== "place" || placeValid;
   const ready = access ? hasKey && (openUse || /^\d{1,20}$/.test(grantId)) : hasKey && /^\d{1,20}$/.test(settings.creatorId) && placeOk;
   const running = sp.pending.filter((p) => !p.error);
-  const failed = sp.pending.filter((p) => p.error);
+
+  // Hasil kembar digabung: satu baris per pesan (bukan puluhan baris pesan yang sama)
+  const groups = useMemo(() => {
+    const map = new Map<string, { key: string; ok: boolean; message: string; ids: string[]; grant: boolean }>();
+    const add = (key: string, ok: boolean, message: string, id: string, grant: boolean) => {
+      const g = map.get(key) ?? { key, ok, message, ids: [], grant };
+      g.ids.push(id);
+      map.set(key, g);
+    };
+    for (const g of sp.grants) {
+      const msg = g.error ?? (g.target.kind === "open" ? S.grantDoneOpen : f(g.target.kind === "group" ? S.grantDoneGroup : S.grantDone, { id: g.target.id }));
+      add(`grant:${g.error ? "err" : "ok"}:${msg}`, !g.error, msg, g.assetId, true);
+    }
+    for (const p of sp.pending) if (p.error) add(`spoof:${p.error}`, false, p.error, p.sourceId, false);
+    // Gagal di atas, berhasil di bawah
+    return [...map.values()].sort((a, b) => Number(a.ok) - Number(b.ok));
+  }, [sp.grants, sp.pending, S, f]);
+  const idsRef = useRef<HTMLTextAreaElement>(null);
+  const refill = (list: string[]) => {
+    setText(list.join("\n"));
+    idsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    idsRef.current?.focus({ preventScroll: true });
+  };
 
   const recordIds = useMemo(() => sp.items.map((r) => r.id), [sp.items]);
   const [asking, setAsking] = useState(false);
@@ -78,6 +101,12 @@ export default function SpoofScreen() {
     if (!yes || !(await sp.remove(ids))) return;
     toast(f(S.deleted, { n }), "ok");
     sel.exit();
+  };
+
+  /** Hapus semua: baris hasil izin/gagal langsung ditutup; catatan spoof tersimpan → konfirmasi dulu */
+  const clearAll = async () => {
+    sp.clearResults();
+    if (sp.items.length) await removeRecords();
   };
 
   const submit = async () => {
@@ -113,6 +142,7 @@ export default function SpoofScreen() {
               <Field label={S.ids} hint={f(S.idsHint, { n: MAX_IDS })}>
                 {({ id }) => (
                   <Textarea
+                    ref={idsRef}
                     id={id}
                     rows={3}
                     className="font-mono"
@@ -149,19 +179,21 @@ export default function SpoofScreen() {
             <CardHeader
               title={S.resultsTitle}
               aside={
-                sp.items.length > 0 && (
+                (sp.items.length > 0 || groups.length > 0) && (
                   <div className="flex gap-1.5">
-                    <Button
-                      size="sm"
-                      variant={selecting ? "primary" : "subtle"}
-                      icon={selecting ? <Xmark width={15} height={15} /> : <ListSelect width={15} height={15} />}
-                      onClick={() => (selecting ? sel.exit() : sel.start())}
-                      aria-pressed={selecting}
-                    >
-                      {selecting ? S.cancelSelect : S.select}
-                    </Button>
+                    {sp.items.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant={selecting ? "primary" : "subtle"}
+                        icon={selecting ? <Xmark width={15} height={15} /> : <ListSelect width={15} height={15} />}
+                        onClick={() => (selecting ? sel.exit() : sel.start())}
+                        aria-pressed={selecting}
+                      >
+                        {selecting ? S.cancelSelect : S.select}
+                      </Button>
+                    )}
                     {!selecting && (
-                      <Button size="sm" variant="subtle" disabled={sp.busy} icon={<Trash width={15} height={15} />} onClick={() => void removeRecords()}>
+                      <Button size="sm" variant="subtle" disabled={sp.busy} icon={<Trash width={15} height={15} />} onClick={() => void clearAll()}>
                         {S.clear}
                       </Button>
                     )}
@@ -169,25 +201,15 @@ export default function SpoofScreen() {
                 )
               }
             />
-            {sp.grants.map((g) => (
-              <div key={`grant-${g.assetId}`} className="flex items-start gap-3 border-b border-[var(--hairline)] px-5 py-4 text-[14px] desk:px-4 desk:py-3 desk:text-[13px]">
-                {g.error ? (
-                  <WarningTriangle width={16} height={16} className="mt-0.5 shrink-0 text-err" aria-hidden="true" />
-                ) : (
-                  <CheckCircle width={16} height={16} className="mt-0.5 shrink-0 text-ok" aria-hidden="true" />
-                )}
-                <p className="min-w-0 flex-1 leading-relaxed text-fg-2">
-                  <span className="font-mono text-fg">{g.assetId}</span> — {g.error ?? (g.target.kind === "open" ? S.grantDoneOpen : f(g.target.kind === "group" ? S.grantDoneGroup : S.grantDone, { id: g.target.id }))}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => sp.dismissGrant(g.assetId)}
-                  aria-label={S.dismiss}
-                  className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[8px] text-fg-3 transition-colors hover:bg-fg/[0.07] hover:text-fg"
-                >
-                  <Xmark width={16} height={16} aria-hidden="true" />
-                </button>
-              </div>
+            {groups.map((g) => (
+              <SpoofResultGroup
+                key={g.key}
+                ok={g.ok}
+                message={g.message}
+                ids={g.ids}
+                onDismiss={() => (g.grant ? sp.dismissGrant(g.ids) : sp.dismiss(g.ids))}
+                onRefill={g.ok ? undefined : () => refill(g.ids)}
+              />
             ))}
             {running.map((p) => (
               <div key={`run-${p.sourceId}`} className="flex items-center gap-3 border-b border-[var(--hairline)] px-5 py-4 text-[14px] desk:px-4 desk:py-3 desk:text-[13px]">
@@ -195,22 +217,6 @@ export default function SpoofScreen() {
                 <span className="min-w-0 flex-1 truncate text-fg-2">
                   {S.working} <span className="font-mono text-fg">{p.sourceId}</span>
                 </span>
-              </div>
-            ))}
-            {failed.map((p) => (
-              <div key={`err-${p.sourceId}`} className="flex items-start gap-3 border-b border-[var(--hairline)] px-5 py-4 text-[14px] desk:px-4 desk:py-3 desk:text-[13px]">
-                <WarningTriangle width={16} height={16} className="mt-0.5 shrink-0 text-err" aria-hidden="true" />
-                <p className="min-w-0 flex-1 leading-relaxed text-fg-2">
-                  <span className="font-mono text-fg">{p.sourceId}</span> — {p.error}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => sp.dismiss(p.sourceId)}
-                  aria-label={S.dismiss}
-                  className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[8px] text-fg-3 transition-colors hover:bg-fg/[0.07] hover:text-fg"
-                >
-                  <Xmark width={16} height={16} aria-hidden="true" />
-                </button>
               </div>
             ))}
             {selecting && <p className="fade-swap border-b border-[var(--hairline)] px-5 py-2.5 text-[13px] text-fg-3 desk:px-4">{S.selectHint}</p>}
