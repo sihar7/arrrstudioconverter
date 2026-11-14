@@ -5,6 +5,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import RobloxCard from "./RobloxCard";
 import { AccountCard, AppearanceCard, DefaultsCard } from "./PreferencesCards";
 import DesktopStorageCard from "./DesktopStorageCard";
+import LyricsApiCard from "./LyricsApiCard";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getDesktop } from "@/type/desktop";
 
@@ -16,7 +17,10 @@ export default function SettingsScreen() {
     <div className="flex flex-col gap-8">
       <PageHeader eyebrow={t.settings.eyebrow} title={t.settings.title} sub={t.settings.sub} />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-        <RobloxCard />
+        <div className="flex flex-col gap-6">
+          <RobloxCard />
+          <LyricsApiCard />
+        </div>
         <div className="flex flex-col gap-6">
           {desktop?.getSaveSettings && <DesktopStorageCard desktop={desktop} />}
           <DefaultsCard />

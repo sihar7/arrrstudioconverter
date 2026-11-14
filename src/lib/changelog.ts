@@ -14,6 +14,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-15-lyrics-api",
+    date: "2026-11-15",
+    text: {
+      id: {
+        title: "Lirik sinkron untuk Music di game-mu",
+        body: [
+          "Baru: Lyrics API di Pengaturan. Buat key, simpan di Roblox Secrets, dan Music di game menampilkan lirik per kata ala Spotify — diselaraskan otomatis ke audio aset (Roblox Bypass 1.4× juga pas).",
+          "Pilih akun Roblox di halaman mana pun kini tampil utuh (sebelumnya daftar akun tertutup kartu di bawahnya).",
+        ],
+      },
+      en: {
+        title: "Synced lyrics for the Music in your game",
+        body: [
+          "New: Lyrics API in Settings. Create a key, save it in Roblox Secrets, and the in-game Music shows word-by-word lyrics like Spotify — auto-aligned to the asset audio (Roblox Bypass 1.4× included).",
+          "The Roblox account picker now opens fully on every page (the list used to be hidden behind the card below it).",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-14-spoof-grouped-results",
     date: "2026-11-14",
     text: {

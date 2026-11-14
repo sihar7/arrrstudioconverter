@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+
+const noopSubscribe = () => () => {};
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, NavArrowDown, Plus, Settings } from "iconoir-react";
@@ -65,22 +68,48 @@ export function AccountPicker({ className, align = "right" }: { className?: stri
   const label = useAccountLabel();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  // Menu dirender di body (portal, position fixed): di dalam header halaman ia tertutup kartu di bawahnya
+  // (stacking context kartu) → hanya judul "Akun Roblox" yang terlihat. Portal = tidak pernah terpotong.
+  // true hanya di browser (portal butuh document.body), false saat render server
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const [pos, setPos] = useState<{ top: number; left?: number; right?: number; maxH: number }>({ top: 0, maxH: 420 });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const place = () => {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const top = r.bottom + 8;
+      const maxH = Math.max(160, Math.min(420, window.innerHeight - top - 12));
+      // Lebar menu 256 (w-64); rata kanan/kiri ke chip, lalu dijepit di dalam layar (chip di kiri layar HP)
+      const w = Math.min(256, window.innerWidth - 16);
+      const want = align === "right" ? r.right - w : r.left;
+      setPos({ top, left: Math.min(Math.max(8, want), window.innerWidth - w - 8), maxH });
+    };
+    place();
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!ref.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
+    };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, align]);
 
   const active = accounts.find((a) => a.id === activeAccountId);
-  if (!active) return null;
+  // Akun dari localStorage hanya ada di browser → render setelah mount (cegah hydration mismatch)
+  if (!active || !mounted) return null;
   const name = label(active);
   const item =
     "state-layer flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-s px-2.5 py-2 text-[13.5px] text-fg-2 transition-colors hover:bg-hover hover:text-fg";
@@ -88,6 +117,7 @@ export function AccountPicker({ className, align = "right" }: { className?: stri
   return (
     <div ref={ref} className={cn("relative min-w-0", className)}>
       <button
+        ref={btnRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -107,15 +137,22 @@ export function AccountPicker({ className, align = "right" }: { className?: stri
         {!apiKey && <span className="size-1.5 shrink-0 rounded-full bg-warn" title={s.apiKeyPlaceholder} aria-label={s.apiKeyPlaceholder} />}
         <NavArrowDown width={14} height={14} className={cn("shrink-0 text-fg-3 transition-transform", open && "rotate-180")} />
       </button>
+      {mounted && createPortal(
       <div
+        ref={menuRef}
         id={menuId}
         role="menu"
         data-open={open}
-        style={{ "--origin": align === "right" ? "top right" : "top left" } as CSSProperties}
-        className={cn(
-          "ios-pop mat absolute top-[calc(100%+8px)] z-[60] max-h-[min(420px,70dvh)] w-64 overflow-y-auto rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]",
-          align === "right" ? "right-0" : "left-0",
-        )}
+        style={
+          {
+            "--origin": align === "right" ? "top right" : "top left",
+            top: pos.top,
+            left: pos.left,
+            right: pos.right,
+            maxHeight: pos.maxH,
+          } as CSSProperties
+        }
+        className="ios-pop mat fixed z-[90] w-64 max-w-[calc(100vw-16px)] overflow-y-auto rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]"
       >
         <p className="caps px-3 pb-1 pt-1.5 text-[10px] text-fg-3">{s.accounts}</p>
         <AccountMenuList itemClass={item} onPicked={() => setOpen(false)} />
@@ -143,7 +180,9 @@ export function AccountPicker({ className, align = "right" }: { className?: stri
           </span>
           {s.manageAccounts}
         </Link>
-      </div>
+      </div>,
+      document.body,
+      )}
     </div>
   );
 }
