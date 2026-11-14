@@ -8,6 +8,8 @@ import { LogOut, NavArrowDown, ShieldCheck } from "iconoir-react";
 import { SfClock, SfCrown, SfGear, SfLock } from "@/components/icons/SfIcons";
 import AppIcon from "@/components/ui/AppIcon";
 import { useLogoutMutation, useMeQuery } from "@/store/api/baseApi";
+import { useAppSelector } from "@/store/hooks";
+import { AccountMenuList } from "./RobloxAccounts";
 import { useT } from "@/hooks/useT";
 import { ButtonLink } from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
@@ -67,6 +69,7 @@ export default function UserMenu({ placement = "down", full = false }: { placeme
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { t, f, lang } = useT();
+  const robloxAccounts = useAppSelector((s) => s.roblox.accounts.length);
 
   useEffect(() => {
     if (!open) return;
@@ -124,7 +127,7 @@ export default function UserMenu({ placement = "down", full = false }: { placeme
         data-open={open}
         style={{ "--origin": placement === "up" ? "bottom left" : "top right" } as CSSProperties}
         className={cn(
-          "ios-pop mat absolute z-[60] w-64 rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]",
+          "ios-pop mat absolute z-[60] max-h-[calc(100dvh-88px)] w-64 overflow-y-auto rounded-l border border-line/70 bg-raised p-1.5 shadow-[var(--elev-3)]",
           placement === "up" ? "bottom-[calc(100%+8px)] left-0" : "right-0 top-[calc(100%+10px)]",
         )}
       >
@@ -155,6 +158,13 @@ export default function UserMenu({ placement = "down", full = false }: { placeme
             </AppIcon>
           )}
         </Link>
+        {robloxAccounts > 1 && (
+          <>
+            <div className="my-1.5 h-px bg-line" />
+            <p className="caps px-3 pb-1 pt-1.5 text-[10px] text-fg-3">{t.settings.accounts}</p>
+            <AccountMenuList itemClass={item} onPicked={() => setOpen(false)} />
+          </>
+        )}
         <div className="my-1.5 h-px bg-line" />
         <Link role="menuitem" href="/history" className={item} onClick={() => setOpen(false)}>
           <AppIcon tone="blue" size={28}>

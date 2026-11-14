@@ -1,8 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { BadgeCheck, Calendar, Group, Key, OpenNewWindow, User } from "iconoir-react";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setAccountMeta } from "@/store/slices/robloxSlice";
 import { useMeQuery, useRobloxProfileQuery } from "@/store/api/baseApi";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/lib/utils";
@@ -18,9 +19,17 @@ export default function RobloxProfileCard() {
   const id = r.creatorId || (r.creatorType === "user" ? (r.keyCheck?.ownerId ?? "") : "");
   const skip = !me?.user || r.apiKey.length < 20 || !/^\d{1,20}$/.test(id);
   const { data, isFetching, isError } = useRobloxProfileQuery({ type: r.creatorType, id }, { skip });
+  const p = data?.profile;
+
+  // Nama & foto profil jadi label akun di pemilih akun (hanya bila profil cocok dengan akun aktif)
+  const dispatch = useAppDispatch();
+  const metaName = p && !skip && p.id === id ? p.displayName : null;
+  const metaAvatar = p?.avatarUrl ?? null;
+  useEffect(() => {
+    if (metaName) dispatch(setAccountMeta({ name: metaName, avatarUrl: metaAvatar }));
+  }, [metaName, metaAvatar, dispatch]);
 
   if (skip) return null;
-  const p = data?.profile;
   const loading = isFetching && !p;
   const profileUrl = p ? (p.type === "user" ? `https://www.roblox.com/users/${p.id}/profile` : `https://www.roblox.com/communities/${p.id}`) : "#";
 

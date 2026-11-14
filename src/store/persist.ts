@@ -21,7 +21,9 @@ export function loadState(): PersistedState {
 }
 
 export function saveState(s: RootState) {
-  const { apiKey, remember, keyCheck: _keyCheck, ...robloxRest } = s.roblox;
+  const { apiKey, remember, keyCheck: _keyCheck, accounts, ...robloxRest } = s.roblox;
+  // Key tiap akun ikut aturan "Ingat"; hasil cek key tidak disimpan (dicek ulang)
+  const savedAccounts = accounts.map((a) => ({ ...a, apiKey: remember ? a.apiKey : "", keyCheck: null }));
   const data: PersistedState = {
     preferences: { lang: s.preferences.lang, theme: s.preferences.theme },
     converter: {
@@ -34,7 +36,7 @@ export function saveState(s: RootState) {
       robloxMode: s.converter.robloxMode,
       trimAsk: s.converter.trimAsk,
     },
-    roblox: { ...robloxRest, remember, apiKey: remember ? apiKey : "" },
+    roblox: { ...robloxRest, remember, apiKey: remember ? apiKey : "", accounts: savedAccounts },
   };
   try {
     localStorage.setItem(KEY, JSON.stringify(data));

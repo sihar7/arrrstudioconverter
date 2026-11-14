@@ -6,7 +6,7 @@ import { makeStore, type AppStore } from "./store";
 import { loadQueue, loadState, saveQueue, saveState } from "./persist";
 import { hydratePreferences } from "./slices/preferencesSlice";
 import { hydrateConverter, hydrateQueue } from "./slices/converterSlice";
-import { updateRoblox } from "./slices/robloxSlice";
+import { hydrateRoblox } from "./slices/robloxSlice";
 
 // Server: satu store default dibuat di level modul (DI LUAR render). createStore Redux memanggil
 // Math.random(), yang ditolak Cache Components saat prerender. Aman dibagi antar request karena
@@ -20,7 +20,7 @@ export default function StoreProvider({ children }: { children: ReactNode }) {
     // Pulihkan setelah mount (SSR selalu render default → tidak ada hydration mismatch)
     const saved = loadState();
     if (saved.converter) store.dispatch(hydrateConverter(saved.converter));
-    if (saved.roblox) store.dispatch(updateRoblox(saved.roblox));
+    store.dispatch(hydrateRoblox(saved.roblox ?? {}));
     store.dispatch(hydratePreferences(saved.preferences ?? {}));
     // Antrean & batch impor bertahan saat refresh / update (job server dilanjutkan, bukan diulang)
     const queue = loadQueue();

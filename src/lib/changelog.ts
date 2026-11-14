@@ -14,6 +14,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-14-roblox-accounts",
+    date: "2026-11-14",
+    text: {
+      id: {
+        title: "Ganti akun Roblox sekali klik",
+        body: [
+          "Pengaturan › Akun Roblox › Tambah akun → tempel API key akun kedua. Tiap akun menyimpan API key, Owner, User/Group ID, dan Place ID sendiri.",
+          "Ganti akun dengan klik namanya di Pengaturan, atau dari menu profil (kiri bawah) di halaman mana pun. Converter, Upload, Spoof, dan Riwayat langsung memakai akun yang dipilih.",
+        ],
+      },
+      en: {
+        title: "Switch Roblox accounts in one click",
+        body: [
+          "Settings › Roblox accounts › Add account → paste the second account's API key. Each account keeps its own API key, Owner, User/Group ID and Place ID.",
+          "Switch by clicking its name in Settings, or from the profile menu (bottom left) on any page. Converter, Upload, Spoof and History use the selected account right away.",
+        ],
+      },
+    },
+  },
+  {
     id: "2026-11-13-library-bulk-restore",
     date: "2026-11-13",
     text: {

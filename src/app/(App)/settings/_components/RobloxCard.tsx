@@ -17,6 +17,7 @@ import Segmented from "@/components/ui/Segmented";
 import Badge from "@/components/ui/Badge";
 import { useKeyCheck } from "../_hooks/useKeyCheck";
 import RobloxProfileCard from "./RobloxProfileCard";
+import AccountSwitcher from "./AccountSwitcher";
 
 export default function RobloxCard() {
   const dispatch = useAppDispatch();
@@ -32,6 +33,7 @@ export default function RobloxCard() {
     <CardBox className="rise">
       <CardHeader title={s.robloxTitle} />
       <div className="flex flex-col gap-6 p-5 sm:p-6">
+        <AccountSwitcher />
         <RobloxProfileCard />
         <p className="text-[14px] leading-relaxed text-fg-2">{s.robloxSub}</p>
 
